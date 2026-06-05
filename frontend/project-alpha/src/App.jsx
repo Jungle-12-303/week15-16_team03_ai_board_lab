@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import './App.css';
+import PostCard from './components/PostCard';
 
 const categories = ['Development', 'Learning', 'Project', 'Daily', 'Review', 'Briefing'];
 
@@ -23,25 +24,6 @@ const initialPosts = [
     tags: ['Daily', 'UX'],
   },
 ];
-
-function PostCard({ author, createdAt, title, content, tags, category }) {
-  return (
-    <article>
-      <p>{category}</p>
-      <p>
-        {author} - {createdAt}
-      </p>
-      <h2>{title}</h2>
-      <p>{content}</p>
-
-      <div>
-        {tags.map((tag) => (
-          <span key={tag}>{tag}</span>
-        ))}
-      </div>
-    </article>
-  );
-}
 
 export default function App() {
   const [posts, setPosts] = useState(initialPosts);
