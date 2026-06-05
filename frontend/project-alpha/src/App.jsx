@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import './App.css';
 
+const categories = ['Development', 'Learning', 'Project', 'Daily', 'Review', 'Briefing'];
+
 const initialPosts = [
   {
     id: 1,
@@ -46,6 +48,7 @@ export default function App() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tagInput, setTagInput] = useState('');
+  const [category, setCategory] = useState('Learning');
   const canSubmit = title.trim().length > 0 && content.trim().length > 0;
 
   function handleSubmit(event) {
@@ -58,7 +61,7 @@ export default function App() {
     const newPost = {
       id: Date.now(),
       author: 'cedis',
-      category: 'Learning',
+      category: category,
       createdAt: 'Just now',
       title: title,
       content: content,
@@ -79,6 +82,14 @@ export default function App() {
       <h1>Project Alpha</h1>
 
       <form onSubmit={handleSubmit}>
+        <select value={category} onChange={(event) => setCategory(event.target.value)}>
+          {categories.map((categoryName) => (
+            <option key={categoryName} value={categoryName}>
+              {categoryName}
+            </option>
+          ))}
+        </select>
+
         <input
           value={title}
           onChange={(event) => setTitle(event.target.value)}
