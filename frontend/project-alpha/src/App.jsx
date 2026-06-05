@@ -24,8 +24,21 @@ export default function App() {
   const [tagInput, setTagInput] = useState('');
   const [category, setCategory] = useState('Learning');
   const [editingPostId, setEditingPostId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const canSubmit = title.trim().length > 0 && content.trim().length > 0;
+  const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+  const filteredPosts =
+    normalizedSearchTerm.length === 0
+      ? posts
+      : posts.filter((post) => {
+          return (
+            post.title.toLowerCase().includes(normalizedSearchTerm) ||
+            post.content.toLowerCase().includes(normalizedSearchTerm) ||
+            post.category.toLowerCase().includes(normalizedSearchTerm) ||
+            post.tags.some((tag) => tag.toLowerCase().includes(normalizedSearchTerm))
+          );
+        });
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -123,8 +136,17 @@ export default function App() {
         onCancelEdit={cancelEditPost}
       />
 
+      <label>
+        Search
+        <input
+          value={searchTerm}
+          onChange={(event) => setSearchTerm(event.target.value)}
+          placeholder="Search posts"
+        />
+      </label>
+
       <PostList
-        posts={posts}
+        posts={filteredPosts}
         onDeletePost={deletePost}
         onEditPost={startEditPost}
       />
