@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import './App.css';
 import PostCard from './components/PostCard';
+import PostForm from './components/PostForm';
 
 const categories = ['Development', 'Learning', 'Project', 'Daily', 'Review', 'Briefing'];
 
@@ -63,37 +64,19 @@ export default function App() {
     <main>
       <h1>Project Alpha</h1>
 
-      <form onSubmit={handleSubmit}>
-        <select value={category} onChange={(event) => setCategory(event.target.value)}>
-          {categories.map((categoryName) => (
-            <option key={categoryName} value={categoryName}>
-              {categoryName}
-            </option>
-          ))}
-        </select>
-
-        <input
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          placeholder="Enter a title"
-        />
-
-        <textarea
-          value={content}
-          onChange={(event) => setContent(event.target.value)}
-          placeholder="Enter content"
-        />
-
-        <input
-          value={tagInput}
-          onChange={(event) => setTagInput(event.target.value)}
-          placeholder="Enter tags separated by commas"
-        />
-
-        <button type="submit" disabled={!canSubmit}>
-          Add post
-        </button>
-      </form>
+      <PostForm
+        categories={categories}
+        category={category}
+        title={title}
+        content={content}
+        tagInput={tagInput}
+        canSubmit={canSubmit}
+        onCategoryChange={setCategory}
+        onTitleChange={setTitle}
+        onContentChange={setContent}
+        onTagInputChange={setTagInput}
+        onSubmit={handleSubmit}
+      />
 
       {posts.length === 0 ? (
         <p>No posts yet.</p>
