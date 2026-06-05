@@ -3,9 +3,7 @@ import './App.css';
 import PostForm from './components/PostForm';
 import PostList from './components/PostList';
 
-const categories = ['Development', 'Learning', 'Project',
-                            'Daily', 'Review', 'Briefing'];
-
+const categories = ['Development', 'Learning', 'Project', 'Daily', 'Review', 'Briefing'];
 
 const initialPosts = [
   {
@@ -29,8 +27,8 @@ export default function App() {
 
   const canSubmit = title.trim().length > 0 && content.trim().length > 0;
 
-  function handleSubmit(e) {
-    e.preventDefault();
+  function handleSubmit(event) {
+    event.preventDefault();
 
     if (!canSubmit) {
       return;
@@ -90,7 +88,6 @@ export default function App() {
         onTagInputChange={setTagInput}
         onSubmit={handleSubmit}
         isEditing={editingPostId !== null}
-
       />
 
       <PostList
