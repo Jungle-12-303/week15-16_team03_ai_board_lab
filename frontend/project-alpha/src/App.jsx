@@ -43,6 +43,7 @@ function PostCard({ author, createdAt, title, content, tags, category }) {
 
 export default function App() {
   const [posts, setPosts] = useState(initialPosts);
+  const [title, setTitle] = useState('');
 
   function addPost() {
     const newPost = {
@@ -50,17 +51,24 @@ export default function App() {
       author: 'cedis',
       category: 'Learning',
       createdAt: 'Just now',
-      title: 'New learning log',
+      title: title,
       content: 'A new post was added with state.',
       tags: ['React', 'State'],
     };
 
     setPosts([newPost, ...posts]);
+    setTitle('');
   }
 
   return (
     <main>
       <h1>Project Alpha</h1>
+      <input
+        value={title}
+        onChange={(event) => setTitle(event.target.value)}
+        placeholder="Enter a title"
+      />
+
       <button type="button" onClick={addPost}>
         Add post
       </button>
