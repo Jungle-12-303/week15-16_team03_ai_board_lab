@@ -47,7 +47,9 @@ export default function App() {
   const [content, setContent] = useState('');
   const canSubmit = title.trim().length > 0 && content.trim().length > 0;
 
-  function addPost() {
+  function handleSubmit(event) {
+    event.preventDefault();
+
     if (!canSubmit) {
       return;
     }
@@ -70,21 +72,24 @@ export default function App() {
   return (
     <main>
       <h1>Project Alpha</h1>
-      <input
-        value={title}
-        onChange={(event) => setTitle(event.target.value)}
-        placeholder="Enter a title"
-      />
 
-      <textarea
-        value={content}
-        onChange={(event) => setContent(event.target.value)}
-        placeholder="Enter content"
-      />
+      <form onSubmit={handleSubmit}>
+        <input
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+          placeholder="Enter a title"
+        />
 
-      <button type="button" onClick={addPost} disabled={!canSubmit}>
-        Add post
-      </button>
+        <textarea
+          value={content}
+          onChange={(event) => setContent(event.target.value)}
+          placeholder="Enter content"
+        />
+
+        <button type="submit" disabled={!canSubmit}>
+          Add post
+        </button>
+      </form>
 
       {posts.length === 0 ? (
         <p>No posts yet.</p>
