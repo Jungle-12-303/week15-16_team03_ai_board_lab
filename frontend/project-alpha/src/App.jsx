@@ -45,6 +45,7 @@ export default function App() {
   const [posts, setPosts] = useState(initialPosts);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [tagInput, setTagInput] = useState('');
   const canSubmit = title.trim().length > 0 && content.trim().length > 0;
 
   function handleSubmit(event) {
@@ -61,12 +62,16 @@ export default function App() {
       createdAt: 'Just now',
       title: title,
       content: content,
-      tags: ['React', 'State'],
+      tags: tagInput
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter((tag) => tag.length > 0),
     };
 
     setPosts([newPost, ...posts]);
     setTitle('');
     setContent('');
+    setTagInput('');
   }
 
   return (
@@ -84,6 +89,12 @@ export default function App() {
           value={content}
           onChange={(event) => setContent(event.target.value)}
           placeholder="Enter content"
+        />
+
+        <input
+          value={tagInput}
+          onChange={(event) => setTagInput(event.target.value)}
+          placeholder="Enter tags separated by commas"
         />
 
         <button type="submit" disabled={!canSubmit}>
