@@ -81,6 +81,14 @@ export default function App() {
     setPosts(posts.filter((post) => post.id !== postId));
   }
 
+  function cancelEditPost() {
+    setEditingPostId(null);
+    setTitle('');
+    setContent('');
+    setTagInput('');
+    setCategory('Learning');
+  }
+
   function startEditPost(postId) {
     const postToEdit = posts.find((post) => post.id === postId);
 
@@ -112,6 +120,7 @@ export default function App() {
         onTagInputChange={setTagInput}
         onSubmit={handleSubmit}
         isEditing={editingPostId !== null}
+        onCancelEdit={cancelEditPost}
       />
 
       <PostList
