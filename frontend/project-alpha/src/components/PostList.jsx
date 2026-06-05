@@ -23,3 +23,4 @@ export default function PostList({ posts, onDeletePost, onEditPost }) {
     </>
   );
 }
+

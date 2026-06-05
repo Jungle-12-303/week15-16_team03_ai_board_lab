@@ -3,7 +3,9 @@ import './App.css';
 import PostForm from './components/PostForm';
 import PostList from './components/PostList';
 
-const categories = ['Development', 'Learning', 'Project', 'Daily', 'Review', 'Briefing'];
+const categories = ['Development', 'Learning', 'Project',
+                            'Daily', 'Review', 'Briefing'];
+
 
 const initialPosts = [
   {
@@ -15,15 +17,6 @@ const initialPosts = [
     content: 'PostCard receives data and renders it on the screen.',
     tags: ['React', 'Props'],
   },
-  {
-    id: 2,
-    author: 'alpha',
-    category: 'Daily',
-    createdAt: 'Yesterday',
-    title: 'Small daily log',
-    content: 'Keeping the app lightweight matters.',
-    tags: ['Daily', 'UX'],
-  },
 ];
 
 export default function App() {
@@ -32,10 +25,12 @@ export default function App() {
   const [content, setContent] = useState('');
   const [tagInput, setTagInput] = useState('');
   const [category, setCategory] = useState('Learning');
+  const [editingPostId, setEditingPostId] = useState(null);
+
   const canSubmit = title.trim().length > 0 && content.trim().length > 0;
 
-  function handleSubmit(event) {
-    event.preventDefault();
+  function handleSubmit(e) {
+    e.preventDefault();
 
     if (!canSubmit) {
       return;
@@ -44,10 +39,10 @@ export default function App() {
     const newPost = {
       id: Date.now(),
       author: 'cedis',
-      category: category,
       createdAt: 'Just now',
       title: title,
       content: content,
+      category: category,
       tags: tagInput
         .split(',')
         .map((tag) => tag.trim())
@@ -64,18 +59,18 @@ export default function App() {
     setPosts(posts.filter((post) => post.id !== postId));
   }
 
-  function editPostTitle(postId) {
-    const nextTitle = window.prompt('New title');
+  function startEditPost(postId) {
+    const postToEdit = posts.find((post) => post.id === postId);
 
-    if (!nextTitle || nextTitle.trim().length === 0) {
+    if (!postToEdit) {
       return;
     }
 
-    setPosts(
-      posts.map((post) =>
-        post.id === postId ? { ...post, title: nextTitle } : post,
-      ),
-    );
+    setEditingPostId(postToEdit.id);
+    setTitle(postToEdit.title);
+    setContent(postToEdit.content);
+    setCategory(postToEdit.category);
+    setTagInput(postToEdit.tags.join(', '));
   }
 
   return (
@@ -94,12 +89,14 @@ export default function App() {
         onContentChange={setContent}
         onTagInputChange={setTagInput}
         onSubmit={handleSubmit}
+        isEditing={editingPostId !== null}
+
       />
 
       <PostList
         posts={posts}
         onDeletePost={deletePost}
-        onEditPost={editPostTitle}
+        onEditPost={startEditPost}
       />
     </main>
   );

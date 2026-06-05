@@ -22,13 +22,14 @@ export default function PostCard({
           <span key={tag}>{tag}</span>
         ))}
       </div>
+        <button type="button" onClick={onDelete}>
+            Delete
+        </button>
+        <button type="button" onClick={onEdit}>
+            Edit
+        </button>
 
-      <button type="button" onClick={onDelete}>
-        Delete
-      </button>
-      <button type="button" onClick={onEdit}>
-        Edit title
-      </button>
     </article>
+
   );
 }

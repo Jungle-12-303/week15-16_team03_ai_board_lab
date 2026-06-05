@@ -10,6 +10,7 @@ export default function PostForm({
   onContentChange,
   onTagInputChange,
   onSubmit,
+  isEditing,
 }) {
   return (
     <form onSubmit={onSubmit}>
@@ -43,7 +44,7 @@ export default function PostForm({
       />
 
       <button type="submit" disabled={!canSubmit}>
-        Add post
+        {isEditing ? 'Update post' : 'Add post'}
       </button>
     </form>
   );

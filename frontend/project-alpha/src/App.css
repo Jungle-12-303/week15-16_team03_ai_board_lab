@@ -1,5 +1,299 @@
-main {
-  max-width: 720px;
+.feed-column {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: min(1020px, calc(100% - 24px));
   margin: 0 auto;
-  padding: 32px 16px;
+  padding: 12px 0;
+}
+
+.composer,
+.post-card,
+.empty-feed {
+  border: 1px solid #ddd9cf;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(31, 41, 51, 0.04);
+}
+
+.composer {
+  padding: 28px;
+}
+
+.composer-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.composer-header h1 {
+  margin: 4px 0 0;
+  color: #101828;
+  font-size: 32px;
+  line-height: 1.15;
+}
+
+.eyebrow {
+  margin: 0;
+  color: #1f6b68;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.category-select,
+.field input,
+.field textarea {
+  width: 100%;
+  border: 1px solid #d8d3c8;
+  border-radius: 12px;
+  background: #fff;
+  color: #0f172a;
+  font: inherit;
+  outline: none;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.category-select {
+  width: 252px;
+  height: 64px;
+  padding: 0 24px;
+  font-size: 24px;
+}
+
+.field {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.field span {
+  color: #565f6b;
+  font-size: 20px;
+  font-weight: 750;
+}
+
+.field input {
+  height: 64px;
+  padding: 0 18px;
+  font-size: 24px;
+}
+
+.field textarea {
+  min-height: 198px;
+  padding: 18px;
+  font-size: 24px;
+  resize: vertical;
+}
+
+.category-select:focus,
+.field input:focus,
+.field textarea:focus {
+  border-color: #2f6f6b;
+  box-shadow: 0 0 0 3px rgba(47, 111, 107, 0.14);
+}
+
+.primary-button,
+.secondary-button,
+.text-button {
+  border: 0;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.primary-button {
+  min-width: 132px;
+  min-height: 60px;
+  padding: 0 24px;
+  background: #1f2933;
+  color: #fff;
+  font-size: 24px;
+}
+
+.primary-button:disabled {
+  cursor: not-allowed;
+  background: #b8b2a6;
+}
+
+.secondary-button {
+  min-height: 54px;
+  padding: 0 20px;
+  border: 1px solid #d8d3c8;
+  background: #fff;
+  color: #174f4c;
+  font-size: 22px;
+}
+
+.text-button {
+  padding: 0;
+  background: transparent;
+  color: #17615d;
+  font-size: 24px;
+}
+
+.composer-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.draft-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.feed-list {
+  display: grid;
+  gap: 22px;
+}
+
+.post-card {
+  padding: 28px;
+}
+
+.post-header,
+.post-footer {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.post-card h2 {
+  margin: 26px 0 18px;
+  color: #101828;
+  font-size: 32px;
+  line-height: 1.25;
+}
+
+.post-content {
+  margin: 0 0 26px;
+  color: #1f2937;
+  font-size: 24px;
+  line-height: 1.65;
+}
+
+.post-author {
+  margin: 0;
+  color: #0f172a;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.post-time {
+  margin: 4px 0 0;
+  color: #667085;
+  font-size: 18px;
+}
+
+.category-pill,
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.category-pill {
+  padding: 0 18px;
+  background: #edf6f4;
+  color: #1f6b68;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.category-daily {
+  background: #f7efe2;
+  color: #8a5a20;
+}
+
+.category-project {
+  background: #eef2ff;
+  color: #475569;
+}
+
+.category-briefing {
+  background: #edf6f4;
+  color: #2f6f6b;
+}
+
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.tag-chip {
+  padding: 0 14px;
+  background: #f2f0ea;
+  color: #4b5563;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.empty-feed {
+  padding: 32px;
+  text-align: center;
+}
+
+.empty-feed h2 {
+  margin: 0;
+  color: #101828;
+}
+
+.empty-feed p {
+  margin: 8px 0 0;
+  color: #667085;
+}
+
+@media (max-width: 680px) {
+  .feed-column {
+    width: min(100% - 24px, 680px);
+    gap: 14px;
+  }
+
+  .composer,
+  .post-card,
+  .empty-feed {
+    padding: 18px;
+  }
+
+  .composer-header,
+  .composer-footer,
+  .post-header,
+  .post-footer {
+    flex-direction: column;
+  }
+
+  .composer-header h1,
+  .post-card h2 {
+    font-size: 26px;
+  }
+
+  .field span,
+  .post-author,
+  .post-content,
+  .primary-button,
+  .secondary-button,
+  .text-button {
+    font-size: 18px;
+  }
+
+  .category-select,
+  .draft-actions,
+  .draft-actions .secondary-button,
+  .composer-footer .primary-button {
+    width: 100%;
+  }
 }
