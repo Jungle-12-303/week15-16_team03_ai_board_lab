@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import './App.css';
 
-const posts = [
+const initialPosts = [
   {
     id: 1,
     author: 'cedis',
@@ -41,6 +42,8 @@ function PostCard({ author, createdAt, title, content, tags, category }) {
 }
 
 export default function App() {
+  const [posts, setPosts] = useState(initialPosts);
+
   return (
     <main>
       <h1>Project Alpha</h1>
