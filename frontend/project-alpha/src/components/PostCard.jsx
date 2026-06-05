@@ -6,6 +6,7 @@ export default function PostCard({
   tags,
   category,
   onDelete,
+  onEdit,
 }) {
   return (
     <article>
@@ -24,6 +25,9 @@ export default function PostCard({
 
       <button type="button" onClick={onDelete}>
         Delete
+      </button>
+      <button type="button" onClick={onEdit}>
+        Edit title
       </button>
     </article>
   );

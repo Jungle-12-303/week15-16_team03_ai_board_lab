@@ -64,6 +64,20 @@ export default function App() {
     setPosts(posts.filter((post) => post.id !== postId));
   }
 
+  function editPostTitle(postId) {
+    const nextTitle = window.prompt('New title');
+
+    if (!nextTitle || nextTitle.trim().length === 0) {
+      return;
+    }
+
+    setPosts(
+      posts.map((post) =>
+        post.id === postId ? { ...post, title: nextTitle } : post,
+      ),
+    );
+  }
+
   return (
     <main>
       <h1>Project Alpha</h1>
@@ -82,7 +96,11 @@ export default function App() {
         onSubmit={handleSubmit}
       />
 
-      <PostList posts={posts} onDeletePost={deletePost} />
+      <PostList
+        posts={posts}
+        onDeletePost={deletePost}
+        onEditPost={editPostTitle}
+      />
     </main>
   );
 }
