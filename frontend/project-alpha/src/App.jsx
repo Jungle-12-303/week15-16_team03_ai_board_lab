@@ -44,17 +44,22 @@ export default function App() {
   return (
     <main>
       <h1>Project Alpha</h1>
-      {posts.map((post) => (
-        <PostCard
-          key={post.id}
-          author={post.author}
-          createdAt={post.createdAt}
-          title={post.title}
-          content={post.content}
-          tags={post.tags}
-          category={post.category}
-        />
-      ))}
+
+      {posts.length === 0 ? (
+        <p>No posts yet.</p>
+      ) : (
+        posts.map((post) => (
+          <PostCard
+            key={post.id}
+            author={post.author}
+            createdAt={post.createdAt}
+            title={post.title}
+            content={post.content}
+            tags={post.tags}
+            category={post.category}
+          />
+        ))
+      )}
     </main>
   );
 }
