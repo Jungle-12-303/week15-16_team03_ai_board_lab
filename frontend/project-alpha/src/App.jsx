@@ -34,6 +34,33 @@ export default function App() {
       return;
     }
 
+    const nextTags = tagInput
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter((tag) => tag.length > 0);
+
+    if (editingPostId !== null) {
+      setPosts(
+        posts.map((post) =>
+          post.id === editingPostId
+            ? {
+                ...post,
+                title: title,
+                content: content,
+                category: category,
+                tags: nextTags,
+              }
+            : post,
+        ),
+      );
+
+      setEditingPostId(null);
+      setTitle('');
+      setContent('');
+      setTagInput('');
+      return;
+    }
+
     const newPost = {
       id: Date.now(),
       author: 'cedis',
@@ -41,10 +68,7 @@ export default function App() {
       title: title,
       content: content,
       category: category,
-      tags: tagInput
-        .split(',')
-        .map((tag) => tag.trim())
-        .filter((tag) => tag.length > 0),
+      tags: nextTags,
     };
 
     setPosts([newPost, ...posts]);
