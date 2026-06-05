@@ -60,6 +60,10 @@ export default function App() {
     setTagInput('');
   }
 
+  function deletePost(postId) {
+    setPosts(posts.filter((post) => post.id !== postId));
+  }
+
   return (
     <main>
       <h1>Project Alpha</h1>
@@ -78,7 +82,7 @@ export default function App() {
         onSubmit={handleSubmit}
       />
 
-      <PostList posts={posts} />
+      <PostList posts={posts} onDeletePost={deletePost} />
     </main>
   );
 }

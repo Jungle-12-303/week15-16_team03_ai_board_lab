@@ -1,4 +1,12 @@
-export default function PostCard({ author, createdAt, title, content, tags, category }) {
+export default function PostCard({
+  author,
+  createdAt,
+  title,
+  content,
+  tags,
+  category,
+  onDelete,
+}) {
   return (
     <article>
       <p>{category}</p>
@@ -13,6 +21,10 @@ export default function PostCard({ author, createdAt, title, content, tags, cate
           <span key={tag}>{tag}</span>
         ))}
       </div>
+
+      <button type="button" onClick={onDelete}>
+        Delete
+      </button>
     </article>
   );
 }
