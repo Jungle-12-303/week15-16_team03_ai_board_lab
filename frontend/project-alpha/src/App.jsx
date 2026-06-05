@@ -45,8 +45,13 @@ export default function App() {
   const [posts, setPosts] = useState(initialPosts);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const canSubmit = title.trim().length > 0 && content.trim().length > 0;
 
   function addPost() {
+    if (!canSubmit) {
+      return;
+    }
+
     const newPost = {
       id: Date.now(),
       author: 'cedis',
@@ -77,7 +82,7 @@ export default function App() {
         placeholder="Enter content"
       />
 
-      <button type="button" onClick={addPost}>
+      <button type="button" onClick={addPost} disabled={!canSubmit}>
         Add post
       </button>
 
