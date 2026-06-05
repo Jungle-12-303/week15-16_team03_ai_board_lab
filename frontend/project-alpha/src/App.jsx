@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import './App.css';
-import PostCard from './components/PostCard';
 import PostForm from './components/PostForm';
+import PostList from './components/PostList';
 
 const categories = ['Development', 'Learning', 'Project', 'Daily', 'Review', 'Briefing'];
 
@@ -78,21 +78,7 @@ export default function App() {
         onSubmit={handleSubmit}
       />
 
-      {posts.length === 0 ? (
-        <p>No posts yet.</p>
-      ) : (
-        posts.map((post) => (
-          <PostCard
-            key={post.id}
-            author={post.author}
-            createdAt={post.createdAt}
-            title={post.title}
-            content={post.content}
-            tags={post.tags}
-            category={post.category}
-          />
-        ))
-      )}
+      <PostList posts={posts} />
     </main>
   );
 }
