@@ -14,6 +14,13 @@ const initialPosts = [
     title: 'React props practice',
     content: 'PostCard receives data and renders it on the screen.',
     tags: ['React', 'Props'],
+    comments: [
+      {
+        id: 1,
+        author: 'cedis',
+        content: 'Comment state will be added next.',
+      },
+    ],
   },
 ];
 
@@ -82,6 +89,7 @@ export default function App() {
       content: content,
       category: category,
       tags: nextTags,
+      comments: [],
     };
 
     setPosts([newPost, ...posts]);
@@ -92,6 +100,45 @@ export default function App() {
 
   function deletePost(postId) {
     setPosts(posts.filter((post) => post.id !== postId));
+  }
+
+  function addComment(postId, commentContent) {
+    const trimmedContent = commentContent.trim();
+
+    if (trimmedContent.length === 0) {
+      return;
+    }
+
+    setPosts(
+      posts.map((post) =>
+        post.id === postId
+          ? {
+              ...post,
+              comments: [
+                ...post.comments,
+                {
+                  id: Date.now(),
+                  author: 'cedis',
+                  content: trimmedContent,
+                },
+              ],
+            }
+          : post,
+      ),
+    );
+  }
+
+  function deleteComment(postId, commentId) {
+    setPosts(
+      posts.map((post) =>
+        post.id === postId
+          ? {
+              ...post,
+              comments: post.comments.filter((comment) => comment.id !== commentId),
+            }
+          : post,
+      ),
+    );
   }
 
   function cancelEditPost() {
@@ -149,6 +196,8 @@ export default function App() {
         posts={filteredPosts}
         onDeletePost={deletePost}
         onEditPost={startEditPost}
+        onAddComment={addComment}
+        onDeleteComment={deleteComment}
       />
     </main>
   );

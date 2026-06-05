@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 export default function PostCard({
   author,
   createdAt,
@@ -5,9 +7,20 @@ export default function PostCard({
   content,
   tags,
   category,
+  comments,
   onDelete,
   onEdit,
+  onAddComment,
+  onDeleteComment,
 }) {
+  const [commentInput, setCommentInput] = useState('');
+
+  function handleCommentSubmit(event) {
+    event.preventDefault();
+    onAddComment(commentInput);
+    setCommentInput('');
+  }
+
   return (
     <article>
       <p>{category}</p>
@@ -29,6 +42,34 @@ export default function PostCard({
       <button type="button" onClick={onEdit}>
         Edit
       </button>
+
+      <section>
+        <h3>Comments</h3>
+
+        {comments.length === 0 ? (
+          <p>No comments yet.</p>
+        ) : (
+          comments.map((comment) => (
+            <div key={comment.id}>
+              <p>
+                {comment.author}: {comment.content}
+              </p>
+              <button type="button" onClick={() => onDeleteComment(comment.id)}>
+                Delete comment
+              </button>
+            </div>
+          ))
+        )}
+
+        <form onSubmit={handleCommentSubmit}>
+          <input
+            value={commentInput}
+            onChange={(event) => setCommentInput(event.target.value)}
+            placeholder="Write a comment"
+          />
+          <button type="submit">Add comment</button>
+        </form>
+      </section>
     </article>
   );
 }
