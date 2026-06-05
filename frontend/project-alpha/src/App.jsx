@@ -1,5 +1,26 @@
 import './App.css';
 
+const posts = [
+  {
+    id: 1,
+    author: 'cedis',
+    category: 'Learning',
+    createdAt: 'Today',
+    title: 'React props practice',
+    content: 'PostCard receives data and renders it on the screen.',
+    tags: ['React', 'Props'],
+  },
+  {
+    id: 2,
+    author: 'alpha',
+    category: 'Daily',
+    createdAt: 'Yesterday',
+    title: 'Small daily log',
+    content: 'Keeping the app lightweight matters.',
+    tags: ['Daily', 'UX'],
+  },
+];
+
 function PostCard({ author, createdAt, title, content, tags, category }) {
   return (
     <article>
@@ -11,8 +32,9 @@ function PostCard({ author, createdAt, title, content, tags, category }) {
       <p>{content}</p>
 
       <div>
-        <span>{tags[0]}</span>
-        <span>{tags[1]}</span>
+        {tags.map((tag) => (
+          <span key={tag}>{tag}</span>
+        ))}
       </div>
     </article>
   );
@@ -22,14 +44,17 @@ export default function App() {
   return (
     <main>
       <h1>Project Alpha</h1>
-      <PostCard
-        author="cedis"
-        createdAt="Today"
-        title="React props practice"
-        content="PostCard receives data and renders it on the screen."
-        tags={['React', 'Props']}
-        category="Learning"
-      />
+      {posts.map((post) => (
+        <PostCard
+          key={post.id}
+          author={post.author}
+          createdAt={post.createdAt}
+          title={post.title}
+          content={post.content}
+          tags={post.tags}
+          category={post.category}
+        />
+      ))}
     </main>
   );
 }
