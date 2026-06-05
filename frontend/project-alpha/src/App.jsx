@@ -44,9 +44,26 @@ function PostCard({ author, createdAt, title, content, tags, category }) {
 export default function App() {
   const [posts, setPosts] = useState(initialPosts);
 
+  function addPost() {
+    const newPost = {
+      id: Date.now(),
+      author: 'cedis',
+      category: 'Learning',
+      createdAt: 'Just now',
+      title: 'New learning log',
+      content: 'A new post was added with state.',
+      tags: ['React', 'State'],
+    };
+
+    setPosts([newPost, ...posts]);
+  }
+
   return (
     <main>
       <h1>Project Alpha</h1>
+      <button type="button" onClick={addPost}>
+        Add post
+      </button>
 
       {posts.length === 0 ? (
         <p>No posts yet.</p>
