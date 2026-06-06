@@ -4,6 +4,7 @@ import './App.css';
 import AuthPanel from './components/AuthPanel';
 import BoardSidebar from './components/BoardSidebar';
 import ComposerModal from './components/ComposerModal';
+import PostFilterBar from './components/PostFilterBar';
 import PostList from './components/PostList';
 import { categories, postsPerPage } from './constants/board';
 import LoginPage from './pages/LoginPage';
@@ -137,6 +138,11 @@ export default function App() {
 
   function selectCategory(nextCategory) {
     setSelectedCategory(nextCategory);
+    setCurrentPage(1);
+  }
+
+  function changeSelectedTag(nextTag) {
+    setSelectedTag(nextTag);
     setCurrentPage(1);
   }
 
@@ -324,44 +330,14 @@ export default function App() {
         />
 
         <section className="main-content">
-          <section className="box">
-            <div className="filterbar">
-              <select
-                className="select"
-                value={selectedCategory}
-                onChange={(event) => selectCategory(event.target.value)}
-              >
-                <option value="All">All categories</option>
-                {categories.map((categoryName) => (
-                  <option key={categoryName} value={categoryName}>
-                    {categoryName}
-                  </option>
-                ))}
-              </select>
-
-              <input
-                className="input"
-                value={selectedTag}
-                onChange={(event) => {
-                  setSelectedTag(event.target.value);
-                  setCurrentPage(1);
-                }}
-                placeholder="Tag filter"
-              />
-
-              <button type="button" className="plain-button" onClick={resetFilters}>
-                Reset
-              </button>
-
-              <button
-                type="button"
-                className="primary-button"
-                onClick={() => setIsComposerOpen(true)}
-              >
-                Write post
-              </button>
-            </div>
-          </section>
+          <PostFilterBar
+            selectedCategory={selectedCategory}
+            selectedTag={selectedTag}
+            onSelectCategory={selectCategory}
+            onTagChange={changeSelectedTag}
+            onResetFilters={resetFilters}
+            onOpenComposer={() => setIsComposerOpen(true)}
+          />
 
           <p className="feed-status">
             Page {safeCurrentPage} of {totalPages} - {filteredPosts.length} posts
