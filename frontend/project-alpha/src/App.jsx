@@ -123,14 +123,15 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [selectedTag, setSelectedTag] = useState('All');
+  const [selectedTag, setSelectedTag] = useState('');
   const [currentUser, setCurrentUser] = useState(loadStoredCurrentUser);
   const [users, setUsers] = useState(loadStoredUsers);
+  const [isComposerOpen, setIsComposerOpen] = useState(false);
 
   const isLoggedIn = currentUser !== null;
   const canSubmit = isLoggedIn && title.trim().length > 0 && content.trim().length > 0;
   const normalizedSearchTerm = searchTerm.trim().toLowerCase();
-  const availableTags = [...new Set(posts.flatMap((post) => post.tags))];
+  const normalizedSelectedTag = selectedTag.trim().toLowerCase();
   const filteredPosts = posts.filter((post) => {
     const matchesSearch =
       normalizedSearchTerm.length === 0 ||
@@ -141,7 +142,9 @@ export default function App() {
 
     const matchesCategory =
       selectedCategory === 'All' || post.category === selectedCategory;
-    const matchesTag = selectedTag === 'All' || post.tags.includes(selectedTag);
+    const matchesTag =
+      normalizedSelectedTag.length === 0 ||
+      post.tags.some((tag) => tag.toLowerCase().includes(normalizedSelectedTag));
 
     return matchesSearch && matchesCategory && matchesTag;
   });
@@ -198,6 +201,7 @@ export default function App() {
       setTitle('');
       setContent('');
       setTagInput('');
+      setIsComposerOpen(false);
       return;
     }
 
@@ -217,6 +221,7 @@ export default function App() {
     setTitle('');
     setContent('');
     setTagInput('');
+    setIsComposerOpen(false);
   }
 
   function deletePost(postId) {
@@ -226,7 +231,7 @@ export default function App() {
   function resetFilters() {
     setSearchTerm('');
     setSelectedCategory('All');
-    setSelectedTag('All');
+    setSelectedTag('');
     setCurrentPage(1);
   }
 
@@ -313,6 +318,7 @@ export default function App() {
     setContent('');
     setTagInput('');
     setCategory('Learning');
+    setIsComposerOpen(false);
   }
 
   function startEditPost(postId) {
@@ -327,11 +333,12 @@ export default function App() {
     setContent(postToEdit.content);
     setCategory(postToEdit.category);
     setTagInput(postToEdit.tags.join(', '));
+    setIsComposerOpen(true);
   }
 
   if (currentUser === null) {
     return (
-      <main>
+      <main className="auth-page">
         <h1>Project Alpha</h1>
 
         <Routes>
@@ -351,7 +358,7 @@ export default function App() {
 
   if (location.pathname.startsWith('/posts/')) {
     return (
-      <main>
+      <main className="detail-page">
         <h1>Project Alpha</h1>
 
         <AuthPanel currentUser={currentUser} onLogout={logout} />
@@ -381,117 +388,185 @@ export default function App() {
   }
 
   return (
-    <main>
-      <h1>Project Alpha</h1>
+    <>
+      <header className="topbar">
+        <div className="topbar-inner">
+          <div className="brand">Project Alpha</div>
+          <input
+            className="search"
+            value={searchTerm}
+            onChange={(event) => {
+              setSearchTerm(event.target.value);
+              setCurrentPage(1);
+            }}
+            placeholder="Search posts, tags, comments"
+          />
+          <AuthPanel currentUser={currentUser} onLogout={logout} />
+        </div>
+      </header>
 
-      <AuthPanel currentUser={currentUser} onLogout={logout} />
+      <main className="layout">
+        <aside className="sidebar">
+          <section className="box">
+            <div className="box-header">Board</div>
+            <ul className="nav-list">
+              <li className={selectedCategory === 'All' ? 'active' : undefined}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCategory('All');
+                    setCurrentPage(1);
+                  }}
+                >
+                  All
+                </button>
+                <span className="count">{posts.length}</span>
+              </li>
 
-      <PostForm
-        categories={categories}
-        category={category}
-        title={title}
-        content={content}
-        tagInput={tagInput}
-        canSubmit={canSubmit}
-        onCategoryChange={setCategory}
-        onTitleChange={setTitle}
-        onContentChange={setContent}
-        onTagInputChange={setTagInput}
-        onSubmit={handleSubmit}
-        isEditing={editingPostId !== null}
-        onCancelEdit={cancelEditPost}
-      />
+              {categories.map((categoryName) => (
+                <li
+                  key={categoryName}
+                  className={selectedCategory === categoryName ? 'active' : undefined}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedCategory(categoryName);
+                      setCurrentPage(1);
+                    }}
+                  >
+                    {categoryName}
+                  </button>
+                  <span className="count">
+                    {posts.filter((post) => post.category === categoryName).length}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </aside>
 
-      <label>
-        Category filter
-        <select
-          value={selectedCategory}
-          onChange={(event) => {
-            setSelectedCategory(event.target.value);
-            setCurrentPage(1);
-          }}
-        >
-          <option value="All">All</option>
-          {categories.map((categoryName) => (
-            <option key={categoryName} value={categoryName}>
-              {categoryName}
-            </option>
-          ))}
-        </select>
-      </label>
+        <section className="main-content">
+          <section className="box">
+            <div className="filterbar">
+              <select
+                className="select"
+                value={selectedCategory}
+                onChange={(event) => {
+                  setSelectedCategory(event.target.value);
+                  setCurrentPage(1);
+                }}
+              >
+                <option value="All">All categories</option>
+                {categories.map((categoryName) => (
+                  <option key={categoryName} value={categoryName}>
+                    {categoryName}
+                  </option>
+                ))}
+              </select>
 
-      <label>
-        Tag filter
-        <select
-          value={selectedTag}
-          onChange={(event) => {
-            setSelectedTag(event.target.value);
-            setCurrentPage(1);
-          }}
-        >
-          <option value="All">All</option>
-          {availableTags.map((tag) => (
-            <option key={tag} value={tag}>
-              {tag}
-            </option>
-          ))}
-        </select>
-      </label>
+              <input
+                className="input"
+                value={selectedTag}
+                onChange={(event) => {
+                  setSelectedTag(event.target.value);
+                  setCurrentPage(1);
+                }}
+                placeholder="Tag filter"
+              />
 
-      <label>
-        Search
-        <input
-          value={searchTerm}
-          onChange={(event) => {
-            setSearchTerm(event.target.value);
-            setCurrentPage(1);
-          }}
-          placeholder="Search posts"
-        />
-      </label>
+              <button type="button" className="plain-button" onClick={resetFilters}>
+                Reset
+              </button>
 
-      <button type="button" onClick={resetFilters}>
-        Reset filters
-      </button>
+              <button
+                type="button"
+                className="primary-button"
+                onClick={() => setIsComposerOpen(true)}
+              >
+                Write post
+              </button>
+            </div>
+          </section>
 
-      <p>
-        Showing page {safeCurrentPage} of {totalPages} ({filteredPosts.length} posts)
-      </p>
+          <p className="feed-status">
+            Page {safeCurrentPage} of {totalPages} · {filteredPosts.length} posts
+          </p>
 
-      <PostList posts={paginatedPosts} />
+          <PostList posts={paginatedPosts} />
 
-      <div className="pagination">
-        <button
-          type="button"
-          onClick={() => setCurrentPage(safeCurrentPage - 1)}
-          disabled={safeCurrentPage === 1}
-        >
-          Previous
-        </button>
-
-        {Array.from({ length: totalPages }, (_, index) => {
-          const pageNumber = index + 1;
-
-          return (
+          <div className="pagination">
             <button
-              key={pageNumber}
               type="button"
-              onClick={() => setCurrentPage(pageNumber)}
-              aria-current={safeCurrentPage === pageNumber ? 'page' : undefined}
+              className="plain-button"
+              onClick={() => setCurrentPage(safeCurrentPage - 1)}
+              disabled={safeCurrentPage === 1}
             >
-              {pageNumber}
+              Previous
             </button>
-          );
-        })}
 
-        <button
-          type="button"
-          onClick={() => setCurrentPage(safeCurrentPage + 1)}
-          disabled={safeCurrentPage === totalPages}
-        >
-          Next
-        </button>
-      </div>
-    </main>
+            {Array.from({ length: totalPages }, (_, index) => {
+              const pageNumber = index + 1;
+
+              return (
+                <button
+                  key={pageNumber}
+                  type="button"
+                  className="plain-button"
+                  onClick={() => setCurrentPage(pageNumber)}
+                  aria-current={safeCurrentPage === pageNumber ? 'page' : undefined}
+                >
+                  {pageNumber}
+                </button>
+              );
+            })}
+
+            <button
+              type="button"
+              className="plain-button"
+              onClick={() => setCurrentPage(safeCurrentPage + 1)}
+              disabled={safeCurrentPage === totalPages}
+            >
+              Next
+            </button>
+          </div>
+        </section>
+      </main>
+
+      {isComposerOpen && (
+        <div className="modal-backdrop" onMouseDown={cancelEditPost}>
+          <section
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Write post dialog"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="box-header">
+              <span>{editingPostId !== null ? 'Edit post' : 'New post'}</span>
+              <button type="button" className="plain-button" onClick={cancelEditPost}>
+                Close
+              </button>
+            </div>
+
+            <PostForm
+              categories={categories}
+              category={category}
+              title={title}
+              content={content}
+              tagInput={tagInput}
+              canSubmit={canSubmit}
+              onCategoryChange={setCategory}
+              onTitleChange={setTitle}
+              onContentChange={setContent}
+              onTagInputChange={setTagInput}
+              onSubmit={handleSubmit}
+              isEditing={editingPostId !== null}
+              onCancelEdit={cancelEditPost}
+            />
+          </section>
+        </div>
+      )}
+    </>
   );
 }

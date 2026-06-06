@@ -4,9 +4,9 @@ export default function AuthPanel({ currentUser, onLogout }) {
   }
 
   return (
-    <div className="auth-panel">
-      <p>Logged in as {currentUser.name}</p>
-      <button type="button" onClick={onLogout}>
+    <div className="user-area">
+      <span>{currentUser.name}</span>
+      <button type="button" className="plain-button" onClick={onLogout}>
         Logout
       </button>
     </div>

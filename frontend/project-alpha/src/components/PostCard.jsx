@@ -13,22 +13,32 @@ export default function PostCard({
   const commentLabel = comments.length === 1 ? '1 comment' : `${comments.length} comments`;
 
   return (
-    <article>
-      <p>{category}</p>
-      <p>
-        {author} - {createdAt}
-      </p>
+    <article className="box post">
+      <div className="post-top">
+        <div>
+          <span className="author">{author}</span>
+          <span className="muted"> - {createdAt}</span>
+        </div>
+        <span className="label">{category}</span>
+      </div>
+
       <h2>{title}</h2>
       <p>{content}</p>
 
-      <div>
+      <div className="tag-list">
         {tags.map((tag) => (
-          <span key={tag}>{tag}</span>
+          <span className="tag" key={tag}>
+            #{tag}
+          </span>
         ))}
       </div>
 
-      <p>{commentLabel}</p>
-      <Link to={`/posts/${id}`}>Open</Link>
+      <div className="post-bottom">
+        <span className="muted">{commentLabel}</span>
+        <Link className="plain-link" to={`/posts/${id}`}>
+          Open
+        </Link>
+      </div>
     </article>
   );
 }
