@@ -35,9 +35,11 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedTag, setSelectedTag] = useState('All');
 
   const canSubmit = title.trim().length > 0 && content.trim().length > 0;
   const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+  const availableTags = [...new Set(posts.flatMap((post) => post.tags))];
   const filteredPosts = posts.filter((post) => {
     const matchesSearch =
       normalizedSearchTerm.length === 0 ||
@@ -48,8 +50,9 @@ export default function App() {
 
     const matchesCategory =
       selectedCategory === 'All' || post.category === selectedCategory;
+    const matchesTag = selectedTag === 'All' || post.tags.includes(selectedTag);
 
-    return matchesSearch && matchesCategory;
+    return matchesSearch && matchesCategory && matchesTag;
   });
   const totalPages = Math.max(1, Math.ceil(filteredPosts.length / postsPerPage));
   const safeCurrentPage = Math.min(currentPage, totalPages);
@@ -206,6 +209,24 @@ export default function App() {
           {categories.map((categoryName) => (
             <option key={categoryName} value={categoryName}>
               {categoryName}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label>
+        Tag filter
+        <select
+          value={selectedTag}
+          onChange={(event) => {
+            setSelectedTag(event.target.value);
+            setCurrentPage(1);
+          }}
+        >
+          <option value="All">All</option>
+          {availableTags.map((tag) => (
+            <option key={tag} value={tag}>
+              {tag}
             </option>
           ))}
         </select>
