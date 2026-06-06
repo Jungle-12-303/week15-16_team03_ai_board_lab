@@ -1,13 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import './App.css';
-import BoardSidebar from './components/BoardSidebar';
-import ComposerModal from './components/ComposerModal';
-import Pagination from './components/Pagination';
-import PostFilterBar from './components/PostFilterBar';
-import PostList from './components/PostList';
 import Topbar from './components/Topbar';
-import { categories, postsPerPage } from './constants/board';
+import { postsPerPage } from './constants/board';
+import BoardPage from './pages/BoardPage';
 import LoginPage from './pages/LoginPage';
 import PostDetailPage from './pages/PostDetailPage';
 import SignupPage from './pages/SignupPage';
@@ -305,62 +301,36 @@ export default function App() {
   }
 
   return (
-    <>
-      <Topbar
-        currentUser={currentUser}
-        onLogout={logout}
-        searchTerm={searchTerm}
-        onSearchChange={changeSearchTerm}
-      />
-
-      <main className="layout">
-        <BoardSidebar
-          posts={posts}
-          selectedCategory={selectedCategory}
-          onSelectCategory={selectCategory}
-        />
-
-        <section className="main-content">
-          <PostFilterBar
-            selectedCategory={selectedCategory}
-            selectedTag={selectedTag}
-            onSelectCategory={selectCategory}
-            onTagChange={changeSelectedTag}
-            onResetFilters={resetFilters}
-            onOpenComposer={() => setIsComposerOpen(true)}
-          />
-
-          <p className="feed-status">
-            Page {safeCurrentPage} of {totalPages} - {filteredPosts.length} posts
-          </p>
-
-          <PostList posts={paginatedPosts} />
-
-          <Pagination
-            currentPage={safeCurrentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-          />
-        </section>
-      </main>
-
-      {isComposerOpen && (
-        <ComposerModal
-          categories={categories}
-          category={category}
-          title={title}
-          content={content}
-          tagInput={tagInput}
-          canSubmit={canSubmit}
-          isEditing={editingPostId !== null}
-          onCategoryChange={setCategory}
-          onTitleChange={setTitle}
-          onContentChange={setContent}
-          onTagInputChange={setTagInput}
-          onSubmit={handleSubmit}
-          onClose={cancelEditPost}
-        />
-      )}
-    </>
+    <BoardPage
+      currentUser={currentUser}
+      posts={posts}
+      paginatedPosts={paginatedPosts}
+      currentPage={safeCurrentPage}
+      totalPages={totalPages}
+      filteredPostCount={filteredPosts.length}
+      searchTerm={searchTerm}
+      selectedCategory={selectedCategory}
+      selectedTag={selectedTag}
+      isComposerOpen={isComposerOpen}
+      category={category}
+      title={title}
+      content={content}
+      tagInput={tagInput}
+      canSubmit={canSubmit}
+      isEditing={editingPostId !== null}
+      onLogout={logout}
+      onSearchChange={changeSearchTerm}
+      onSelectCategory={selectCategory}
+      onTagChange={changeSelectedTag}
+      onResetFilters={resetFilters}
+      onOpenComposer={() => setIsComposerOpen(true)}
+      onPageChange={setCurrentPage}
+      onCategoryChange={setCategory}
+      onTitleChange={setTitle}
+      onContentChange={setContent}
+      onTagInputChange={setTagInput}
+      onSubmit={handleSubmit}
+      onCloseComposer={cancelEditPost}
+    />
   );
 }
