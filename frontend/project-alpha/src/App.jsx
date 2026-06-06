@@ -34,20 +34,23 @@ export default function App() {
   const [editingPostId, setEditingPostId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedCategory, setSelectedCategory] = useState('All');
 
   const canSubmit = title.trim().length > 0 && content.trim().length > 0;
   const normalizedSearchTerm = searchTerm.trim().toLowerCase();
-  const filteredPosts =
-    normalizedSearchTerm.length === 0
-      ? posts
-      : posts.filter((post) => {
-          return (
-            post.title.toLowerCase().includes(normalizedSearchTerm) ||
-            post.content.toLowerCase().includes(normalizedSearchTerm) ||
-            post.category.toLowerCase().includes(normalizedSearchTerm) ||
-            post.tags.some((tag) => tag.toLowerCase().includes(normalizedSearchTerm))
-          );
-        });
+  const filteredPosts = posts.filter((post) => {
+    const matchesSearch =
+      normalizedSearchTerm.length === 0 ||
+      post.title.toLowerCase().includes(normalizedSearchTerm) ||
+      post.content.toLowerCase().includes(normalizedSearchTerm) ||
+      post.category.toLowerCase().includes(normalizedSearchTerm) ||
+      post.tags.some((tag) => tag.toLowerCase().includes(normalizedSearchTerm));
+
+    const matchesCategory =
+      selectedCategory === 'All' || post.category === selectedCategory;
+
+    return matchesSearch && matchesCategory;
+  });
   const totalPages = Math.max(1, Math.ceil(filteredPosts.length / postsPerPage));
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const firstPostIndex = (safeCurrentPage - 1) * postsPerPage;
@@ -189,6 +192,24 @@ export default function App() {
         isEditing={editingPostId !== null}
         onCancelEdit={cancelEditPost}
       />
+
+      <label>
+        Category filter
+        <select
+          value={selectedCategory}
+          onChange={(event) => {
+            setSelectedCategory(event.target.value);
+            setCurrentPage(1);
+          }}
+        >
+          <option value="All">All</option>
+          {categories.map((categoryName) => (
+            <option key={categoryName} value={categoryName}>
+              {categoryName}
+            </option>
+          ))}
+        </select>
+      </label>
 
       <label>
         Search
