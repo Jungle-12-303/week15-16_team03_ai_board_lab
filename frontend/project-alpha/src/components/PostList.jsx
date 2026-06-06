@@ -1,10 +1,6 @@
 import PostCard from './PostCard';
 
-export default function PostList({
-  posts,
-  onDeletePost,
-  onEditPost,
-}) {
+export default function PostList({ posts }) {
   if (posts.length === 0) {
     return <p>No posts yet.</p>;
   }
@@ -22,8 +18,6 @@ export default function PostList({
           tags={post.tags}
           category={post.category}
           comments={post.comments}
-          onDelete={() => onDeletePost(post.id)}
-          onEdit={() => onEditPost(post.id)}
         />
       ))}
     </>

@@ -1,13 +1,16 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 export default function PostDetailPage({
   posts,
   currentUser,
   onAddComment,
   onDeleteComment,
+  onDeletePost,
+  onEditPost,
 }) {
   const { postId } = useParams();
+  const navigate = useNavigate();
   const [commentInput, setCommentInput] = useState('');
   const post = posts.find((item) => item.id === Number(postId));
 
@@ -31,6 +34,18 @@ export default function PostDetailPage({
     setCommentInput('');
   }
 
+  function handleDeletePost() {
+    onDeletePost(post.id);
+    navigate('/');
+  }
+
+  function handleEditPost() {
+    onEditPost(post.id);
+    navigate('/');
+  }
+
+  const canManagePost = post.author === currentUser.name;
+
   return (
     <section>
       <Link to="/">Back to board</Link>
@@ -48,6 +63,17 @@ export default function PostDetailPage({
             <span key={tag}>{tag}</span>
           ))}
         </div>
+
+        {canManagePost && (
+          <div>
+            <button type="button" onClick={handleEditPost}>
+              Edit post
+            </button>
+            <button type="button" onClick={handleDeletePost}>
+              Delete post
+            </button>
+          </div>
+        )}
       </article>
 
       <section>

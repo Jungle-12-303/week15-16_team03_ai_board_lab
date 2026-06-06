@@ -330,6 +330,8 @@ export default function App() {
                 currentUser={currentUser}
                 onAddComment={addComment}
                 onDeleteComment={deleteComment}
+                onDeletePost={deletePost}
+                onEditPost={startEditPost}
               />
             }
           />
@@ -421,11 +423,7 @@ export default function App() {
         Showing page {safeCurrentPage} of {totalPages} ({filteredPosts.length} posts)
       </p>
 
-      <PostList
-        posts={paginatedPosts}
-        onDeletePost={deletePost}
-        onEditPost={startEditPost}
-      />
+      <PostList posts={paginatedPosts} />
 
       <div className="pagination">
         <button

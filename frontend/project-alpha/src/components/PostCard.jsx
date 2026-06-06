@@ -9,8 +9,6 @@ export default function PostCard({
   tags,
   category,
   comments,
-  onDelete,
-  onEdit,
 }) {
   const commentLabel = comments.length === 1 ? '1 comment' : `${comments.length} comments`;
 
@@ -29,12 +27,6 @@ export default function PostCard({
         ))}
       </div>
 
-      <button type="button" onClick={onDelete}>
-        Delete
-      </button>
-      <button type="button" onClick={onEdit}>
-        Edit
-      </button>
       <p>{commentLabel}</p>
       <Link to={`/posts/${id}`}>Open</Link>
     </article>
