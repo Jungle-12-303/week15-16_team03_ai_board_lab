@@ -115,6 +115,13 @@ export default function App() {
     setPosts(posts.filter((post) => post.id !== postId));
   }
 
+  function resetFilters() {
+    setSearchTerm('');
+    setSelectedCategory('All');
+    setSelectedTag('All');
+    setCurrentPage(1);
+  }
+
   function addComment(postId, commentContent) {
     const trimmedContent = commentContent.trim();
 
@@ -243,6 +250,10 @@ export default function App() {
           placeholder="Search posts"
         />
       </label>
+
+      <button type="button" onClick={resetFilters}>
+        Reset filters
+      </button>
 
       <p>
         Showing page {safeCurrentPage} of {totalPages} ({filteredPosts.length} posts)
