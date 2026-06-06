@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import './App.css';
 import AuthPanel from './components/AuthPanel';
@@ -9,6 +9,8 @@ import SignupPage from './pages/SignupPage';
 
 const categories = ['Development', 'Learning', 'Project', 'Daily', 'Review', 'Briefing'];
 const postsPerPage = 3;
+const usersStorageKey = 'project-alpha-users';
+const currentUserStorageKey = 'project-alpha-current-user';
 
 const initialUsers = [
   {
@@ -36,6 +38,48 @@ const initialPosts = [
   },
 ];
 
+function loadStoredUsers() {
+  const storedUsers = localStorage.getItem(usersStorageKey);
+
+  if (storedUsers === null) {
+    return initialUsers;
+  }
+
+  try {
+    const parsedUsers = JSON.parse(storedUsers);
+
+    if (!Array.isArray(parsedUsers)) {
+      return initialUsers;
+    }
+
+    return parsedUsers.filter(
+      (user) => typeof user.username === 'string' && typeof user.password === 'string',
+    );
+  } catch {
+    return initialUsers;
+  }
+}
+
+function loadStoredCurrentUser() {
+  const storedCurrentUser = localStorage.getItem(currentUserStorageKey);
+
+  if (storedCurrentUser === null) {
+    return null;
+  }
+
+  try {
+    const parsedCurrentUser = JSON.parse(storedCurrentUser);
+
+    if (parsedCurrentUser !== null && typeof parsedCurrentUser.name === 'string') {
+      return parsedCurrentUser;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
 export default function App() {
   const location = useLocation();
   const [posts, setPosts] = useState(initialPosts);
@@ -48,8 +92,8 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedTag, setSelectedTag] = useState('All');
-  const [currentUser, setCurrentUser] = useState(null);
-  const [users, setUsers] = useState(initialUsers);
+  const [currentUser, setCurrentUser] = useState(loadStoredCurrentUser);
+  const [users, setUsers] = useState(loadStoredUsers);
 
   const isLoggedIn = currentUser !== null;
   const canSubmit = isLoggedIn && title.trim().length > 0 && content.trim().length > 0;
@@ -73,6 +117,19 @@ export default function App() {
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const firstPostIndex = (safeCurrentPage - 1) * postsPerPage;
   const paginatedPosts = filteredPosts.slice(firstPostIndex, firstPostIndex + postsPerPage);
+
+  useEffect(() => {
+    localStorage.setItem(usersStorageKey, JSON.stringify(users));
+  }, [users]);
+
+  useEffect(() => {
+    if (currentUser === null) {
+      localStorage.removeItem(currentUserStorageKey);
+      return;
+    }
+
+    localStorage.setItem(currentUserStorageKey, JSON.stringify(currentUser));
+  }, [currentUser]);
 
   function handleSubmit(event) {
     event.preventDefault();
