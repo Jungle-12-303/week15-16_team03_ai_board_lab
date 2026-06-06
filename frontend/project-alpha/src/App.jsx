@@ -5,9 +5,17 @@ import AuthPanel from './components/AuthPanel';
 import PostForm from './components/PostForm';
 import PostList from './components/PostList';
 import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
 
 const categories = ['Development', 'Learning', 'Project', 'Daily', 'Review', 'Briefing'];
 const postsPerPage = 3;
+
+const initialUsers = [
+  {
+    username: 'cedis',
+    password: 'alpha123',
+  },
+];
 
 const initialPosts = [
   {
@@ -41,6 +49,7 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedTag, setSelectedTag] = useState('All');
   const [currentUser, setCurrentUser] = useState(null);
+  const [users, setUsers] = useState(initialUsers);
 
   const isLoggedIn = currentUser !== null;
   const canSubmit = isLoggedIn && title.trim().length > 0 && content.trim().length > 0;
@@ -128,8 +137,37 @@ export default function App() {
     setCurrentPage(1);
   }
 
-  function login(username = 'cedis') {
-    setCurrentUser({ name: username });
+  function login(username, password) {
+    const trimmedUsername = username.trim();
+    const foundUser = users.find(
+      (user) => user.username === trimmedUsername && user.password === password,
+    );
+
+    if (!foundUser) {
+      return false;
+    }
+
+    setCurrentUser({ name: foundUser.username });
+    return true;
+  }
+
+  function signUp(username, password) {
+    const trimmedUsername = username.trim();
+    const isUsernameTaken = users.some((user) => user.username === trimmedUsername);
+
+    if (isUsernameTaken) {
+      return false;
+    }
+
+    setUsers([
+      ...users,
+      {
+        username: trimmedUsername,
+        password: password,
+      },
+    ]);
+
+    return true;
   }
 
   function logout() {
@@ -208,6 +246,10 @@ export default function App() {
             path="/login"
             element={<LoginPage currentUser={currentUser} onLogin={login} />}
           />
+          <Route
+            path="/signup"
+            element={<SignupPage currentUser={currentUser} onSignUp={signUp} />}
+          />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </main>
@@ -222,7 +264,7 @@ export default function App() {
     <main>
       <h1>Project Alpha</h1>
 
-      <AuthPanel currentUser={currentUser} onLogin={login} onLogout={logout} />
+      <AuthPanel currentUser={currentUser} onLogout={logout} />
 
       <PostForm
         categories={categories}
