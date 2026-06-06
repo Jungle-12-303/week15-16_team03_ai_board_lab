@@ -4,113 +4,17 @@ import './App.css';
 import AuthPanel from './components/AuthPanel';
 import PostForm from './components/PostForm';
 import PostList from './components/PostList';
+import { categories, postsPerPage } from './constants/board';
 import LoginPage from './pages/LoginPage';
 import PostDetailPage from './pages/PostDetailPage';
 import SignupPage from './pages/SignupPage';
-
-const categories = ['Development', 'Learning', 'Project', 'Daily', 'Review', 'Briefing'];
-const postsPerPage = 3;
-const usersStorageKey = 'project-alpha-users';
-const currentUserStorageKey = 'project-alpha-current-user';
-const postsStorageKey = 'project-alpha-posts';
-
-const initialUsers = [
-  {
-    username: 'cedis',
-    password: 'alpha123',
-  },
-];
-
-const initialPosts = [
-  {
-    id: 1,
-    author: 'cedis',
-    category: 'Learning',
-    createdAt: 'Today',
-    title: 'React props practice',
-    content: 'PostCard receives data and renders it on the screen.',
-    tags: ['React', 'Props'],
-    comments: [
-      {
-        id: 1,
-        author: 'cedis',
-        content: 'Comment state will be added next.',
-      },
-    ],
-  },
-];
-
-function loadStoredUsers() {
-  const storedUsers = localStorage.getItem(usersStorageKey);
-
-  if (storedUsers === null) {
-    return initialUsers;
-  }
-
-  try {
-    const parsedUsers = JSON.parse(storedUsers);
-
-    if (!Array.isArray(parsedUsers)) {
-      return initialUsers;
-    }
-
-    return parsedUsers.filter(
-      (user) => typeof user.username === 'string' && typeof user.password === 'string',
-    );
-  } catch {
-    return initialUsers;
-  }
-}
-
-function loadStoredCurrentUser() {
-  const storedCurrentUser = localStorage.getItem(currentUserStorageKey);
-
-  if (storedCurrentUser === null) {
-    return null;
-  }
-
-  try {
-    const parsedCurrentUser = JSON.parse(storedCurrentUser);
-
-    if (parsedCurrentUser !== null && typeof parsedCurrentUser.name === 'string') {
-      return parsedCurrentUser;
-    }
-  } catch {
-    return null;
-  }
-
-  return null;
-}
-
-function loadStoredPosts() {
-  const storedPosts = localStorage.getItem(postsStorageKey);
-
-  if (storedPosts === null) {
-    return initialPosts;
-  }
-
-  try {
-    const parsedPosts = JSON.parse(storedPosts);
-
-    if (!Array.isArray(parsedPosts)) {
-      return initialPosts;
-    }
-
-    return parsedPosts.filter(
-      (post) =>
-        typeof post.id === 'number' &&
-        typeof post.author === 'string' &&
-        typeof post.category === 'string' &&
-        typeof post.createdAt === 'string' &&
-        typeof post.title === 'string' &&
-        typeof post.content === 'string' &&
-        Array.isArray(post.tags) &&
-        Array.isArray(post.comments),
-    );
-  } catch {
-    return initialPosts;
-  }
-}
+import {
+  loadStoredCurrentUser,
+  loadStoredUsers,
+  saveStoredCurrentUser,
+  saveStoredUsers,
+} from './storage/authStorage';
+import { loadStoredPosts, saveStoredPosts } from './storage/postStorage';
 
 export default function App() {
   const location = useLocation();
@@ -154,20 +58,15 @@ export default function App() {
   const paginatedPosts = filteredPosts.slice(firstPostIndex, firstPostIndex + postsPerPage);
 
   useEffect(() => {
-    localStorage.setItem(usersStorageKey, JSON.stringify(users));
+    saveStoredUsers(users);
   }, [users]);
 
   useEffect(() => {
-    localStorage.setItem(postsStorageKey, JSON.stringify(posts));
+    saveStoredPosts(posts);
   }, [posts]);
 
   useEffect(() => {
-    if (currentUser === null) {
-      localStorage.removeItem(currentUserStorageKey);
-      return;
-    }
-
-    localStorage.setItem(currentUserStorageKey, JSON.stringify(currentUser));
+    saveStoredCurrentUser(currentUser);
   }, [currentUser]);
 
   function handleSubmit(event) {
