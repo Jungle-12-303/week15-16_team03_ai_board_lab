@@ -12,11 +12,17 @@ export default function PostCard({
   onEdit,
   onAddComment,
   onDeleteComment,
+  canComment,
 }) {
   const [commentInput, setCommentInput] = useState('');
 
   function handleCommentSubmit(event) {
     event.preventDefault();
+
+    if (!canComment || commentInput.trim().length === 0) {
+      return;
+    }
+
     onAddComment(commentInput);
     setCommentInput('');
   }
@@ -66,8 +72,11 @@ export default function PostCard({
             value={commentInput}
             onChange={(event) => setCommentInput(event.target.value)}
             placeholder="Write a comment"
+            disabled={!canComment}
           />
-          <button type="submit">Add comment</button>
+          <button type="submit" disabled={!canComment || commentInput.trim().length === 0}>
+            Add comment
+          </button>
         </form>
       </section>
     </article>

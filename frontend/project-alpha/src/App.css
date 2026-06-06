@@ -22,6 +22,10 @@ textarea {
   min-height: 120px;
 }
 
+.auth-panel {
+  margin-bottom: 24px;
+}
+
 article {
   border: 1px solid #ddd;
   padding: 16px;

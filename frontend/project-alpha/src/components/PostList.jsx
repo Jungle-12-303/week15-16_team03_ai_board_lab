@@ -6,6 +6,7 @@ export default function PostList({
   onEditPost,
   onAddComment,
   onDeleteComment,
+  canComment,
 }) {
   if (posts.length === 0) {
     return <p>No posts yet.</p>;
@@ -27,6 +28,7 @@ export default function PostList({
           onEdit={() => onEditPost(post.id)}
           onAddComment={(commentContent) => onAddComment(post.id, commentContent)}
           onDeleteComment={(commentId) => onDeleteComment(post.id, commentId)}
+          canComment={canComment}
         />
       ))}
     </>

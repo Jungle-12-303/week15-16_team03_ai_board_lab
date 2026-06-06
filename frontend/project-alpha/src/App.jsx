@@ -36,8 +36,10 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedTag, setSelectedTag] = useState('All');
+  const [currentUser, setCurrentUser] = useState(null);
 
-  const canSubmit = title.trim().length > 0 && content.trim().length > 0;
+  const isLoggedIn = currentUser !== null;
+  const canSubmit = isLoggedIn && title.trim().length > 0 && content.trim().length > 0;
   const normalizedSearchTerm = searchTerm.trim().toLowerCase();
   const availableTags = [...new Set(posts.flatMap((post) => post.tags))];
   const filteredPosts = posts.filter((post) => {
@@ -62,7 +64,7 @@ export default function App() {
   function handleSubmit(event) {
     event.preventDefault();
 
-    if (!canSubmit) {
+    if (!canSubmit || currentUser === null) {
       return;
     }
 
@@ -95,7 +97,7 @@ export default function App() {
 
     const newPost = {
       id: Date.now(),
-      author: 'cedis',
+      author: currentUser.name,
       createdAt: 'Just now',
       title: title,
       content: content,
@@ -122,10 +124,19 @@ export default function App() {
     setCurrentPage(1);
   }
 
+  function loginAsCedis() {
+    setCurrentUser({ name: 'cedis' });
+  }
+
+  function logout() {
+    setCurrentUser(null);
+    cancelEditPost();
+  }
+
   function addComment(postId, commentContent) {
     const trimmedContent = commentContent.trim();
 
-    if (trimmedContent.length === 0) {
+    if (currentUser === null || trimmedContent.length === 0) {
       return;
     }
 
@@ -138,7 +149,7 @@ export default function App() {
                 ...post.comments,
                 {
                   id: Date.now(),
-                  author: 'cedis',
+                  author: currentUser.name,
                   content: trimmedContent,
                 },
               ],
@@ -186,6 +197,21 @@ export default function App() {
   return (
     <main>
       <h1>Project Alpha</h1>
+
+      <div className="auth-panel">
+        {currentUser === null ? (
+          <button type="button" onClick={loginAsCedis}>
+            Login as cedis
+          </button>
+        ) : (
+          <>
+            <p>Logged in as {currentUser.name}</p>
+            <button type="button" onClick={logout}>
+              Logout
+            </button>
+          </>
+        )}
+      </div>
 
       <PostForm
         categories={categories}
@@ -265,6 +291,7 @@ export default function App() {
         onEditPost={startEditPost}
         onAddComment={addComment}
         onDeleteComment={deleteComment}
+        canComment={isLoggedIn}
       />
 
       <div className="pagination">
