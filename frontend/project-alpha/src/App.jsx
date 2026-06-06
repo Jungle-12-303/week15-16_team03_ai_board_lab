@@ -1,19 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import './App.css';
 import Topbar from './components/Topbar';
 import { postsPerPage } from './constants/board';
+import useAuth from './hooks/useAuth';
 import usePosts from './hooks/usePosts';
 import BoardPage from './pages/BoardPage';
 import LoginPage from './pages/LoginPage';
 import PostDetailPage from './pages/PostDetailPage';
 import SignupPage from './pages/SignupPage';
-import {
-  loadStoredCurrentUser,
-  loadStoredUsers,
-  saveStoredCurrentUser,
-  saveStoredUsers,
-} from './storage/authStorage';
 
 export default function App() {
   const location = useLocation();
@@ -26,9 +21,8 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedTag, setSelectedTag] = useState('');
-  const [currentUser, setCurrentUser] = useState(loadStoredCurrentUser);
-  const [users, setUsers] = useState(loadStoredUsers);
   const [isComposerOpen, setIsComposerOpen] = useState(false);
+  const { currentUser, login, signUp, logout } = useAuth();
   const { posts, createPost, updatePost, deletePost, addComment, deleteComment } =
     usePosts(currentUser);
 
@@ -56,14 +50,6 @@ export default function App() {
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const firstPostIndex = (safeCurrentPage - 1) * postsPerPage;
   const paginatedPosts = filteredPosts.slice(firstPostIndex, firstPostIndex + postsPerPage);
-
-  useEffect(() => {
-    saveStoredUsers(users);
-  }, [users]);
-
-  useEffect(() => {
-    saveStoredCurrentUser(currentUser);
-  }, [currentUser]);
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -128,41 +114,8 @@ export default function App() {
     setCurrentPage(1);
   }
 
-  function login(username, password) {
-    const trimmedUsername = username.trim();
-    const foundUser = users.find(
-      (user) => user.username === trimmedUsername && user.password === password,
-    );
-
-    if (!foundUser) {
-      return false;
-    }
-
-    setCurrentUser({ name: foundUser.username });
-    return true;
-  }
-
-  function signUp(username, password) {
-    const trimmedUsername = username.trim();
-    const isUsernameTaken = users.some((user) => user.username === trimmedUsername);
-
-    if (isUsernameTaken) {
-      return false;
-    }
-
-    setUsers([
-      ...users,
-      {
-        username: trimmedUsername,
-        password: password,
-      },
-    ]);
-
-    return true;
-  }
-
-  function logout() {
-    setCurrentUser(null);
+  function handleLogout() {
+    logout();
     cancelEditPost();
   }
 
@@ -213,7 +166,7 @@ export default function App() {
   if (location.pathname.startsWith('/posts/')) {
     return (
       <>
-        <Topbar currentUser={currentUser} onLogout={logout} />
+        <Topbar currentUser={currentUser} onLogout={handleLogout} />
 
         <main className="detail-shell">
           <Routes>
@@ -259,7 +212,7 @@ export default function App() {
       tagInput={tagInput}
       canSubmit={canSubmit}
       isEditing={editingPostId !== null}
-      onLogout={logout}
+      onLogout={handleLogout}
       onSearchChange={changeSearchTerm}
       onSelectCategory={selectCategory}
       onTagChange={changeSelectedTag}
