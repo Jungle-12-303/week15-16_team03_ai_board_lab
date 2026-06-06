@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import './App.css';
+import AuthPanel from './components/AuthPanel';
 import PostForm from './components/PostForm';
 import PostList from './components/PostList';
 
@@ -198,20 +199,7 @@ export default function App() {
     <main>
       <h1>Project Alpha</h1>
 
-      <div className="auth-panel">
-        {currentUser === null ? (
-          <button type="button" onClick={loginAsCedis}>
-            Login as cedis
-          </button>
-        ) : (
-          <>
-            <p>Logged in as {currentUser.name}</p>
-            <button type="button" onClick={logout}>
-              Logout
-            </button>
-          </>
-        )}
-      </div>
+      <AuthPanel currentUser={currentUser} onLogin={loginAsCedis} onLogout={logout} />
 
       <PostForm
         categories={categories}
