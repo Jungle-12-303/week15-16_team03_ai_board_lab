@@ -5,6 +5,7 @@ import AuthPanel from './components/AuthPanel';
 import PostForm from './components/PostForm';
 import PostList from './components/PostList';
 import LoginPage from './pages/LoginPage';
+import PostDetailPage from './pages/PostDetailPage';
 import SignupPage from './pages/SignupPage';
 
 const categories = ['Development', 'Learning', 'Project', 'Daily', 'Review', 'Briefing'];
@@ -313,6 +314,31 @@ export default function App() {
     );
   }
 
+  if (location.pathname.startsWith('/posts/')) {
+    return (
+      <main>
+        <h1>Project Alpha</h1>
+
+        <AuthPanel currentUser={currentUser} onLogout={logout} />
+
+        <Routes>
+          <Route
+            path="/posts/:postId"
+            element={
+              <PostDetailPage
+                posts={posts}
+                currentUser={currentUser}
+                onAddComment={addComment}
+                onDeleteComment={deleteComment}
+              />
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
+    );
+  }
+
   if (location.pathname !== '/') {
     return <Navigate to="/" replace />;
   }
@@ -399,9 +425,6 @@ export default function App() {
         posts={paginatedPosts}
         onDeletePost={deletePost}
         onEditPost={startEditPost}
-        onAddComment={addComment}
-        onDeleteComment={deleteComment}
-        canComment={isLoggedIn}
       />
 
       <div className="pagination">

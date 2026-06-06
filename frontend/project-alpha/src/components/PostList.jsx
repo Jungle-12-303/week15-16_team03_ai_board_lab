@@ -4,9 +4,6 @@ export default function PostList({
   posts,
   onDeletePost,
   onEditPost,
-  onAddComment,
-  onDeleteComment,
-  canComment,
 }) {
   if (posts.length === 0) {
     return <p>No posts yet.</p>;
@@ -17,6 +14,7 @@ export default function PostList({
       {posts.map((post) => (
         <PostCard
           key={post.id}
+          id={post.id}
           author={post.author}
           createdAt={post.createdAt}
           title={post.title}
@@ -26,9 +24,6 @@ export default function PostList({
           comments={post.comments}
           onDelete={() => onDeletePost(post.id)}
           onEdit={() => onEditPost(post.id)}
-          onAddComment={(commentContent) => onAddComment(post.id, commentContent)}
-          onDeleteComment={(commentId) => onDeleteComment(post.id, commentId)}
-          canComment={canComment}
         />
       ))}
     </>

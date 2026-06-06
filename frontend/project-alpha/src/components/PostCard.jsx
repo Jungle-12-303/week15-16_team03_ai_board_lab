@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 export default function PostCard({
+  id,
   author,
   createdAt,
   title,
@@ -10,22 +11,8 @@ export default function PostCard({
   comments,
   onDelete,
   onEdit,
-  onAddComment,
-  onDeleteComment,
-  canComment,
 }) {
-  const [commentInput, setCommentInput] = useState('');
-
-  function handleCommentSubmit(event) {
-    event.preventDefault();
-
-    if (!canComment || commentInput.trim().length === 0) {
-      return;
-    }
-
-    onAddComment(commentInput);
-    setCommentInput('');
-  }
+  const commentLabel = comments.length === 1 ? '1 comment' : `${comments.length} comments`;
 
   return (
     <article>
@@ -48,37 +35,8 @@ export default function PostCard({
       <button type="button" onClick={onEdit}>
         Edit
       </button>
-
-      <section>
-        <h3>Comments</h3>
-
-        {comments.length === 0 ? (
-          <p>No comments yet.</p>
-        ) : (
-          comments.map((comment) => (
-            <div key={comment.id}>
-              <p>
-                {comment.author}: {comment.content}
-              </p>
-              <button type="button" onClick={() => onDeleteComment(comment.id)}>
-                Delete comment
-              </button>
-            </div>
-          ))
-        )}
-
-        <form onSubmit={handleCommentSubmit}>
-          <input
-            value={commentInput}
-            onChange={(event) => setCommentInput(event.target.value)}
-            placeholder="Write a comment"
-            disabled={!canComment}
-          />
-          <button type="submit" disabled={!canComment || commentInput.trim().length === 0}>
-            Add comment
-          </button>
-        </form>
-      </section>
+      <p>{commentLabel}</p>
+      <Link to={`/posts/${id}`}>Open</Link>
     </article>
   );
 }
