@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import './App.css';
 import AuthPanel from './components/AuthPanel';
 import PostForm from './components/PostForm';
 import PostList from './components/PostList';
+import LoginPage from './pages/LoginPage';
 
 const categories = ['Development', 'Learning', 'Project', 'Daily', 'Review', 'Briefing'];
 const postsPerPage = 3;
@@ -27,6 +29,7 @@ const initialPosts = [
 ];
 
 export default function App() {
+  const location = useLocation();
   const [posts, setPosts] = useState(initialPosts);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -193,6 +196,26 @@ export default function App() {
     setContent(postToEdit.content);
     setCategory(postToEdit.category);
     setTagInput(postToEdit.tags.join(', '));
+  }
+
+  if (currentUser === null) {
+    return (
+      <main>
+        <h1>Project Alpha</h1>
+
+        <Routes>
+          <Route
+            path="/login"
+            element={<LoginPage currentUser={currentUser} onLogin={loginAsCedis} />}
+          />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </main>
+    );
+  }
+
+  if (location.pathname !== '/') {
+    return <Navigate to="/" replace />;
   }
 
   return (
