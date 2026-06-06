@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import './App.css';
 import Topbar from './components/Topbar';
 import { postsPerPage } from './constants/board';
+import usePosts from './hooks/usePosts';
 import BoardPage from './pages/BoardPage';
 import LoginPage from './pages/LoginPage';
 import PostDetailPage from './pages/PostDetailPage';
@@ -13,11 +14,9 @@ import {
   saveStoredCurrentUser,
   saveStoredUsers,
 } from './storage/authStorage';
-import { loadStoredPosts, saveStoredPosts } from './storage/postStorage';
 
 export default function App() {
   const location = useLocation();
-  const [posts, setPosts] = useState(loadStoredPosts);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tagInput, setTagInput] = useState('');
@@ -30,6 +29,8 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(loadStoredCurrentUser);
   const [users, setUsers] = useState(loadStoredUsers);
   const [isComposerOpen, setIsComposerOpen] = useState(false);
+  const { posts, createPost, updatePost, deletePost, addComment, deleteComment } =
+    usePosts(currentUser);
 
   const isLoggedIn = currentUser !== null;
   const canSubmit = isLoggedIn && title.trim().length > 0 && content.trim().length > 0;
@@ -61,10 +62,6 @@ export default function App() {
   }, [users]);
 
   useEffect(() => {
-    saveStoredPosts(posts);
-  }, [posts]);
-
-  useEffect(() => {
     saveStoredCurrentUser(currentUser);
   }, [currentUser]);
 
@@ -81,19 +78,12 @@ export default function App() {
       .filter((tag) => tag.length > 0);
 
     if (editingPostId !== null) {
-      setPosts(
-        posts.map((post) =>
-          post.id === editingPostId
-            ? {
-                ...post,
-                title: title,
-                content: content,
-                category: category,
-                tags: nextTags,
-              }
-            : post,
-        ),
-      );
+      updatePost(editingPostId, {
+        title: title,
+        content: content,
+        category: category,
+        tags: nextTags,
+      });
 
       setEditingPostId(null);
       setTitle('');
@@ -103,27 +93,17 @@ export default function App() {
       return;
     }
 
-    const newPost = {
-      id: Date.now(),
-      author: currentUser.name,
-      createdAt: 'Just now',
+    createPost({
       title: title,
       content: content,
       category: category,
       tags: nextTags,
-      comments: [],
-    };
-
-    setPosts([newPost, ...posts]);
+    });
     setCurrentPage(1);
     setTitle('');
     setContent('');
     setTagInput('');
     setIsComposerOpen(false);
-  }
-
-  function deletePost(postId) {
-    setPosts(posts.filter((post) => post.id !== postId));
   }
 
   function resetFilters() {
@@ -184,45 +164,6 @@ export default function App() {
   function logout() {
     setCurrentUser(null);
     cancelEditPost();
-  }
-
-  function addComment(postId, commentContent) {
-    const trimmedContent = commentContent.trim();
-
-    if (currentUser === null || trimmedContent.length === 0) {
-      return;
-    }
-
-    setPosts(
-      posts.map((post) =>
-        post.id === postId
-          ? {
-              ...post,
-              comments: [
-                ...post.comments,
-                {
-                  id: Date.now(),
-                  author: currentUser.name,
-                  content: trimmedContent,
-                },
-              ],
-            }
-          : post,
-      ),
-    );
-  }
-
-  function deleteComment(postId, commentId) {
-    setPosts(
-      posts.map((post) =>
-        post.id === postId
-          ? {
-              ...post,
-              comments: post.comments.filter((comment) => comment.id !== commentId),
-            }
-          : post,
-      ),
-    );
   }
 
   function cancelEditPost() {
