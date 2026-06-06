@@ -31,3 +31,13 @@ article {
 span {
   margin-right: 8px;
 }
+
+.pagination {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.pagination button[aria-current='page'] {
+  font-weight: 700;
+}

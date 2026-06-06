@@ -4,6 +4,7 @@ import PostForm from './components/PostForm';
 import PostList from './components/PostList';
 
 const categories = ['Development', 'Learning', 'Project', 'Daily', 'Review', 'Briefing'];
+const postsPerPage = 3;
 
 const initialPosts = [
   {
@@ -32,6 +33,7 @@ export default function App() {
   const [category, setCategory] = useState('Learning');
   const [editingPostId, setEditingPostId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
 
   const canSubmit = title.trim().length > 0 && content.trim().length > 0;
   const normalizedSearchTerm = searchTerm.trim().toLowerCase();
@@ -46,6 +48,10 @@ export default function App() {
             post.tags.some((tag) => tag.toLowerCase().includes(normalizedSearchTerm))
           );
         });
+  const totalPages = Math.max(1, Math.ceil(filteredPosts.length / postsPerPage));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const firstPostIndex = (safeCurrentPage - 1) * postsPerPage;
+  const paginatedPosts = filteredPosts.slice(firstPostIndex, firstPostIndex + postsPerPage);
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -93,6 +99,7 @@ export default function App() {
     };
 
     setPosts([newPost, ...posts]);
+    setCurrentPage(1);
     setTitle('');
     setContent('');
     setTagInput('');
@@ -187,18 +194,58 @@ export default function App() {
         Search
         <input
           value={searchTerm}
-          onChange={(event) => setSearchTerm(event.target.value)}
+          onChange={(event) => {
+            setSearchTerm(event.target.value);
+            setCurrentPage(1);
+          }}
           placeholder="Search posts"
         />
       </label>
 
+      <p>
+        Showing page {safeCurrentPage} of {totalPages} ({filteredPosts.length} posts)
+      </p>
+
       <PostList
-        posts={filteredPosts}
+        posts={paginatedPosts}
         onDeletePost={deletePost}
         onEditPost={startEditPost}
         onAddComment={addComment}
         onDeleteComment={deleteComment}
       />
+
+      <div className="pagination">
+        <button
+          type="button"
+          onClick={() => setCurrentPage(safeCurrentPage - 1)}
+          disabled={safeCurrentPage === 1}
+        >
+          Previous
+        </button>
+
+        {Array.from({ length: totalPages }, (_, index) => {
+          const pageNumber = index + 1;
+
+          return (
+            <button
+              key={pageNumber}
+              type="button"
+              onClick={() => setCurrentPage(pageNumber)}
+              aria-current={safeCurrentPage === pageNumber ? 'page' : undefined}
+            >
+              {pageNumber}
+            </button>
+          );
+        })}
+
+        <button
+          type="button"
+          onClick={() => setCurrentPage(safeCurrentPage + 1)}
+          disabled={safeCurrentPage === totalPages}
+        >
+          Next
+        </button>
+      </div>
     </main>
   );
 }
