@@ -128,8 +128,8 @@ export default function App() {
     setCurrentPage(1);
   }
 
-  function loginAsCedis() {
-    setCurrentUser({ name: 'cedis' });
+  function login(username = 'cedis') {
+    setCurrentUser({ name: username });
   }
 
   function logout() {
@@ -206,7 +206,7 @@ export default function App() {
         <Routes>
           <Route
             path="/login"
-            element={<LoginPage currentUser={currentUser} onLogin={loginAsCedis} />}
+            element={<LoginPage currentUser={currentUser} onLogin={login} />}
           />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
@@ -222,7 +222,7 @@ export default function App() {
     <main>
       <h1>Project Alpha</h1>
 
-      <AuthPanel currentUser={currentUser} onLogin={loginAsCedis} onLogout={logout} />
+      <AuthPanel currentUser={currentUser} onLogin={login} onLogout={logout} />
 
       <PostForm
         categories={categories}
