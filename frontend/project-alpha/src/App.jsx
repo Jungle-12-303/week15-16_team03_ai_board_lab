@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import './App.css';
-import AuthPanel from './components/AuthPanel';
 import BoardSidebar from './components/BoardSidebar';
 import ComposerModal from './components/ComposerModal';
 import PostFilterBar from './components/PostFilterBar';
 import PostList from './components/PostList';
+import Topbar from './components/Topbar';
 import { categories, postsPerPage } from './constants/board';
 import LoginPage from './pages/LoginPage';
 import PostDetailPage from './pages/PostDetailPage';
@@ -146,6 +146,11 @@ export default function App() {
     setCurrentPage(1);
   }
 
+  function changeSearchTerm(nextSearchTerm) {
+    setSearchTerm(nextSearchTerm);
+    setCurrentPage(1);
+  }
+
   function login(username, password) {
     const trimmedUsername = username.trim();
     const foundUser = users.find(
@@ -270,13 +275,7 @@ export default function App() {
   if (location.pathname.startsWith('/posts/')) {
     return (
       <>
-        <header className="topbar">
-          <div className="topbar-inner">
-            <div className="brand">Project Alpha</div>
-            <div className="topbar-spacer" />
-            <AuthPanel currentUser={currentUser} onLogout={logout} />
-          </div>
-        </header>
+        <Topbar currentUser={currentUser} onLogout={logout} />
 
         <main className="detail-shell">
           <Routes>
@@ -306,21 +305,12 @@ export default function App() {
 
   return (
     <>
-      <header className="topbar">
-        <div className="topbar-inner">
-          <div className="brand">Project Alpha</div>
-          <input
-            className="search"
-            value={searchTerm}
-            onChange={(event) => {
-              setSearchTerm(event.target.value);
-              setCurrentPage(1);
-            }}
-            placeholder="Search posts, tags, comments"
-          />
-          <AuthPanel currentUser={currentUser} onLogout={logout} />
-        </div>
-      </header>
+      <Topbar
+        currentUser={currentUser}
+        onLogout={logout}
+        searchTerm={searchTerm}
+        onSearchChange={changeSearchTerm}
+      />
 
       <main className="layout">
         <BoardSidebar
