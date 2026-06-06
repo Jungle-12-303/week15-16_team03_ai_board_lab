@@ -16,8 +16,10 @@ export default function PostDetailPage({
 
   if (!post) {
     return (
-      <section>
-        <Link to="/">Back to board</Link>
+      <section className="empty-state">
+        <Link className="plain-link back-link" to="/">
+          Back to board
+        </Link>
         <h2>Post not found</h2>
       </section>
     );
@@ -47,62 +49,84 @@ export default function PostDetailPage({
   const canManagePost = post.author === currentUser.name;
 
   return (
-    <section>
-      <Link to="/">Back to board</Link>
+    <section className="detail-stack">
+      <Link className="plain-link back-link" to="/">
+        Back to board
+      </Link>
 
-      <article>
-        <p>{post.category}</p>
-        <p>
-          {post.author} - {post.createdAt}
-        </p>
+      <article className="box post detail-post">
+        <div className="post-top">
+          <div>
+            <span className="author">{post.author}</span>
+            <span className="muted"> - {post.createdAt}</span>
+          </div>
+          <span className="label">{post.category}</span>
+        </div>
         <h2>{post.title}</h2>
         <p>{post.content}</p>
 
-        <div>
+        <div className="tag-list">
           {post.tags.map((tag) => (
-            <span key={tag}>{tag}</span>
+            <span className="tag" key={tag}>
+              #{tag}
+            </span>
           ))}
         </div>
 
         {canManagePost && (
-          <div>
-            <button type="button" onClick={handleEditPost}>
+          <div className="post-actions">
+            <button type="button" className="plain-button" onClick={handleEditPost}>
               Edit post
             </button>
-            <button type="button" onClick={handleDeletePost}>
+            <button type="button" className="danger-button" onClick={handleDeletePost}>
               Delete post
             </button>
           </div>
         )}
       </article>
 
-      <section>
-        <h3>Comments</h3>
+      <section className="box comments-panel">
+        <div className="box-header">
+          <span>Comments</span>
+          <span className="count">{post.comments.length}</span>
+        </div>
 
         {post.comments.length === 0 ? (
-          <p>No comments yet.</p>
+          <p className="empty-comment">No comments yet.</p>
         ) : (
-          post.comments.map((comment) => (
-            <div key={comment.id}>
-              <p>
-                {comment.author}: {comment.content}
-              </p>
-              {comment.author === currentUser.name && (
-                <button type="button" onClick={() => onDeleteComment(post.id, comment.id)}>
-                  Delete comment
-                </button>
-              )}
-            </div>
-          ))
+          <div className="comment-list">
+            {post.comments.map((comment) => (
+              <div className="comment-item" key={comment.id}>
+                <div>
+                  <span className="author">{comment.author}</span>
+                  <p>{comment.content}</p>
+                </div>
+                {comment.author === currentUser.name && (
+                  <button
+                    type="button"
+                    className="plain-button"
+                    onClick={() => onDeleteComment(post.id, comment.id)}
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
         )}
 
-        <form onSubmit={handleCommentSubmit}>
+        <form className="comment-form" onSubmit={handleCommentSubmit}>
           <input
+            className="input"
             value={commentInput}
             onChange={(event) => setCommentInput(event.target.value)}
             placeholder="Write a comment"
           />
-          <button type="submit" disabled={commentInput.trim().length === 0}>
+          <button
+            type="submit"
+            className="primary-button"
+            disabled={commentInput.trim().length === 0}
+          >
             Add comment
           </button>
         </form>

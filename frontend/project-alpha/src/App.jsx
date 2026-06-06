@@ -358,28 +358,34 @@ export default function App() {
 
   if (location.pathname.startsWith('/posts/')) {
     return (
-      <main className="detail-page">
-        <h1>Project Alpha</h1>
+      <>
+        <header className="topbar">
+          <div className="topbar-inner">
+            <div className="brand">Project Alpha</div>
+            <div className="topbar-spacer" />
+            <AuthPanel currentUser={currentUser} onLogout={logout} />
+          </div>
+        </header>
 
-        <AuthPanel currentUser={currentUser} onLogout={logout} />
-
-        <Routes>
-          <Route
-            path="/posts/:postId"
-            element={
-              <PostDetailPage
-                posts={posts}
-                currentUser={currentUser}
-                onAddComment={addComment}
-                onDeleteComment={deleteComment}
-                onDeletePost={deletePost}
-                onEditPost={startEditPost}
-              />
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
+        <main className="detail-shell">
+          <Routes>
+            <Route
+              path="/posts/:postId"
+              element={
+                <PostDetailPage
+                  posts={posts}
+                  currentUser={currentUser}
+                  onAddComment={addComment}
+                  onDeleteComment={deleteComment}
+                  onDeletePost={deletePost}
+                  onEditPost={startEditPost}
+                />
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </main>
+      </>
     );
   }
 
@@ -490,7 +496,7 @@ export default function App() {
           </section>
 
           <p className="feed-status">
-            Page {safeCurrentPage} of {totalPages} · {filteredPosts.length} posts
+            Page {safeCurrentPage} of {totalPages} - {filteredPosts.length} posts
           </p>
 
           <PostList posts={paginatedPosts} />
