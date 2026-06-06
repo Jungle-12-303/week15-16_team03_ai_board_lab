@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import './App.css';
 import AuthPanel from './components/AuthPanel';
-import PostForm from './components/PostForm';
+import ComposerModal from './components/ComposerModal';
 import PostList from './components/PostList';
 import { categories, postsPerPage } from './constants/board';
 import LoginPage from './pages/LoginPage';
@@ -439,38 +439,21 @@ export default function App() {
       </main>
 
       {isComposerOpen && (
-        <div className="modal-backdrop" onMouseDown={cancelEditPost}>
-          <section
-            className="modal"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Write post dialog"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <div className="box-header">
-              <span>{editingPostId !== null ? 'Edit post' : 'New post'}</span>
-              <button type="button" className="plain-button" onClick={cancelEditPost}>
-                Close
-              </button>
-            </div>
-
-            <PostForm
-              categories={categories}
-              category={category}
-              title={title}
-              content={content}
-              tagInput={tagInput}
-              canSubmit={canSubmit}
-              onCategoryChange={setCategory}
-              onTitleChange={setTitle}
-              onContentChange={setContent}
-              onTagInputChange={setTagInput}
-              onSubmit={handleSubmit}
-              isEditing={editingPostId !== null}
-              onCancelEdit={cancelEditPost}
-            />
-          </section>
-        </div>
+        <ComposerModal
+          categories={categories}
+          category={category}
+          title={title}
+          content={content}
+          tagInput={tagInput}
+          canSubmit={canSubmit}
+          isEditing={editingPostId !== null}
+          onCategoryChange={setCategory}
+          onTitleChange={setTitle}
+          onContentChange={setContent}
+          onTagInputChange={setTagInput}
+          onSubmit={handleSubmit}
+          onClose={cancelEditPost}
+        />
       )}
     </>
   );
