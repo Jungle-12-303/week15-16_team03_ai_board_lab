@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import './App.css';
 import AuthPanel from './components/AuthPanel';
+import BoardSidebar from './components/BoardSidebar';
 import ComposerModal from './components/ComposerModal';
 import PostList from './components/PostList';
 import { categories, postsPerPage } from './constants/board';
@@ -131,6 +132,11 @@ export default function App() {
     setSearchTerm('');
     setSelectedCategory('All');
     setSelectedTag('');
+    setCurrentPage(1);
+  }
+
+  function selectCategory(nextCategory) {
+    setSelectedCategory(nextCategory);
     setCurrentPage(1);
   }
 
@@ -311,45 +317,11 @@ export default function App() {
       </header>
 
       <main className="layout">
-        <aside className="sidebar">
-          <section className="box">
-            <div className="box-header">Board</div>
-            <ul className="nav-list">
-              <li className={selectedCategory === 'All' ? 'active' : undefined}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedCategory('All');
-                    setCurrentPage(1);
-                  }}
-                >
-                  All
-                </button>
-                <span className="count">{posts.length}</span>
-              </li>
-
-              {categories.map((categoryName) => (
-                <li
-                  key={categoryName}
-                  className={selectedCategory === categoryName ? 'active' : undefined}
-                >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedCategory(categoryName);
-                      setCurrentPage(1);
-                    }}
-                  >
-                    {categoryName}
-                  </button>
-                  <span className="count">
-                    {posts.filter((post) => post.category === categoryName).length}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        </aside>
+        <BoardSidebar
+          posts={posts}
+          selectedCategory={selectedCategory}
+          onSelectCategory={selectCategory}
+        />
 
         <section className="main-content">
           <section className="box">
@@ -357,10 +329,7 @@ export default function App() {
               <select
                 className="select"
                 value={selectedCategory}
-                onChange={(event) => {
-                  setSelectedCategory(event.target.value);
-                  setCurrentPage(1);
-                }}
+                onChange={(event) => selectCategory(event.target.value)}
               >
                 <option value="All">All categories</option>
                 {categories.map((categoryName) => (
