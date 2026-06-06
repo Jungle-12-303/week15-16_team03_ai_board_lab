@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import './App.css';
 import BoardSidebar from './components/BoardSidebar';
 import ComposerModal from './components/ComposerModal';
+import Pagination from './components/Pagination';
 import PostFilterBar from './components/PostFilterBar';
 import PostList from './components/PostList';
 import Topbar from './components/Topbar';
@@ -335,41 +336,11 @@ export default function App() {
 
           <PostList posts={paginatedPosts} />
 
-          <div className="pagination">
-            <button
-              type="button"
-              className="plain-button"
-              onClick={() => setCurrentPage(safeCurrentPage - 1)}
-              disabled={safeCurrentPage === 1}
-            >
-              Previous
-            </button>
-
-            {Array.from({ length: totalPages }, (_, index) => {
-              const pageNumber = index + 1;
-
-              return (
-                <button
-                  key={pageNumber}
-                  type="button"
-                  className="plain-button"
-                  onClick={() => setCurrentPage(pageNumber)}
-                  aria-current={safeCurrentPage === pageNumber ? 'page' : undefined}
-                >
-                  {pageNumber}
-                </button>
-              );
-            })}
-
-            <button
-              type="button"
-              className="plain-button"
-              onClick={() => setCurrentPage(safeCurrentPage + 1)}
-              disabled={safeCurrentPage === totalPages}
-            >
-              Next
-            </button>
-          </div>
+          <Pagination
+            currentPage={safeCurrentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
         </section>
       </main>
 
