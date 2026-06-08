@@ -5,11 +5,18 @@ import com.jungle_choi.namanmu.domain.comment.CommentRepository;
 import com.jungle_choi.namanmu.domain.post.Post;
 import com.jungle_choi.namanmu.domain.post.PostRepository;
 import com.jungle_choi.namanmu.domain.post.PostStatus;
+import com.jungle_choi.namanmu.domain.post.PostTag;
+import com.jungle_choi.namanmu.domain.post.PostTagRepository;
+import com.jungle_choi.namanmu.domain.tag.Tag;
+import com.jungle_choi.namanmu.domain.tag.TagRepository;
 import com.jungle_choi.namanmu.domain.user.User;
 import com.jungle_choi.namanmu.domain.user.UserRepository;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,7 +26,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.transaction.annotation.Transactional;
 
 @RestController
 @RequestMapping("/api/posts")
@@ -32,14 +38,20 @@ public class PostController {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final CommentRepository commentRepository;
+    private final TagRepository tagRepository;
+    private final PostTagRepository postTagRepository;
 
     public PostController(
             PostRepository postRepository,
             UserRepository userRepository,
-            CommentRepository commentRepository) {
+            CommentRepository commentRepository,
+            TagRepository tagRepository,
+            PostTagRepository postTagRepository) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.commentRepository = commentRepository;
+        this.tagRepository = tagRepository;
+        this.postTagRepository = postTagRepository;
     }
 
     @GetMapping
@@ -51,10 +63,12 @@ public class PostController {
     }
 
     @PostMapping
+    @Transactional
     public PostResponse createPost(@RequestBody CreatePostRequest request) {
         User author = findOrCreateLocalUser(request.author());
         Post post = Post.create(author, request.category(), request.title(), request.content());
         Post savedPost = postRepository.save(post);
+        updatePostTags(savedPost, request.tags());
 
         return toResponse(savedPost);
     }
@@ -68,6 +82,7 @@ public class PostController {
                 .orElseThrow();
 
         post.update(request.category(), request.title(), request.content());
+        updatePostTags(post, request.tags());
 
         return toResponse(post);
     }
@@ -110,6 +125,32 @@ public class PostController {
                 .orElseGet(() -> userRepository.save(User.createLocalUser(authorName)));
     }
 
+    private void updatePostTags(Post post, List<String> tagNames) {
+        postTagRepository.deleteByPostId(post.getId());
+        postTagRepository.flush();
+
+        normalizeTags(tagNames).forEach((tagName) -> {
+            Tag tag = tagRepository.findByName(tagName)
+                    .orElseGet(() -> tagRepository.save(Tag.create(tagName)));
+            postTagRepository.save(PostTag.create(post, tag));
+        });
+    }
+
+    private static Set<String> normalizeTags(List<String> tagNames) {
+        Set<String> normalizedTags = new LinkedHashSet<>();
+
+        if (tagNames == null) {
+            return normalizedTags;
+        }
+
+        tagNames.stream()
+                .map(String::trim)
+                .filter((tagName) -> !tagName.isBlank())
+                .forEach(normalizedTags::add);
+
+        return normalizedTags;
+    }
+
     private PostResponse toResponse(Post post) {
         return new PostResponse(
                 post.getId(),
@@ -118,7 +159,10 @@ public class PostController {
                 formatDateTime(post.getCreatedAt()),
                 post.getTitle(),
                 post.getContent(),
-                List.of(),
+                postTagRepository.findAllByPostIdOrderByTagNameAsc(post.getId())
+                        .stream()
+                        .map((postTag) -> postTag.getTag().getName())
+                        .toList(),
                 commentRepository.findAllByPostIdOrderByCreatedAtAsc(post.getId())
                         .stream()
                         .map(PostController::toCommentResponse)

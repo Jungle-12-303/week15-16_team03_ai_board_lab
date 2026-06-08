@@ -28,8 +28,18 @@ public class Tag {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    public static Tag create(String name) {
+        Tag tag = new Tag();
+        tag.name = name;
+        return tag;
+    }
+
     @PrePersist
     void onCreate() {
         this.createdAt = LocalDateTime.now();
+    }
+
+    public String getName() {
+        return name;
     }
 }

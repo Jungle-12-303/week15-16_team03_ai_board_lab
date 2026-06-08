@@ -37,8 +37,19 @@ public class PostTag {
 
     private LocalDateTime createdAt;
 
+    public static PostTag create(Post post, Tag tag) {
+        PostTag postTag = new PostTag();
+        postTag.post = post;
+        postTag.tag = tag;
+        return postTag;
+    }
+
     @PrePersist
     void onCreate() {
         this.createdAt = LocalDateTime.now();
+    }
+
+    public Tag getTag() {
+        return tag;
     }
 }
