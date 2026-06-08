@@ -72,12 +72,16 @@ export default function App() {
       .filter((tag) => tag.length > 0);
 
     if (editingPostId !== null) {
-      updatePost(editingPostId, {
+      const updatedPost = await updatePost(editingPostId, {
         title: title,
         content: content,
         category: category,
         tags: nextTags,
       });
+
+      if (updatedPost === null) {
+        return;
+      }
 
       setEditingPostId(null);
       setTitle('');

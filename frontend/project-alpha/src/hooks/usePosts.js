@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
-import { createPost as createServerPost, fetchPosts } from '../api/postApi';
+import {
+  createPost as createServerPost,
+  fetchPosts,
+  updatePost as updateServerPost,
+} from '../api/postApi';
 import { loadStoredPosts, saveStoredPosts } from '../storage/postStorage';
 
 export default function usePosts(currentUser) {
@@ -63,17 +67,19 @@ export default function usePosts(currentUser) {
     }
   }
 
-  function updatePost(postId, nextPostFields) {
-    setPosts((currentPosts) =>
-      currentPosts.map((post) =>
-        post.id === postId
-          ? {
-              ...post,
-              ...nextPostFields,
-            }
-          : post,
-      ),
-    );
+  async function updatePost(postId, nextPostFields) {
+    try {
+      const updatedPost = await updateServerPost(postId, nextPostFields);
+
+      setPosts((currentPosts) =>
+        currentPosts.map((post) => (post.id === postId ? updatedPost : post)),
+      );
+      setPostsError('');
+      return updatedPost;
+    } catch {
+      setPostsError('Post could not be updated on the server.');
+      return null;
+    }
   }
 
   function deletePost(postId) {

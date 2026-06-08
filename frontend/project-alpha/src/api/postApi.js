@@ -38,6 +38,27 @@ export async function createPost({ title, content, category, tags, author }) {
   return normalizePost(await response.json());
 }
 
+export async function updatePost(postId, { title, content, category, tags }) {
+  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      title,
+      content,
+      category,
+      tags,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to update post.');
+  }
+
+  return normalizePost(await response.json());
+}
+
 function normalizePost(post) {
   return {
     id: Number(post.id),

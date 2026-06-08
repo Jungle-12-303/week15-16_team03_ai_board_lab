@@ -10,10 +10,13 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.transaction.annotation.Transactional;
 
 @RestController
 @RequestMapping("/api/posts")
@@ -46,6 +49,19 @@ public class PostController {
         Post savedPost = postRepository.save(post);
 
         return toResponse(savedPost);
+    }
+
+    @PatchMapping("/{postId}")
+    @Transactional
+    public PostResponse updatePost(
+            @PathVariable Long postId,
+            @RequestBody UpdatePostRequest request) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow();
+
+        post.update(request.category(), request.title(), request.content());
+
+        return toResponse(post);
     }
 
     private User findOrCreateLocalUser(String authorName) {
@@ -92,6 +108,13 @@ public class PostController {
 
     public record CreatePostRequest(
             String author,
+            String category,
+            String title,
+            String content,
+            List<String> tags) {
+    }
+
+    public record UpdatePostRequest(
             String category,
             String title,
             String content,

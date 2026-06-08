@@ -61,6 +61,12 @@ public class Post {
         return post;
     }
 
+    public void update(String category, String title, String content) {
+        this.category = category;
+        this.title = title;
+        this.content = content;
+    }
+
     @PrePersist
     void onCreate() {
         LocalDateTime now = LocalDateTime.now();
