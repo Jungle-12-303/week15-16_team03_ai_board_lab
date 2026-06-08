@@ -1,10 +1,3 @@
-export const initialUsers = [
-  {
-    username: 'cedis',
-    password: 'alpha123',
-  },
-];
-
 export const initialPosts = [
   {
     id: 1,
