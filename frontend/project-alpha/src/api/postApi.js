@@ -88,6 +88,16 @@ export async function addComment(postId, { author, content }) {
   return normalizeComment(await response.json());
 }
 
+export async function deleteComment(postId, commentId) {
+  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}/comments/${commentId}`, {
+    method: 'DELETE',
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to delete comment.');
+  }
+}
+
 function normalizePost(post) {
   return {
     id: Number(post.id),

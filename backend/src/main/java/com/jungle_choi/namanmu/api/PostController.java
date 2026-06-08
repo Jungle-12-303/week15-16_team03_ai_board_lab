@@ -85,6 +85,14 @@ public class PostController {
         return toCommentResponse(savedComment);
     }
 
+    @DeleteMapping("/{postId}/comments/{commentId}")
+    @Transactional
+    public void deleteComment(
+            @PathVariable Long postId,
+            @PathVariable Long commentId) {
+        commentRepository.deleteByIdAndPostId(commentId, postId);
+    }
+
     @DeleteMapping("/{postId}")
     @Transactional
     public void deletePost(@PathVariable Long postId) {

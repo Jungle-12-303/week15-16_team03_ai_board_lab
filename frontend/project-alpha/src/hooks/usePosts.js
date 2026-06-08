@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   addComment as addServerComment,
   createPost as createServerPost,
+  deleteComment as deleteServerComment,
   deletePost as deleteServerPost,
   fetchPosts,
   updatePost as updateServerPost,
@@ -128,17 +129,26 @@ export default function usePosts(currentUser) {
     }
   }
 
-  function deleteComment(postId, commentId) {
-    setPosts((currentPosts) =>
-      currentPosts.map((post) =>
-        post.id === postId
-          ? {
-              ...post,
-              comments: post.comments.filter((comment) => comment.id !== commentId),
-            }
-          : post,
-      ),
-    );
+  async function deleteComment(postId, commentId) {
+    try {
+      await deleteServerComment(postId, commentId);
+
+      setPosts((currentPosts) =>
+        currentPosts.map((post) =>
+          post.id === postId
+            ? {
+                ...post,
+                comments: post.comments.filter((comment) => comment.id !== commentId),
+              }
+            : post,
+        ),
+      );
+      setPostsError('');
+      return true;
+    } catch {
+      setPostsError('Comment could not be deleted on the server.');
+      return false;
+    }
   }
 
   return {
