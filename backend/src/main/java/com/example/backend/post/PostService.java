@@ -3,12 +3,23 @@ package com.example.backend.post;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
-
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 public class PostService {
     private final PostRepository postRepository;
+
+    public Post createPost(PostCreateRequest request){
+        Post post = new Post(
+            request.getTitle(),
+            request.getContent(),
+            request.getAuthorName(),
+            LocalDateTime.now()
+        );
+        
+        return postRepository.save(post);
+    }
 
     public PostService(PostRepository postRepository){
         this.postRepository = postRepository;
@@ -22,5 +33,5 @@ public class PostService {
         return postRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다."));
     }
-    
+
 }
