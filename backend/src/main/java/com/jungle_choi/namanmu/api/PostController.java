@@ -121,7 +121,8 @@ public class PostController {
         String localEmail = "local-" + Integer.toHexString(authorName.hashCode())
                 + "@project-alpha.local";
 
-        return userRepository.findByEmail(localEmail)
+        return userRepository.findByEmail(User.accountEmail(authorName))
+                .or(() -> userRepository.findByEmail(localEmail))
                 .orElseGet(() -> userRepository.save(User.createLocalUser(authorName)));
     }
 

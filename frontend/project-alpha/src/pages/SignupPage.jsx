@@ -15,7 +15,7 @@ export default function SignupPage({ currentUser, onSignUp }) {
     return <Navigate to="/" replace />;
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
 
     if (!canSignUp) {
@@ -33,7 +33,7 @@ export default function SignupPage({ currentUser, onSignUp }) {
       return;
     }
 
-    const signUpSucceeded = onSignUp(username, password);
+    const signUpSucceeded = await onSignUp(username, password);
 
     if (!signUpSucceeded) {
       setErrorMessage('Username is already taken.');

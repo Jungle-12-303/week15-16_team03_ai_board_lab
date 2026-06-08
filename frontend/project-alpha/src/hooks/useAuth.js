@@ -1,54 +1,35 @@
 import { useEffect, useState } from 'react';
-import {
-  loadStoredCurrentUser,
-  loadStoredUsers,
-  saveStoredCurrentUser,
-  saveStoredUsers,
-} from '../storage/authStorage';
+import { login as loginRequest, signUp as signUpRequest } from '../api/authApi';
+import { loadStoredCurrentUser, saveStoredCurrentUser } from '../storage/authStorage';
 
 export default function useAuth() {
   const [currentUser, setCurrentUser] = useState(loadStoredCurrentUser);
-  const [users, setUsers] = useState(loadStoredUsers);
-
-  useEffect(() => {
-    saveStoredUsers(users);
-  }, [users]);
 
   useEffect(() => {
     saveStoredCurrentUser(currentUser);
   }, [currentUser]);
 
-  function login(username, password) {
+  async function login(username, password) {
     const trimmedUsername = username.trim();
-    const foundUser = users.find(
-      (user) => user.username === trimmedUsername && user.password === password,
-    );
 
-    if (!foundUser) {
+    try {
+      const user = await loginRequest(trimmedUsername, password);
+      setCurrentUser(user);
+      return true;
+    } catch {
       return false;
     }
-
-    setCurrentUser({ name: foundUser.username });
-    return true;
   }
 
-  function signUp(username, password) {
+  async function signUp(username, password) {
     const trimmedUsername = username.trim();
-    const isUsernameTaken = users.some((user) => user.username === trimmedUsername);
 
-    if (isUsernameTaken) {
+    try {
+      await signUpRequest(trimmedUsername, password);
+      return true;
+    } catch {
       return false;
     }
-
-    setUsers((currentUsers) => [
-      ...currentUsers,
-      {
-        username: trimmedUsername,
-        password: password,
-      },
-    ]);
-
-    return true;
   }
 
   function logout() {

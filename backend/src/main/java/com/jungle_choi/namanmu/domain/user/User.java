@@ -53,6 +53,21 @@ public class User {
         return user;
     }
 
+    public static User createRegisteredUser(String username, String passwordHash) {
+        User user = new User();
+        user.email = accountEmail(username);
+        user.passwordHash = passwordHash;
+        user.name = username;
+        user.role = UserRole.USER;
+        return user;
+    }
+
+    public static String accountEmail(String username) {
+        String normalizedUsername = username.trim().toLowerCase();
+        return "account-" + Integer.toHexString(normalizedUsername.hashCode())
+                + "@project-alpha.local";
+    }
+
     @PrePersist
     void onCreate() {
         LocalDateTime now = LocalDateTime.now();
@@ -71,6 +86,10 @@ public class User {
 
     public String getEmail() {
         return email;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
     }
 
     public String getName() {

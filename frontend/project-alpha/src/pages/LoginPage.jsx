@@ -13,7 +13,7 @@ export default function LoginPage({ currentUser, onLogin }) {
     return <Navigate to="/" replace />;
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
 
     const trimmedUsername = username.trim();
@@ -23,7 +23,7 @@ export default function LoginPage({ currentUser, onLogin }) {
       return;
     }
 
-    const loginSucceeded = onLogin(trimmedUsername, password);
+    const loginSucceeded = await onLogin(trimmedUsername, password);
 
     if (!loginSucceeded) {
       setErrorMessage('Username or password is incorrect.');
