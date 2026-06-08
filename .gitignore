@@ -1,1 +1,5 @@
 .idea/
+.env
+backend/.env
+frontend/project-alpha/.env
+frontend/project-alpha/.env.local
