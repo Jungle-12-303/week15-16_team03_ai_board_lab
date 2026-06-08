@@ -1,8 +1,40 @@
 import { useEffect, useState } from 'react';
+import { fetchPosts } from '../api/postApi';
 import { loadStoredPosts, saveStoredPosts } from '../storage/postStorage';
 
 export default function usePosts(currentUser) {
   const [posts, setPosts] = useState(loadStoredPosts);
+  const [isLoadingPosts, setIsLoadingPosts] = useState(true);
+  const [postsError, setPostsError] = useState('');
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadServerPosts() {
+      try {
+        const serverPosts = await fetchPosts();
+
+        if (!ignore) {
+          setPosts(serverPosts);
+          setPostsError('');
+        }
+      } catch {
+        if (!ignore) {
+          setPostsError('Server posts are unavailable. Local data is shown.');
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoadingPosts(false);
+        }
+      }
+    }
+
+    loadServerPosts();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   useEffect(() => {
     saveStoredPosts(posts);
@@ -86,6 +118,8 @@ export default function usePosts(currentUser) {
 
   return {
     posts,
+    isLoadingPosts,
+    postsError,
     createPost,
     updatePost,
     deletePost,

@@ -1,0 +1,38 @@
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+
+export async function fetchPosts() {
+  const response = await fetch(`${apiBaseUrl}/api/posts`);
+
+  if (!response.ok) {
+    throw new Error('Failed to load posts.');
+  }
+
+  const posts = await response.json();
+
+  if (!Array.isArray(posts)) {
+    throw new Error('Posts response must be an array.');
+  }
+
+  return posts.map(normalizePost);
+}
+
+function normalizePost(post) {
+  return {
+    id: Number(post.id),
+    author: String(post.author ?? ''),
+    category: String(post.category ?? ''),
+    createdAt: String(post.createdAt ?? ''),
+    title: String(post.title ?? ''),
+    content: String(post.content ?? ''),
+    tags: Array.isArray(post.tags) ? post.tags.map(String) : [],
+    comments: Array.isArray(post.comments) ? post.comments.map(normalizeComment) : [],
+  };
+}
+
+function normalizeComment(comment) {
+  return {
+    id: Number(comment.id),
+    author: String(comment.author ?? ''),
+    content: String(comment.content ?? ''),
+  };
+}

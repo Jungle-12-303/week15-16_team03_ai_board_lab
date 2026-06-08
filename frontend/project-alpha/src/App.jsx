@@ -23,8 +23,16 @@ export default function App() {
   const [selectedTag, setSelectedTag] = useState('');
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const { currentUser, login, signUp, logout } = useAuth();
-  const { posts, createPost, updatePost, deletePost, addComment, deleteComment } =
-    usePosts(currentUser);
+  const {
+    posts,
+    isLoadingPosts,
+    postsError,
+    createPost,
+    updatePost,
+    deletePost,
+    addComment,
+    deleteComment,
+  } = usePosts(currentUser);
 
   const isLoggedIn = currentUser !== null;
   const canSubmit = isLoggedIn && title.trim().length > 0 && content.trim().length > 0;
@@ -198,6 +206,8 @@ export default function App() {
     <BoardPage
       currentUser={currentUser}
       posts={posts}
+      isLoadingPosts={isLoadingPosts}
+      postsError={postsError}
       paginatedPosts={paginatedPosts}
       currentPage={safeCurrentPage}
       totalPages={totalPages}

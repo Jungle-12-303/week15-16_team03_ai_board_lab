@@ -9,6 +9,8 @@ import { categories } from '../constants/board';
 export default function BoardPage({
   currentUser,
   posts,
+  isLoadingPosts,
+  postsError,
   paginatedPosts,
   currentPage,
   totalPages,
@@ -66,6 +68,10 @@ export default function BoardPage({
           <p className="feed-status">
             Page {currentPage} of {totalPages} - {filteredPostCount} posts
           </p>
+          {isLoadingPosts && <p className="feed-status">Loading posts from server...</p>}
+          {postsError.length > 0 && (
+            <p className="feed-status error-status">{postsError}</p>
+          )}
 
           <PostList posts={paginatedPosts} />
 

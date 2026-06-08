@@ -180,6 +180,10 @@
   font-size: 13px;
 }
 
+.error-status {
+  color: #cf222e;
+}
+
 .feed-list {
   display: grid;
   gap: 8px;
