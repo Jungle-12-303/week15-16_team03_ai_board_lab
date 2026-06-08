@@ -36,8 +36,13 @@ export default function PostDetailPage({
     setCommentInput('');
   }
 
-  function handleDeletePost() {
-    onDeletePost(post.id);
+  async function handleDeletePost() {
+    const isDeleted = await onDeletePost(post.id);
+
+    if (!isDeleted) {
+      return;
+    }
+
     navigate('/');
   }
 

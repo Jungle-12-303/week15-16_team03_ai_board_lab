@@ -67,6 +67,10 @@ public class Post {
         this.content = content;
     }
 
+    public void delete() {
+        this.status = PostStatus.DELETED;
+    }
+
     @PrePersist
     void onCreate() {
         LocalDateTime now = LocalDateTime.now();

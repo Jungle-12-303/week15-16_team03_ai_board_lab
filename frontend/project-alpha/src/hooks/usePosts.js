@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   createPost as createServerPost,
+  deletePost as deleteServerPost,
   fetchPosts,
   updatePost as updateServerPost,
 } from '../api/postApi';
@@ -82,8 +83,17 @@ export default function usePosts(currentUser) {
     }
   }
 
-  function deletePost(postId) {
-    setPosts((currentPosts) => currentPosts.filter((post) => post.id !== postId));
+  async function deletePost(postId) {
+    try {
+      await deleteServerPost(postId);
+
+      setPosts((currentPosts) => currentPosts.filter((post) => post.id !== postId));
+      setPostsError('');
+      return true;
+    } catch {
+      setPostsError('Post could not be deleted on the server.');
+      return false;
+    }
   }
 
   function addComment(postId, commentContent) {

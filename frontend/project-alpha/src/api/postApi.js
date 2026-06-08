@@ -59,6 +59,16 @@ export async function updatePost(postId, { title, content, category, tags }) {
   return normalizePost(await response.json());
 }
 
+export async function deletePost(postId) {
+  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}`, {
+    method: 'DELETE',
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to delete post.');
+  }
+}
+
 function normalizePost(post) {
   return {
     id: Number(post.id),
