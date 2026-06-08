@@ -61,4 +61,28 @@ public class Post {
     void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+
+    public Long getId() {
+        return id;
+    }
+
+    public User getAuthor() {
+        return author;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
 }

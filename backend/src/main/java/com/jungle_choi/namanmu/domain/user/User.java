@@ -55,4 +55,16 @@ public class User {
     void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public String getName() {
+        return name;
+    }
 }
