@@ -25,14 +25,19 @@ export default function PostDetailPage({
     );
   }
 
-  function handleCommentSubmit(event) {
+  async function handleCommentSubmit(event) {
     event.preventDefault();
 
     if (commentInput.trim().length === 0) {
       return;
     }
 
-    onAddComment(post.id, commentInput);
+    const isAdded = await onAddComment(post.id, commentInput);
+
+    if (!isAdded) {
+      return;
+    }
+
     setCommentInput('');
   }
 

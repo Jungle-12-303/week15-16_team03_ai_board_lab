@@ -1,5 +1,7 @@
 package com.jungle_choi.namanmu.api;
 
+import com.jungle_choi.namanmu.domain.comment.Comment;
+import com.jungle_choi.namanmu.domain.comment.CommentRepository;
 import com.jungle_choi.namanmu.domain.post.Post;
 import com.jungle_choi.namanmu.domain.post.PostRepository;
 import com.jungle_choi.namanmu.domain.post.PostStatus;
@@ -29,17 +31,22 @@ public class PostController {
 
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final CommentRepository commentRepository;
 
-    public PostController(PostRepository postRepository, UserRepository userRepository) {
+    public PostController(
+            PostRepository postRepository,
+            UserRepository userRepository,
+            CommentRepository commentRepository) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
+        this.commentRepository = commentRepository;
     }
 
     @GetMapping
     public List<PostResponse> listPosts() {
         return postRepository.findAllByStatusOrderByCreatedAtDesc(PostStatus.PUBLISHED)
                 .stream()
-                .map(PostController::toResponse)
+                .map(this::toResponse)
                 .toList();
     }
 
@@ -65,6 +72,19 @@ public class PostController {
         return toResponse(post);
     }
 
+    @PostMapping("/{postId}/comments")
+    public CommentResponse createComment(
+            @PathVariable Long postId,
+            @RequestBody CreateCommentRequest request) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow();
+        User author = findOrCreateLocalUser(request.author());
+        Comment comment = Comment.create(post, author, request.content());
+        Comment savedComment = commentRepository.save(comment);
+
+        return toCommentResponse(savedComment);
+    }
+
     @DeleteMapping("/{postId}")
     @Transactional
     public void deletePost(@PathVariable Long postId) {
@@ -82,7 +102,7 @@ public class PostController {
                 .orElseGet(() -> userRepository.save(User.createLocalUser(authorName)));
     }
 
-    private static PostResponse toResponse(Post post) {
+    private PostResponse toResponse(Post post) {
         return new PostResponse(
                 post.getId(),
                 post.getAuthor().getName(),
@@ -91,7 +111,17 @@ public class PostController {
                 post.getTitle(),
                 post.getContent(),
                 List.of(),
-                List.of());
+                commentRepository.findAllByPostIdOrderByCreatedAtAsc(post.getId())
+                        .stream()
+                        .map(PostController::toCommentResponse)
+                        .toList());
+    }
+
+    private static CommentResponse toCommentResponse(Comment comment) {
+        return new CommentResponse(
+                comment.getId(),
+                comment.getAuthor().getName(),
+                comment.getContent());
     }
 
     private static String formatDateTime(LocalDateTime dateTime) {
@@ -129,5 +159,10 @@ public class PostController {
             String title,
             String content,
             List<String> tags) {
+    }
+
+    public record CreateCommentRequest(
+            String author,
+            String content) {
     }
 }

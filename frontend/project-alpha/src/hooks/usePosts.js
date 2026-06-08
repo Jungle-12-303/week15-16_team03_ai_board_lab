@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
+  addComment as addServerComment,
   createPost as createServerPost,
   deletePost as deleteServerPost,
   fetchPosts,
@@ -96,30 +97,35 @@ export default function usePosts(currentUser) {
     }
   }
 
-  function addComment(postId, commentContent) {
+  async function addComment(postId, commentContent) {
     const trimmedContent = commentContent.trim();
 
     if (currentUser === null || trimmedContent.length === 0) {
-      return;
+      return false;
     }
 
-    setPosts((currentPosts) =>
-      currentPosts.map((post) =>
-        post.id === postId
-          ? {
-              ...post,
-              comments: [
-                ...post.comments,
-                {
-                  id: Date.now(),
-                  author: currentUser.name,
-                  content: trimmedContent,
-                },
-              ],
-            }
-          : post,
-      ),
-    );
+    try {
+      const newComment = await addServerComment(postId, {
+        author: currentUser.name,
+        content: trimmedContent,
+      });
+
+      setPosts((currentPosts) =>
+        currentPosts.map((post) =>
+          post.id === postId
+            ? {
+                ...post,
+                comments: [...post.comments, newComment],
+              }
+            : post,
+        ),
+      );
+      setPostsError('');
+      return true;
+    } catch {
+      setPostsError('Comment could not be saved to the server.');
+      return false;
+    }
   }
 
   function deleteComment(postId, commentId) {

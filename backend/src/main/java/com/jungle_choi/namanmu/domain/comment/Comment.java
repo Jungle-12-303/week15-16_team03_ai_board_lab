@@ -40,6 +40,14 @@ public class Comment {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+    public static Comment create(Post post, User author, String content) {
+        Comment comment = new Comment();
+        comment.post = post;
+        comment.author = author;
+        comment.content = content;
+        return comment;
+    }
+
     @PrePersist
     void onCreate() {
         LocalDateTime now = LocalDateTime.now();
@@ -50,5 +58,17 @@ public class Comment {
     @PreUpdate
     void onUpdate() {
         this.updatedAt = LocalDateTime.now();
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public User getAuthor() {
+        return author;
+    }
+
+    public String getContent() {
+        return content;
     }
 }

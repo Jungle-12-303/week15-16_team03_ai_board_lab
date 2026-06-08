@@ -69,6 +69,25 @@ export async function deletePost(postId) {
   }
 }
 
+export async function addComment(postId, { author, content }) {
+  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}/comments`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      author,
+      content,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to add comment.');
+  }
+
+  return normalizeComment(await response.json());
+}
+
 function normalizePost(post) {
   return {
     id: Number(post.id),
