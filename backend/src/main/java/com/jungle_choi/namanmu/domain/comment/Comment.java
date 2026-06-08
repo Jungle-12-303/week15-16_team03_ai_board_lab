@@ -68,6 +68,10 @@ public class Comment {
         return author;
     }
 
+    public Post getPost() {
+        return post;
+    }
+
     public String getContent() {
         return content;
     }

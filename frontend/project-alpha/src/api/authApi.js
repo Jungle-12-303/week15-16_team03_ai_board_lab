@@ -41,5 +41,6 @@ export async function signUp(username, password) {
 function normalizeUser(user) {
   return {
     name: String(user.name ?? ''),
+    token: String(user.token ?? ''),
   };
 }

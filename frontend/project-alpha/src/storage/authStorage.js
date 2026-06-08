@@ -10,7 +10,12 @@ export function loadStoredCurrentUser() {
   try {
     const parsedCurrentUser = JSON.parse(storedCurrentUser);
 
-    if (parsedCurrentUser !== null && typeof parsedCurrentUser.name === 'string') {
+    if (
+      parsedCurrentUser !== null &&
+      typeof parsedCurrentUser.name === 'string' &&
+      typeof parsedCurrentUser.token === 'string' &&
+      parsedCurrentUser.token.length > 0
+    ) {
       return parsedCurrentUser;
     }
   } catch {

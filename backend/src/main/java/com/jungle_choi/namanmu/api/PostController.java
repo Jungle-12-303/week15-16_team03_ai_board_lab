@@ -11,11 +11,13 @@ import com.jungle_choi.namanmu.domain.tag.Tag;
 import com.jungle_choi.namanmu.domain.tag.TagRepository;
 import com.jungle_choi.namanmu.domain.user.User;
 import com.jungle_choi.namanmu.domain.user.UserRepository;
+import com.jungle_choi.namanmu.security.JwtTokenService;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -24,8 +26,10 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/posts")
@@ -40,18 +44,21 @@ public class PostController {
     private final CommentRepository commentRepository;
     private final TagRepository tagRepository;
     private final PostTagRepository postTagRepository;
+    private final JwtTokenService jwtTokenService;
 
     public PostController(
             PostRepository postRepository,
             UserRepository userRepository,
             CommentRepository commentRepository,
             TagRepository tagRepository,
-            PostTagRepository postTagRepository) {
+            PostTagRepository postTagRepository,
+            JwtTokenService jwtTokenService) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.commentRepository = commentRepository;
         this.tagRepository = tagRepository;
         this.postTagRepository = postTagRepository;
+        this.jwtTokenService = jwtTokenService;
     }
 
     @GetMapping
@@ -64,8 +71,10 @@ public class PostController {
 
     @PostMapping
     @Transactional
-    public PostResponse createPost(@RequestBody CreatePostRequest request) {
-        User author = findOrCreateLocalUser(request.author());
+    public PostResponse createPost(
+            @RequestHeader(name = "Authorization", required = false) String authorizationHeader,
+            @RequestBody CreatePostRequest request) {
+        User author = findAuthenticatedUser(authorizationHeader);
         Post post = Post.create(author, request.category(), request.title(), request.content());
         Post savedPost = postRepository.save(post);
         updatePostTags(savedPost, request.tags());
@@ -76,10 +85,13 @@ public class PostController {
     @PatchMapping("/{postId}")
     @Transactional
     public PostResponse updatePost(
+            @RequestHeader(name = "Authorization", required = false) String authorizationHeader,
             @PathVariable Long postId,
             @RequestBody UpdatePostRequest request) {
+        User user = findAuthenticatedUser(authorizationHeader);
         Post post = postRepository.findById(postId)
                 .orElseThrow();
+        validatePostOwner(post, user);
 
         post.update(request.category(), request.title(), request.content());
         updatePostTags(post, request.tags());
@@ -89,11 +101,12 @@ public class PostController {
 
     @PostMapping("/{postId}/comments")
     public CommentResponse createComment(
+            @RequestHeader(name = "Authorization", required = false) String authorizationHeader,
             @PathVariable Long postId,
             @RequestBody CreateCommentRequest request) {
         Post post = postRepository.findById(postId)
                 .orElseThrow();
-        User author = findOrCreateLocalUser(request.author());
+        User author = findAuthenticatedUser(authorizationHeader);
         Comment comment = Comment.create(post, author, request.content());
         Comment savedComment = commentRepository.save(comment);
 
@@ -103,27 +116,50 @@ public class PostController {
     @DeleteMapping("/{postId}/comments/{commentId}")
     @Transactional
     public void deleteComment(
+            @RequestHeader(name = "Authorization", required = false) String authorizationHeader,
             @PathVariable Long postId,
             @PathVariable Long commentId) {
-        commentRepository.deleteByIdAndPostId(commentId, postId);
+        User user = findAuthenticatedUser(authorizationHeader);
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow();
+
+        validateCommentOwner(comment, postId, user);
+        commentRepository.delete(comment);
     }
 
     @DeleteMapping("/{postId}")
     @Transactional
-    public void deletePost(@PathVariable Long postId) {
+    public void deletePost(
+            @RequestHeader(name = "Authorization", required = false) String authorizationHeader,
+            @PathVariable Long postId) {
+        User user = findAuthenticatedUser(authorizationHeader);
         Post post = postRepository.findById(postId)
                 .orElseThrow();
+        validatePostOwner(post, user);
 
         post.delete();
     }
 
-    private User findOrCreateLocalUser(String authorName) {
-        String localEmail = "local-" + Integer.toHexString(authorName.hashCode())
-                + "@project-alpha.local";
+    private User findAuthenticatedUser(String authorizationHeader) {
+        String email = jwtTokenService.readEmailFromAuthorizationHeader(authorizationHeader);
 
-        return userRepository.findByEmail(User.accountEmail(authorName))
-                .or(() -> userRepository.findByEmail(localEmail))
-                .orElseGet(() -> userRepository.save(User.createLocalUser(authorName)));
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+    }
+
+    private static void validatePostOwner(Post post, User user) {
+        if (!post.getAuthor().getId().equals(user.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        }
+    }
+
+    private static void validateCommentOwner(Comment comment, Long postId, User user) {
+        boolean samePost = comment.getPost().getId().equals(postId);
+        boolean sameAuthor = comment.getAuthor().getId().equals(user.getId());
+
+        if (!samePost || !sameAuthor) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        }
     }
 
     private void updatePostTags(Post post, List<String> tagNames) {
@@ -200,7 +236,6 @@ public class PostController {
     }
 
     public record CreatePostRequest(
-            String author,
             String category,
             String title,
             String content,
@@ -215,7 +250,6 @@ public class PostController {
     }
 
     public record CreateCommentRequest(
-            String author,
             String content) {
     }
 }

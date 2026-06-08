@@ -16,18 +16,15 @@ export async function fetchPosts() {
   return posts.map(normalizePost);
 }
 
-export async function createPost({ title, content, category, tags, author }) {
+export async function createPost({ title, content, category, tags, token }) {
   const response = await fetch(`${apiBaseUrl}/api/posts`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: jsonHeaders(token),
     body: JSON.stringify({
       title,
       content,
       category,
       tags,
-      author,
     }),
   });
 
@@ -38,12 +35,10 @@ export async function createPost({ title, content, category, tags, author }) {
   return normalizePost(await response.json());
 }
 
-export async function updatePost(postId, { title, content, category, tags }) {
+export async function updatePost(postId, { title, content, category, tags, token }) {
   const response = await fetch(`${apiBaseUrl}/api/posts/${postId}`, {
     method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: jsonHeaders(token),
     body: JSON.stringify({
       title,
       content,
@@ -59,9 +54,10 @@ export async function updatePost(postId, { title, content, category, tags }) {
   return normalizePost(await response.json());
 }
 
-export async function deletePost(postId) {
+export async function deletePost(postId, token) {
   const response = await fetch(`${apiBaseUrl}/api/posts/${postId}`, {
     method: 'DELETE',
+    headers: authHeaders(token),
   });
 
   if (!response.ok) {
@@ -69,14 +65,11 @@ export async function deletePost(postId) {
   }
 }
 
-export async function addComment(postId, { author, content }) {
+export async function addComment(postId, { content, token }) {
   const response = await fetch(`${apiBaseUrl}/api/posts/${postId}/comments`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: jsonHeaders(token),
     body: JSON.stringify({
-      author,
       content,
     }),
   });
@@ -88,14 +81,32 @@ export async function addComment(postId, { author, content }) {
   return normalizeComment(await response.json());
 }
 
-export async function deleteComment(postId, commentId) {
+export async function deleteComment(postId, commentId, token) {
   const response = await fetch(`${apiBaseUrl}/api/posts/${postId}/comments/${commentId}`, {
     method: 'DELETE',
+    headers: authHeaders(token),
   });
 
   if (!response.ok) {
     throw new Error('Failed to delete comment.');
   }
+}
+
+function jsonHeaders(token) {
+  return {
+    'Content-Type': 'application/json',
+    ...authHeaders(token),
+  };
+}
+
+function authHeaders(token) {
+  if (!token) {
+    return {};
+  }
+
+  return {
+    Authorization: `Bearer ${token}`,
+  };
 }
 
 function normalizePost(post) {

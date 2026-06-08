@@ -2,6 +2,7 @@ package com.jungle_choi.namanmu.api;
 
 import com.jungle_choi.namanmu.domain.user.User;
 import com.jungle_choi.namanmu.domain.user.UserRepository;
+import com.jungle_choi.namanmu.security.JwtTokenService;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -18,10 +19,15 @@ public class AuthController {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtTokenService jwtTokenService;
 
-    public AuthController(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public AuthController(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            JwtTokenService jwtTokenService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtTokenService = jwtTokenService;
     }
 
     @PostMapping("/signup")
@@ -43,7 +49,7 @@ public class AuthController {
                 passwordEncoder.encode(password));
         User savedUser = userRepository.save(user);
 
-        return new AuthResponse(savedUser.getName());
+        return toResponse(savedUser);
     }
 
     @PostMapping("/login")
@@ -58,12 +64,16 @@ public class AuthController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
 
-        return new AuthResponse(user.getName());
+        return toResponse(user);
+    }
+
+    private AuthResponse toResponse(User user) {
+        return new AuthResponse(user.getName(), jwtTokenService.createToken(user));
     }
 
     public record AuthRequest(String username, String password) {
     }
 
-    public record AuthResponse(String name) {
+    public record AuthResponse(String name, String token) {
     }
 }

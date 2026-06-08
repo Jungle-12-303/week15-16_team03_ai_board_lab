@@ -58,7 +58,7 @@ export default function usePosts(currentUser) {
         content: content,
         category: category,
         tags: tags,
-        author: currentUser.name,
+        token: currentUser.token,
       });
 
       setPosts((currentPosts) => [savedPost, ...currentPosts]);
@@ -71,8 +71,15 @@ export default function usePosts(currentUser) {
   }
 
   async function updatePost(postId, nextPostFields) {
+    if (currentUser === null) {
+      return null;
+    }
+
     try {
-      const updatedPost = await updateServerPost(postId, nextPostFields);
+      const updatedPost = await updateServerPost(postId, {
+        ...nextPostFields,
+        token: currentUser.token,
+      });
 
       setPosts((currentPosts) =>
         currentPosts.map((post) => (post.id === postId ? updatedPost : post)),
@@ -86,8 +93,12 @@ export default function usePosts(currentUser) {
   }
 
   async function deletePost(postId) {
+    if (currentUser === null) {
+      return false;
+    }
+
     try {
-      await deleteServerPost(postId);
+      await deleteServerPost(postId, currentUser.token);
 
       setPosts((currentPosts) => currentPosts.filter((post) => post.id !== postId));
       setPostsError('');
@@ -107,8 +118,8 @@ export default function usePosts(currentUser) {
 
     try {
       const newComment = await addServerComment(postId, {
-        author: currentUser.name,
         content: trimmedContent,
+        token: currentUser.token,
       });
 
       setPosts((currentPosts) =>
@@ -130,8 +141,12 @@ export default function usePosts(currentUser) {
   }
 
   async function deleteComment(postId, commentId) {
+    if (currentUser === null) {
+      return false;
+    }
+
     try {
-      await deleteServerComment(postId, commentId);
+      await deleteServerComment(postId, commentId, currentUser.token);
 
       setPosts((currentPosts) =>
         currentPosts.map((post) =>
