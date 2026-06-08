@@ -16,6 +16,28 @@ export async function fetchPosts() {
   return posts.map(normalizePost);
 }
 
+export async function createPost({ title, content, category, tags, author }) {
+  const response = await fetch(`${apiBaseUrl}/api/posts`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      title,
+      content,
+      category,
+      tags,
+      author,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to create post.');
+  }
+
+  return normalizePost(await response.json());
+}
+
 function normalizePost(post) {
   return {
     id: Number(post.id),

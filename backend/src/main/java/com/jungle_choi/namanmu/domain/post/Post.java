@@ -50,6 +50,17 @@ public class Post {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+    public static Post create(User author, String category, String title, String content) {
+        Post post = new Post();
+        post.author = author;
+        post.category = category;
+        post.title = title;
+        post.content = content;
+        post.status = PostStatus.PUBLISHED;
+        post.viewCount = 0;
+        return post;
+    }
+
     @PrePersist
     void onCreate() {
         LocalDateTime now = LocalDateTime.now();

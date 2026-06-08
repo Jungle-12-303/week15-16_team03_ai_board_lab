@@ -44,6 +44,15 @@ public class User {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+    public static User createLocalUser(String name) {
+        User user = new User();
+        user.email = "local-" + Integer.toHexString(name.hashCode()) + "@project-alpha.local";
+        user.passwordHash = "local-dev-user";
+        user.name = name;
+        user.role = UserRole.USER;
+        return user;
+    }
+
     @PrePersist
     void onCreate() {
         LocalDateTime now = LocalDateTime.now();

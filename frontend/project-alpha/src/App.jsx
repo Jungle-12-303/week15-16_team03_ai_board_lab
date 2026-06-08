@@ -59,7 +59,7 @@ export default function App() {
   const firstPostIndex = (safeCurrentPage - 1) * postsPerPage;
   const paginatedPosts = filteredPosts.slice(firstPostIndex, firstPostIndex + postsPerPage);
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
 
     if (!canSubmit || currentUser === null) {
@@ -87,12 +87,17 @@ export default function App() {
       return;
     }
 
-    createPost({
+    const createdPost = await createPost({
       title: title,
       content: content,
       category: category,
       tags: nextTags,
     });
+
+    if (createdPost === null) {
+      return;
+    }
+
     setCurrentPage(1);
     setTitle('');
     setContent('');

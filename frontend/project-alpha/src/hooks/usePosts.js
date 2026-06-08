@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fetchPosts } from '../api/postApi';
+import { createPost as createServerPost, fetchPosts } from '../api/postApi';
 import { loadStoredPosts, saveStoredPosts } from '../storage/postStorage';
 
 export default function usePosts(currentUser) {
@@ -40,24 +40,27 @@ export default function usePosts(currentUser) {
     saveStoredPosts(posts);
   }, [posts]);
 
-  function createPost({ title, content, category, tags }) {
+  async function createPost({ title, content, category, tags }) {
     if (currentUser === null) {
       return null;
     }
 
-    const newPost = {
-      id: Date.now(),
-      author: currentUser.name,
-      createdAt: 'Just now',
-      title: title,
-      content: content,
-      category: category,
-      tags: tags,
-      comments: [],
-    };
+    try {
+      const savedPost = await createServerPost({
+        title: title,
+        content: content,
+        category: category,
+        tags: tags,
+        author: currentUser.name,
+      });
 
-    setPosts((currentPosts) => [newPost, ...currentPosts]);
-    return newPost;
+      setPosts((currentPosts) => [savedPost, ...currentPosts]);
+      setPostsError('');
+      return savedPost;
+    } catch {
+      setPostsError('Post could not be saved to the server.');
+      return null;
+    }
   }
 
   function updatePost(postId, nextPostFields) {
