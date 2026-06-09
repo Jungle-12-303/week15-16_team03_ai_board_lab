@@ -7,7 +7,8 @@ export async function fetchPosts() {
     throw new Error('Failed to load posts.');
   }
 
-  const posts = await response.json();
+  const postsResponse = await response.json();
+  const posts = Array.isArray(postsResponse) ? postsResponse : postsResponse.posts;
 
   if (!Array.isArray(posts)) {
     throw new Error('Posts response must be an array.');

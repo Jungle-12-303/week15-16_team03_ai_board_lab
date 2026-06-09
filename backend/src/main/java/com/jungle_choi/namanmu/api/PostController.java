@@ -17,6 +17,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -27,6 +30,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
@@ -62,11 +66,32 @@ public class PostController {
     }
 
     @GetMapping
-    public List<PostResponse> listPosts() {
-        return postRepository.findAllByStatusOrderByCreatedAtDesc(PostStatus.PUBLISHED)
-                .stream()
-                .map(this::toResponse)
-                .toList();
+    public PostPageResponse listPosts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "100") int size) {
+        PageRequest pageRequest = PageRequest.of(
+                normalizePage(page),
+                normalizeSize(size),
+                Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Post> postPage = postRepository.findAllByStatus(PostStatus.PUBLISHED, pageRequest);
+
+        return new PostPageResponse(
+                postPage.getContent()
+                        .stream()
+                        .map(this::toResponse)
+                        .toList(),
+                postPage.getNumber(),
+                postPage.getSize(),
+                postPage.getTotalElements(),
+                postPage.getTotalPages());
+    }
+
+    private static int normalizePage(int page) {
+        return Math.max(page, 0);
+    }
+
+    private static int normalizeSize(int size) {
+        return Math.min(Math.max(size, 1), 100);
     }
 
     @PostMapping
@@ -230,6 +255,14 @@ public class PostController {
             String content,
             List<String> tags,
             List<CommentResponse> comments) {
+    }
+
+    public record PostPageResponse(
+            List<PostResponse> posts,
+            int page,
+            int size,
+            long totalElements,
+            int totalPages) {
     }
 
     public record CommentResponse(Long id, String author, String content) {
