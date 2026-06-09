@@ -67,13 +67,14 @@ public class PostController {
 
     @GetMapping
     public PostPageResponse listPosts(
+            @RequestParam(defaultValue = "") String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "100") int size) {
         PageRequest pageRequest = PageRequest.of(
                 normalizePage(page),
                 normalizeSize(size),
                 Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<Post> postPage = postRepository.findAllByStatus(PostStatus.PUBLISHED, pageRequest);
+        Page<Post> postPage = searchPosts(keyword, pageRequest);
 
         return new PostPageResponse(
                 postPage.getContent()
@@ -84,6 +85,21 @@ public class PostController {
                 postPage.getSize(),
                 postPage.getTotalElements(),
                 postPage.getTotalPages());
+    }
+
+    private Page<Post> searchPosts(String keyword, PageRequest pageRequest) {
+        String normalizedKeyword = keyword.trim();
+
+        if (normalizedKeyword.isBlank()) {
+            return postRepository.findAllByStatus(PostStatus.PUBLISHED, pageRequest);
+        }
+
+        return postRepository.findAllByStatusAndTitleContainingIgnoreCaseOrStatusAndContentContainingIgnoreCase(
+                PostStatus.PUBLISHED,
+                normalizedKeyword,
+                PostStatus.PUBLISHED,
+                normalizedKeyword,
+                pageRequest);
     }
 
     private static int normalizePage(int page) {

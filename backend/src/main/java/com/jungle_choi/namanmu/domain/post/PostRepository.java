@@ -9,4 +9,12 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     @EntityGraph(attributePaths = "author")
     Page<Post> findAllByStatus(PostStatus status, Pageable pageable);
+
+    @EntityGraph(attributePaths = "author")
+    Page<Post> findAllByStatusAndTitleContainingIgnoreCaseOrStatusAndContentContainingIgnoreCase(
+            PostStatus titleStatus,
+            String titleKeyword,
+            PostStatus contentStatus,
+            String contentKeyword,
+            Pageable pageable);
 }
