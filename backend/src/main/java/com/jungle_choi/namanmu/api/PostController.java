@@ -68,13 +68,14 @@ public class PostController {
     @GetMapping
     public PostPageResponse listPosts(
             @RequestParam(defaultValue = "") String keyword,
+            @RequestParam(defaultValue = "All") String category,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "100") int size) {
         PageRequest pageRequest = PageRequest.of(
                 normalizePage(page),
                 normalizeSize(size),
                 Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<Post> postPage = searchPosts(keyword, pageRequest);
+        Page<Post> postPage = searchPosts(keyword, category, pageRequest);
 
         return new PostPageResponse(
                 postPage.getContent()
@@ -87,11 +88,19 @@ public class PostController {
                 postPage.getTotalPages());
     }
 
-    private Page<Post> searchPosts(String keyword, PageRequest pageRequest) {
+    private Page<Post> searchPosts(String keyword, String category, PageRequest pageRequest) {
         String normalizedKeyword = keyword.trim();
+        String normalizedCategory = category.trim();
 
         if (normalizedKeyword.isBlank()) {
-            return postRepository.findAllByStatus(PostStatus.PUBLISHED, pageRequest);
+            if (normalizedCategory.isBlank() || normalizedCategory.equals("All")) {
+                return postRepository.findAllByStatus(PostStatus.PUBLISHED, pageRequest);
+            }
+
+            return postRepository.findAllByStatusAndCategory(
+                    PostStatus.PUBLISHED,
+                    normalizedCategory,
+                    pageRequest);
         }
 
         return postRepository.findAllByStatusAndTitleContainingIgnoreCaseOrStatusAndContentContainingIgnoreCase(
