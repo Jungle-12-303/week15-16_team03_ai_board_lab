@@ -35,3 +35,7 @@ submission/name
 7. 실행 방법
 8. 데모 스크린샷
 9. 회고, 한계점, 개선 아이디어
+
+참고 문서
+- [Project Alpha Database Schema](docs/database-schema.md)
+- [AWS Workshop Application Plan](docs/aws-workshop-application-plan.md)
