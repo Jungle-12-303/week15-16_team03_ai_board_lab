@@ -21,6 +21,26 @@ public class PostService {
         return postRepository.save(post);
     }
 
+    public Post updatePost(Long id, PostCreateRequest request){
+        Post post = postRepository.findById(id)
+            .orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다."));
+
+        post.update(
+            request.getTitle(),
+            request.getContent(),
+            request.getAuthorName()
+        );
+
+        return postRepository.save(post);
+    }
+
+    public void deletePost(Long id){
+        Post post = postRepository.findById(id)
+            .orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다."));
+
+        postRepository.delete(post);
+    }
+
     public PostService(PostRepository postRepository){
         this.postRepository = postRepository;
     }

@@ -24,6 +24,12 @@ public class Post {
         this.createdAt = createdAt;
     }
 
+    public void update(String title, String content, String authorName){
+        this.title = title;
+        this.content = content;
+        this.authorName = authorName;
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
