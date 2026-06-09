@@ -9,8 +9,22 @@ import {
 } from '../api/postApi';
 import { loadStoredPosts, saveStoredPosts } from '../storage/postStorage';
 
-export default function usePosts(currentUser) {
+const defaultPostPageInfo = {
+  page: 0,
+  size: 100,
+  totalElements: 0,
+  totalPages: 1,
+};
+
+export default function usePosts(currentUser, postQuery = {}) {
+  const {
+    searchTerm = '',
+    selectedCategory = 'All',
+    currentPage = 1,
+    postsPerPage = 100,
+  } = postQuery;
   const [posts, setPosts] = useState(loadStoredPosts);
+  const [postPageInfo, setPostPageInfo] = useState(defaultPostPageInfo);
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
   const [postsError, setPostsError] = useState('');
 
@@ -19,10 +33,23 @@ export default function usePosts(currentUser) {
 
     async function loadServerPosts() {
       try {
-        const serverPosts = await fetchPosts();
+        setIsLoadingPosts(true);
+
+        const serverPostPage = await fetchPosts({
+          keyword: searchTerm,
+          category: selectedCategory,
+          page: currentPage - 1,
+          size: postsPerPage,
+        });
 
         if (!ignore) {
-          setPosts(serverPosts);
+          setPosts(serverPostPage.posts);
+          setPostPageInfo({
+            page: serverPostPage.page,
+            size: serverPostPage.size,
+            totalElements: serverPostPage.totalElements,
+            totalPages: Math.max(1, serverPostPage.totalPages),
+          });
           setPostsError('');
         }
       } catch {
@@ -41,7 +68,7 @@ export default function usePosts(currentUser) {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [searchTerm, selectedCategory, currentPage, postsPerPage]);
 
   useEffect(() => {
     saveStoredPosts(posts);
@@ -168,6 +195,7 @@ export default function usePosts(currentUser) {
 
   return {
     posts,
+    postPageInfo,
     isLoadingPosts,
     postsError,
     createPost,

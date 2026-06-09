@@ -25,6 +25,7 @@ export default function App() {
   const { currentUser, login, signUp, logout } = useAuth();
   const {
     posts,
+    postPageInfo,
     isLoadingPosts,
     postsError,
     createPost,
@@ -32,32 +33,28 @@ export default function App() {
     deletePost,
     addComment,
     deleteComment,
-  } = usePosts(currentUser);
+  } = usePosts(currentUser, {
+    searchTerm,
+    selectedCategory,
+    currentPage,
+    postsPerPage,
+  });
 
   const isLoggedIn = currentUser !== null;
   const canSubmit = isLoggedIn && title.trim().length > 0 && content.trim().length > 0;
-  const normalizedSearchTerm = searchTerm.trim().toLowerCase();
   const normalizedSelectedTag = selectedTag.trim().toLowerCase();
   const filteredPosts = posts.filter((post) => {
-    const matchesSearch =
-      normalizedSearchTerm.length === 0 ||
-      post.title.toLowerCase().includes(normalizedSearchTerm) ||
-      post.content.toLowerCase().includes(normalizedSearchTerm) ||
-      post.category.toLowerCase().includes(normalizedSearchTerm) ||
-      post.tags.some((tag) => tag.toLowerCase().includes(normalizedSearchTerm));
-
-    const matchesCategory =
-      selectedCategory === 'All' || post.category === selectedCategory;
     const matchesTag =
       normalizedSelectedTag.length === 0 ||
       post.tags.some((tag) => tag.toLowerCase().includes(normalizedSelectedTag));
 
-    return matchesSearch && matchesCategory && matchesTag;
+    return matchesTag;
   });
-  const totalPages = Math.max(1, Math.ceil(filteredPosts.length / postsPerPage));
+  const totalPages = postPageInfo.totalPages;
   const safeCurrentPage = Math.min(currentPage, totalPages);
-  const firstPostIndex = (safeCurrentPage - 1) * postsPerPage;
-  const paginatedPosts = filteredPosts.slice(firstPostIndex, firstPostIndex + postsPerPage);
+  const paginatedPosts = filteredPosts;
+  const filteredPostCount =
+    normalizedSelectedTag.length === 0 ? postPageInfo.totalElements : filteredPosts.length;
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -220,7 +217,7 @@ export default function App() {
       paginatedPosts={paginatedPosts}
       currentPage={safeCurrentPage}
       totalPages={totalPages}
-      filteredPostCount={filteredPosts.length}
+      filteredPostCount={filteredPostCount}
       searchTerm={searchTerm}
       selectedCategory={selectedCategory}
       selectedTag={selectedTag}

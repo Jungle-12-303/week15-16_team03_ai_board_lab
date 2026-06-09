@@ -1,7 +1,13 @@
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
 
-export async function fetchPosts() {
-  const response = await fetch(`${apiBaseUrl}/api/posts`);
+export async function fetchPosts({ keyword = '', category = 'All', page = 0, size = 100 } = {}) {
+  const searchParams = new URLSearchParams({
+    keyword,
+    category,
+    page: String(page),
+    size: String(size),
+  });
+  const response = await fetch(`${apiBaseUrl}/api/posts?${searchParams.toString()}`);
 
   if (!response.ok) {
     throw new Error('Failed to load posts.');
@@ -14,7 +20,13 @@ export async function fetchPosts() {
     throw new Error('Posts response must be an array.');
   }
 
-  return posts.map(normalizePost);
+  return {
+    posts: posts.map(normalizePost),
+    page: Number(postsResponse.page ?? 0),
+    size: Number(postsResponse.size ?? posts.length),
+    totalElements: Number(postsResponse.totalElements ?? posts.length),
+    totalPages: Number(postsResponse.totalPages ?? 1),
+  };
 }
 
 export async function createPost({ title, content, category, tags, token }) {
