@@ -92,22 +92,10 @@ public class PostController {
         String normalizedKeyword = keyword.trim();
         String normalizedCategory = category.trim();
 
-        if (normalizedKeyword.isBlank()) {
-            if (normalizedCategory.isBlank() || normalizedCategory.equals("All")) {
-                return postRepository.findAllByStatus(PostStatus.PUBLISHED, pageRequest);
-            }
-
-            return postRepository.findAllByStatusAndCategory(
-                    PostStatus.PUBLISHED,
-                    normalizedCategory,
-                    pageRequest);
-        }
-
-        return postRepository.findAllByStatusAndTitleContainingIgnoreCaseOrStatusAndContentContainingIgnoreCase(
+        return postRepository.search(
                 PostStatus.PUBLISHED,
                 normalizedKeyword,
-                PostStatus.PUBLISHED,
-                normalizedKeyword,
+                normalizedCategory,
                 pageRequest);
     }
 
