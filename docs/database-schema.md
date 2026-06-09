@@ -11,6 +11,7 @@ erDiagram
     users ||--o{ comments : writes
     posts ||--o{ comments : has
     posts ||--o{ post_tags : has
+    posts ||--o| post_embeddings : has
     tags ||--o{ post_tags : attached
 
     users {
@@ -56,6 +57,17 @@ erDiagram
         bigint tag_id FK
         datetime created_at
     }
+
+    post_embeddings {
+        bigint id PK
+        bigint post_id FK
+        varchar embedding_model
+        int dimensions
+        longtext embedding_json
+        varchar source_hash
+        datetime created_at
+        datetime updated_at
+    }
 ```
 
 ## 기능별 테이블
@@ -67,6 +79,7 @@ erDiagram
 | 댓글 | `comments` | `Comment` | 게시글별 댓글과 댓글 작성자 저장 |
 | 태그 | `tags` | `Tag` | 태그 이름 저장 |
 | 게시글-태그 연결 | `post_tags` | `PostTag` | 게시글과 태그의 다대다 관계 연결 |
+| RAG 유사 게시글 | `post_embeddings` | `PostEmbedding` | 게시글별 임베딩 벡터와 원본 해시 저장 |
 
 ## 테이블 상세
 
@@ -136,6 +149,25 @@ erDiagram
 
 `post_id`, `tag_id` 조합에는 unique 제약이 있다. 같은 게시글에 같은 태그가 중복으로 붙지 않게 하기 위해서다.
 
+### post_embeddings
+
+RAG 유사 게시글 검색을 위한 게시글 임베딩 저장 테이블이다.
+초기 구현에서는 MySQL에 임베딩을 JSON 문자열로 저장하고, 서버 코드에서 cosine similarity를 계산한다.
+데이터가 커지면 Chroma, OpenSearch, pgvector 같은 전용 Vector DB로 교체할 수 있다.
+
+| 컬럼 | 타입 | 제약 | 설명 |
+| --- | --- | --- | --- |
+| `id` | `BIGINT` | PK, AUTO_INCREMENT | 임베딩 식별자 |
+| `post_id` | `BIGINT` | FK, UNIQUE, NOT NULL | 임베딩 대상 게시글. `posts.id` 참조 |
+| `embedding_model` | `VARCHAR(100)` | NOT NULL | 임베딩 생성에 사용한 모델명 |
+| `dimensions` | `INT` | NOT NULL | 임베딩 벡터 차원 수 |
+| `embedding_json` | `LONGTEXT` | NOT NULL | 벡터 값을 JSON 배열 문자열로 저장 |
+| `source_hash` | `VARCHAR(64)` | NOT NULL | 제목/본문/태그 기반 원본 해시. 재생성 필요 여부 판단용 |
+| `created_at` | `DATETIME` | NOT NULL | 최초 생성 시간 |
+| `updated_at` | `DATETIME` | NOT NULL | 마지막 갱신 시간 |
+
+`post_id`는 unique 제약을 둔다. 게시글 하나에는 현재 기준의 최신 임베딩 하나만 연결하기 위해서다.
+
 ## 현재 API 연결 상태
 
 | API | 현재 상태 |
@@ -154,7 +186,6 @@ AI 기능과 개인화 기능은 아직 테이블로 만들지 않았다. 구현
 
 | 기능 | 후보 테이블 | 목적 |
 | --- | --- | --- |
-| RAG 유사 게시글 | `post_embeddings` | 게시글 임베딩 벡터와 임베딩 모델 정보 저장 |
 | AI 초안 생성 기록 | `ai_draft_logs` | 입력 초안, 참조 게시글, 생성 결과, 모델명 저장 |
 | MCP 날씨 브리핑 | `weather_briefing_logs` | 지역, 날씨 원본 데이터, 생성된 브리핑 저장 |
 | 놓친 글 추천 Agent | `post_reads`, `user_interests` | 읽은 글 기록, 사용자 선호 태그 저장 |
