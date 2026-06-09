@@ -12,6 +12,9 @@ import com.jungle_choi.namanmu.domain.tag.TagRepository;
 import com.jungle_choi.namanmu.domain.user.User;
 import com.jungle_choi.namanmu.domain.user.UserRepository;
 import com.jungle_choi.namanmu.security.JwtTokenService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashSet;
@@ -111,7 +114,7 @@ public class PostController {
     @Transactional
     public PostResponse createPost(
             @RequestHeader(name = "Authorization", required = false) String authorizationHeader,
-            @RequestBody CreatePostRequest request) {
+            @Valid @RequestBody CreatePostRequest request) {
         User author = findAuthenticatedUser(authorizationHeader);
         Post post = Post.create(author, request.category(), request.title(), request.content());
         Post savedPost = postRepository.save(post);
@@ -125,7 +128,7 @@ public class PostController {
     public PostResponse updatePost(
             @RequestHeader(name = "Authorization", required = false) String authorizationHeader,
             @PathVariable Long postId,
-            @RequestBody UpdatePostRequest request) {
+            @Valid @RequestBody UpdatePostRequest request) {
         User user = findAuthenticatedUser(authorizationHeader);
         Post post = postRepository.findById(postId)
                 .orElseThrow();
@@ -141,7 +144,7 @@ public class PostController {
     public CommentResponse createComment(
             @RequestHeader(name = "Authorization", required = false) String authorizationHeader,
             @PathVariable Long postId,
-            @RequestBody CreateCommentRequest request) {
+            @Valid @RequestBody CreateCommentRequest request) {
         Post post = postRepository.findById(postId)
                 .orElseThrow();
         User author = findAuthenticatedUser(authorizationHeader);
@@ -282,20 +285,34 @@ public class PostController {
     }
 
     public record CreatePostRequest(
+            @NotBlank(message = "category is required.")
+            @Size(max = 30, message = "category must be 30 characters or fewer.")
             String category,
+            @NotBlank(message = "title is required.")
+            @Size(max = 120, message = "title must be 120 characters or fewer.")
             String title,
+            @NotBlank(message = "content is required.")
+            @Size(max = 5000, message = "content must be 5000 characters or fewer.")
             String content,
-            List<String> tags) {
+            List<@Size(max = 30, message = "tag must be 30 characters or fewer.") String> tags) {
     }
 
     public record UpdatePostRequest(
+            @NotBlank(message = "category is required.")
+            @Size(max = 30, message = "category must be 30 characters or fewer.")
             String category,
+            @NotBlank(message = "title is required.")
+            @Size(max = 120, message = "title must be 120 characters or fewer.")
             String title,
+            @NotBlank(message = "content is required.")
+            @Size(max = 5000, message = "content must be 5000 characters or fewer.")
             String content,
-            List<String> tags) {
+            List<@Size(max = 30, message = "tag must be 30 characters or fewer.") String> tags) {
     }
 
     public record CreateCommentRequest(
+            @NotBlank(message = "comment content is required.")
+            @Size(max = 1000, message = "comment content must be 1000 characters or fewer.")
             String content) {
     }
 }

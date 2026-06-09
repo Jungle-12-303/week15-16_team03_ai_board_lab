@@ -3,6 +3,9 @@ package com.jungle_choi.namanmu.api;
 import com.jungle_choi.namanmu.domain.user.User;
 import com.jungle_choi.namanmu.domain.user.UserRepository;
 import com.jungle_choi.namanmu.security.JwtTokenService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -31,14 +34,10 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
-    public AuthResponse signUp(@RequestBody AuthRequest request) {
-        String username = request.username() == null ? "" : request.username().trim();
-        String password = request.password() == null ? "" : request.password();
+    public AuthResponse signUp(@Valid @RequestBody AuthRequest request) {
+        String username = request.username().trim();
+        String password = request.password();
         String accountEmail = User.accountEmail(username);
-
-        if (username.isBlank() || password.length() < 6) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-        }
 
         if (userRepository.existsByEmail(accountEmail)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT);
@@ -53,9 +52,9 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public AuthResponse login(@RequestBody AuthRequest request) {
-        String username = request.username() == null ? "" : request.username().trim();
-        String password = request.password() == null ? "" : request.password();
+    public AuthResponse login(@Valid @RequestBody AuthRequest request) {
+        String username = request.username().trim();
+        String password = request.password();
         String accountEmail = User.accountEmail(username);
         User user = userRepository.findByEmail(accountEmail)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
@@ -71,7 +70,12 @@ public class AuthController {
         return new AuthResponse(user.getName(), jwtTokenService.createToken(user));
     }
 
-    public record AuthRequest(String username, String password) {
+    public record AuthRequest(
+            @NotBlank(message = "username is required.")
+            String username,
+            @NotBlank(message = "password is required.")
+            @Size(min = 6, message = "password must be at least 6 characters.")
+            String password) {
     }
 
     public record AuthResponse(String name, String token) {
