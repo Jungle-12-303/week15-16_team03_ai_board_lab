@@ -147,6 +147,12 @@ Content-Type: application/json
 게시글 임베딩 입력에는 본문만 넣지 않고 서비스 맥락, 카테고리, 제목, 본문, 태그를 함께 넣는다.
 이는 chunk가 단독으로 검색될 때 원래 게시판 맥락을 잃지 않게 하기 위한 설계다.
 
+### 임베딩 작업 처리 흐름
+
+게시글 생성/수정 시에는 `embedding_jobs`에 `PENDING` 작업만 예약한다.
+`EmbeddingJobProcessor`는 오래된 `PENDING` 작업 하나를 `PROCESSING`으로 바꾼 뒤 OpenAI Embedding API를 호출하고, 결과를 `post_embeddings`에 저장한 후 작업을 `COMPLETED` 또는 `FAILED`로 마무리한다.
+외부 API 호출은 게시글 저장 트랜잭션과 분리해 게시글 작성 속도와 OpenAI 장애를 격리한다.
+
 ## MCP 기능 반영
 
 확정한 MCP 기능은 날씨 브리핑 기반 글 작성 보조다.

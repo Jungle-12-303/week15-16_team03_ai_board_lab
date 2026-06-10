@@ -1,6 +1,7 @@
 package com.jungle_choi.namanmu.service;
 
 import com.jungle_choi.namanmu.domain.post.Post;
+import com.jungle_choi.namanmu.domain.post.PostRepository;
 import com.jungle_choi.namanmu.domain.post.PostTagRepository;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -14,13 +15,24 @@ public class PostEmbeddingTextBuilder {
             Use the category and tags as context for understanding the post topic.
             """;
 
+    private final PostRepository postRepository;
     private final PostTagRepository postTagRepository;
 
-    public PostEmbeddingTextBuilder(PostTagRepository postTagRepository) {
+    public PostEmbeddingTextBuilder(
+            PostRepository postRepository,
+            PostTagRepository postTagRepository) {
+        this.postRepository = postRepository;
         this.postTagRepository = postTagRepository;
     }
 
     @Transactional(readOnly = true)
+    public String build(Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow();
+
+        return build(post);
+    }
+
     public String build(Post post) {
         List<String> tags = postTagRepository.findAllByPostIdOrderByTagNameAsc(post.getId())
                 .stream()

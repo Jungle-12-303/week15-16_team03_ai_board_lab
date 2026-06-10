@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jungle_choi.namanmu.domain.embedding.PostEmbedding;
 import com.jungle_choi.namanmu.domain.embedding.PostEmbeddingRepository;
 import com.jungle_choi.namanmu.domain.post.Post;
+import com.jungle_choi.namanmu.domain.post.PostRepository;
 import com.jungle_choi.namanmu.service.OpenAiEmbeddingClient.EmbeddingResult;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -18,21 +19,25 @@ public class PostEmbeddingService {
     private static final String HASH_ALGORITHM = "SHA-256";
 
     private final PostEmbeddingRepository postEmbeddingRepository;
+    private final PostRepository postRepository;
     private final ObjectMapper objectMapper;
 
     public PostEmbeddingService(
             PostEmbeddingRepository postEmbeddingRepository,
+            PostRepository postRepository,
             ObjectMapper objectMapper) {
         this.postEmbeddingRepository = postEmbeddingRepository;
+        this.postRepository = postRepository;
         this.objectMapper = objectMapper;
     }
 
     @Transactional
-    public void saveOrReplace(Post post, String sourceText, EmbeddingResult embeddingResult) {
+    public void saveOrReplace(Long postId, String sourceText, EmbeddingResult embeddingResult) {
+        Post post = postRepository.getReferenceById(postId);
         String embeddingJson = toJson(embeddingResult);
         String sourceHash = hash(sourceText);
 
-        postEmbeddingRepository.findByPost_Id(post.getId())
+        postEmbeddingRepository.findByPost_Id(postId)
                 .ifPresentOrElse(
                         (postEmbedding) -> postEmbedding.replace(
                                 embeddingResult.model(),
