@@ -176,7 +176,7 @@ RAG 유사 게시글 검색을 위한 게시글 임베딩 저장 테이블이다
 | `embedding_model` | `VARCHAR(100)` | NOT NULL | 임베딩 생성에 사용한 모델명 |
 | `dimensions` | `INT` | NOT NULL | 임베딩 벡터 차원 수 |
 | `embedding_json` | `LONGTEXT` | NOT NULL | 벡터 값을 JSON 배열 문자열로 저장 |
-| `source_hash` | `VARCHAR(64)` | NOT NULL | 제목/본문/태그 기반 원본 해시. 재생성 필요 여부 판단용 |
+| `source_hash` | `VARCHAR(64)` | NOT NULL | 임베딩 입력 문자열의 SHA-256 해시. 재생성 필요 여부 판단용 |
 | `created_at` | `DATETIME` | NOT NULL | 최초 생성 시간 |
 | `updated_at` | `DATETIME` | NOT NULL | 마지막 갱신 시간 |
 
