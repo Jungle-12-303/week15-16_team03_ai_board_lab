@@ -12,6 +12,7 @@ erDiagram
     posts ||--o{ comments : has
     posts ||--o{ post_tags : has
     posts ||--o| post_embeddings : has
+    posts ||--o{ embedding_jobs : queues
     tags ||--o{ post_tags : attached
 
     users {
@@ -68,6 +69,18 @@ erDiagram
         datetime created_at
         datetime updated_at
     }
+
+    embedding_jobs {
+        bigint id PK
+        bigint post_id FK
+        varchar status
+        int attempt_count
+        varchar error_message
+        datetime started_at
+        datetime completed_at
+        datetime created_at
+        datetime updated_at
+    }
 ```
 
 ## 기능별 테이블
@@ -80,6 +93,7 @@ erDiagram
 | 태그 | `tags` | `Tag` | 태그 이름 저장 |
 | 게시글-태그 연결 | `post_tags` | `PostTag` | 게시글과 태그의 다대다 관계 연결 |
 | RAG 유사 게시글 | `post_embeddings` | `PostEmbedding` | 게시글별 임베딩 벡터와 원본 해시 저장 |
+| RAG 임베딩 작업 큐 | `embedding_jobs` | `EmbeddingJob` | 게시글 임베딩 생성 작업의 상태와 실패 기록 저장 |
 
 ## 테이블 상세
 
@@ -167,6 +181,25 @@ RAG 유사 게시글 검색을 위한 게시글 임베딩 저장 테이블이다
 | `updated_at` | `DATETIME` | NOT NULL | 마지막 갱신 시간 |
 
 `post_id`는 unique 제약을 둔다. 게시글 하나에는 현재 기준의 최신 임베딩 하나만 연결하기 위해서다.
+
+### embedding_jobs
+
+게시글 저장과 OpenAI Embedding API 호출을 분리하기 위한 작업 큐 테이블이다.
+게시글 생성/수정 트랜잭션에서는 이 테이블에 `PENDING` 작업만 예약하고, 실제 외부 API 호출은 별도 수동 실행 API 또는 Scheduler가 처리한다.
+
+| 컬럼 | 타입 | 제약 | 설명 |
+| --- | --- | --- | --- |
+| `id` | `BIGINT` | PK, AUTO_INCREMENT | 임베딩 작업 식별자 |
+| `post_id` | `BIGINT` | FK, NOT NULL | 임베딩을 생성할 게시글. `posts.id` 참조 |
+| `status` | `VARCHAR(20)` | NOT NULL | `PENDING`, `PROCESSING`, `COMPLETED`, `FAILED` |
+| `attempt_count` | `INT` | NOT NULL | 처리 시도 횟수 |
+| `error_message` | `VARCHAR(1000)` | NULL | 마지막 실패 사유 |
+| `started_at` | `DATETIME` | NULL | 마지막 처리 시작 시간 |
+| `completed_at` | `DATETIME` | NULL | 성공 또는 실패로 처리 종료된 시간 |
+| `created_at` | `DATETIME` | NOT NULL | 작업 예약 시간 |
+| `updated_at` | `DATETIME` | NOT NULL | 작업 상태 갱신 시간 |
+
+이 테이블은 완성된 벡터를 저장하지 않는다. 완성된 결과는 `post_embeddings`에 저장하고, `embedding_jobs`는 처리해야 할 일과 처리 상태만 관리한다.
 
 ## 현재 API 연결 상태
 
