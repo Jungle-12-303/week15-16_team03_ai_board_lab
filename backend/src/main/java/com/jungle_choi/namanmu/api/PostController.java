@@ -10,6 +10,7 @@ import com.jungle_choi.namanmu.domain.post.PostTagRepository;
 import com.jungle_choi.namanmu.domain.tag.Tag;
 import com.jungle_choi.namanmu.domain.tag.TagRepository;
 import com.jungle_choi.namanmu.domain.user.User;
+import com.jungle_choi.namanmu.service.EmbeddingJobService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -48,16 +49,19 @@ public class PostController {
     private final CommentRepository commentRepository;
     private final TagRepository tagRepository;
     private final PostTagRepository postTagRepository;
+    private final EmbeddingJobService embeddingJobService;
 
     public PostController(
             PostRepository postRepository,
             CommentRepository commentRepository,
             TagRepository tagRepository,
-            PostTagRepository postTagRepository) {
+            PostTagRepository postTagRepository,
+            EmbeddingJobService embeddingJobService) {
         this.postRepository = postRepository;
         this.commentRepository = commentRepository;
         this.tagRepository = tagRepository;
         this.postTagRepository = postTagRepository;
+        this.embeddingJobService = embeddingJobService;
     }
 
     @GetMapping
@@ -110,6 +114,7 @@ public class PostController {
         Post post = Post.create(author, request.category(), request.title(), request.content());
         Post savedPost = postRepository.save(post);
         updatePostTags(savedPost, request.tags());
+        embeddingJobService.enqueuePostEmbedding(savedPost);
 
         return toResponse(savedPost);
     }
@@ -126,6 +131,7 @@ public class PostController {
 
         post.update(request.category(), request.title(), request.content());
         updatePostTags(post, request.tags());
+        embeddingJobService.enqueuePostEmbedding(post);
 
         return toResponse(post);
     }
