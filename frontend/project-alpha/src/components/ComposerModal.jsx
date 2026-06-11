@@ -10,6 +10,9 @@ export default function ComposerModal({
   similarPostsError,
   isLoadingSimilarPosts,
   hasSearchedSimilarPosts,
+  draftError,
+  draftMessage,
+  isGeneratingDraft,
   canSubmit,
   isEditing,
   onCategoryChange,
@@ -17,6 +20,7 @@ export default function ComposerModal({
   onContentChange,
   onTagInputChange,
   onFindSimilarPosts,
+  onCreateDraftFromSources,
   onSubmit,
   onClose,
 }) {
@@ -46,12 +50,16 @@ export default function ComposerModal({
           similarPostsError={similarPostsError}
           isLoadingSimilarPosts={isLoadingSimilarPosts}
           hasSearchedSimilarPosts={hasSearchedSimilarPosts}
+          draftError={draftError}
+          draftMessage={draftMessage}
+          isGeneratingDraft={isGeneratingDraft}
           canSubmit={canSubmit}
           onCategoryChange={onCategoryChange}
           onTitleChange={onTitleChange}
           onContentChange={onContentChange}
           onTagInputChange={onTagInputChange}
           onFindSimilarPosts={onFindSimilarPosts}
+          onCreateDraftFromSources={onCreateDraftFromSources}
           onSubmit={onSubmit}
           isEditing={isEditing}
           onCancelEdit={onClose}

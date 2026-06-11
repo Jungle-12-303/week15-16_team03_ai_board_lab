@@ -36,6 +36,42 @@ export async function findSimilarPosts({
   return posts.map(normalizeSimilarPost);
 }
 
+export async function createDraftFromSources({
+  category,
+  title,
+  content,
+  tags,
+  excludedPostId,
+  limit = 5,
+  token,
+}) {
+  const response = await fetch(`${apiBaseUrl}/api/ai/draft`, {
+    method: 'POST',
+    headers: jsonHeaders(token),
+    body: JSON.stringify({
+      category,
+      title,
+      content,
+      tags,
+      excludedPostId,
+      limit,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to create draft from sources.');
+  }
+
+  const draftResponse = await response.json();
+  const sources = Array.isArray(draftResponse.sources) ? draftResponse.sources : [];
+
+  return {
+    draft: String(draftResponse.draft ?? ''),
+    message: String(draftResponse.message ?? ''),
+    sources: sources.map(normalizeSimilarPost),
+  };
+}
+
 function jsonHeaders(token) {
   return {
     'Content-Type': 'application/json',

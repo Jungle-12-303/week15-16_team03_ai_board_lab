@@ -8,12 +8,16 @@ export default function PostForm({
   similarPostsError,
   isLoadingSimilarPosts,
   hasSearchedSimilarPosts,
+  draftError,
+  draftMessage,
+  isGeneratingDraft,
   canSubmit,
   onCategoryChange,
   onTitleChange,
   onContentChange,
   onTagInputChange,
   onFindSimilarPosts,
+  onCreateDraftFromSources,
   onSubmit,
   isEditing,
   onCancelEdit,
@@ -65,8 +69,13 @@ export default function PostForm({
           >
             Related posts
           </button>
-          <button type="button" className="assist-button">
-            Draft from sources
+          <button
+            type="button"
+            className="assist-button"
+            onClick={onCreateDraftFromSources}
+            disabled={!canSubmit || isGeneratingDraft}
+          >
+            {isGeneratingDraft ? 'Drafting...' : 'Draft from sources'}
           </button>
           <button type="button" className="assist-button">
             Weather post
@@ -79,17 +88,26 @@ export default function PostForm({
       </div>
 
       {(isLoadingSimilarPosts ||
+        isGeneratingDraft ||
         hasSearchedSimilarPosts ||
         similarPostsError.length > 0 ||
+        draftError.length > 0 ||
+        draftMessage.length > 0 ||
         similarPosts.length > 0) && (
         <section className="assist-panel" aria-label="Related posts results">
           {isLoadingSimilarPosts && <p className="feed-status">Finding related posts...</p>}
+          {isGeneratingDraft && <p className="feed-status">Drafting from related posts...</p>}
           {similarPostsError.length > 0 && (
             <p className="feed-status error-status">{similarPostsError}</p>
           )}
+          {draftError.length > 0 && (
+            <p className="feed-status error-status">{draftError}</p>
+          )}
+          {draftMessage.length > 0 && <p className="feed-status">{draftMessage}</p>}
           {hasSearchedSimilarPosts &&
             !isLoadingSimilarPosts &&
             similarPostsError.length === 0 &&
+            draftMessage.length === 0 &&
             similarPosts.length === 0 && (
               <p className="feed-status">No related posts found.</p>
             )}

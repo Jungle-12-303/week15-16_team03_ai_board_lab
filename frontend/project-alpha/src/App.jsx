@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import './App.css';
-import { findSimilarPosts } from './api/aiApi';
+import { createDraftFromSources, findSimilarPosts } from './api/aiApi';
 import Topbar from './components/Topbar';
 import { postsPerPage } from './constants/board';
 import useAuth from './hooks/useAuth';
@@ -27,6 +27,9 @@ export default function App() {
   const [similarPostsError, setSimilarPostsError] = useState('');
   const [isLoadingSimilarPosts, setIsLoadingSimilarPosts] = useState(false);
   const [hasSearchedSimilarPosts, setHasSearchedSimilarPosts] = useState(false);
+  const [draftError, setDraftError] = useState('');
+  const [draftMessage, setDraftMessage] = useState('');
+  const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
   const { currentUser, login, signUp, logout } = useAuth();
   const {
     posts,
@@ -139,6 +142,42 @@ export default function App() {
     }
   }
 
+  async function handleCreateDraftFromSources() {
+    if (!canSubmit || currentUser === null) {
+      return;
+    }
+
+    try {
+      setIsGeneratingDraft(true);
+      setDraftError('');
+      setDraftMessage('');
+      setSimilarPostsError('');
+
+      const draftResult = await createDraftFromSources({
+        category: category,
+        title: title,
+        content: content,
+        tags: parseTagInput(tagInput),
+        excludedPostId: editingPostId,
+        limit: 5,
+        token: currentUser.token,
+      });
+
+      if (draftResult.draft.trim().length > 0) {
+        setContent(draftResult.draft);
+      }
+
+      setSimilarPosts(draftResult.sources);
+      setDraftMessage(draftResult.message);
+      setHasSearchedSimilarPosts(true);
+    } catch {
+      setDraftMessage('');
+      setDraftError('Draft could not be generated from related posts.');
+    } finally {
+      setIsGeneratingDraft(false);
+    }
+  }
+
   function resetFilters() {
     setSearchTerm('');
     setSelectedCategory('All');
@@ -197,6 +236,9 @@ export default function App() {
     setSimilarPostsError('');
     setIsLoadingSimilarPosts(false);
     setHasSearchedSimilarPosts(false);
+    setDraftError('');
+    setDraftMessage('');
+    setIsGeneratingDraft(false);
   }
 
   function parseTagInput(input) {
@@ -279,6 +321,9 @@ export default function App() {
       similarPostsError={similarPostsError}
       isLoadingSimilarPosts={isLoadingSimilarPosts}
       hasSearchedSimilarPosts={hasSearchedSimilarPosts}
+      draftError={draftError}
+      draftMessage={draftMessage}
+      isGeneratingDraft={isGeneratingDraft}
       canSubmit={canSubmit}
       isEditing={editingPostId !== null}
       onLogout={handleLogout}
@@ -293,6 +338,7 @@ export default function App() {
       onContentChange={setContent}
       onTagInputChange={setTagInput}
       onFindSimilarPosts={handleFindSimilarPosts}
+      onCreateDraftFromSources={handleCreateDraftFromSources}
       onSubmit={handleSubmit}
       onCloseComposer={cancelEditPost}
     />
