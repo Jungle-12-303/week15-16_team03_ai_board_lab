@@ -1,9 +1,16 @@
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
 
-export async function fetchPosts({ keyword = '', category = 'All', page = 0, size = 100 } = {}) {
+export async function fetchPosts({
+  keyword = '',
+  category = 'All',
+  tag = '',
+  page = 0,
+  size = 100,
+} = {}) {
   const searchParams = new URLSearchParams({
     keyword,
     category,
+    tag,
     page: String(page),
     size: String(size),
   });

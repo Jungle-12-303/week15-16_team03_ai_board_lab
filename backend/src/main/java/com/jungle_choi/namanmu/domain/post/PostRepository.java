@@ -17,6 +17,15 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             where post.status = :status
               and (:category = '' or :category = 'All' or post.category = :category)
               and (
+                :tag = ''
+                or exists (
+                  select postTag.id
+                  from PostTag postTag
+                  where postTag.post = post
+                    and lower(postTag.tag.name) like lower(concat('%', :tag, '%'))
+                )
+              )
+              and (
                 :keyword = ''
                 or lower(post.title) like lower(concat('%', :keyword, '%'))
                 or lower(post.content) like lower(concat('%', :keyword, '%'))
@@ -26,12 +35,22 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             @Param("status") PostStatus status,
             @Param("keyword") String keyword,
             @Param("category") String category,
+            @Param("tag") String tag,
             Pageable pageable);
 
     @Query("""
             select post.category as category, count(post) as postCount
             from Post post
             where post.status = :status
+              and (
+                :tag = ''
+                or exists (
+                  select postTag.id
+                  from PostTag postTag
+                  where postTag.post = post
+                    and lower(postTag.tag.name) like lower(concat('%', :tag, '%'))
+                )
+              )
               and (
                 :keyword = ''
                 or lower(post.title) like lower(concat('%', :keyword, '%'))
@@ -41,7 +60,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             """)
     List<CategoryCount> countByCategory(
             @Param("status") PostStatus status,
-            @Param("keyword") String keyword);
+            @Param("keyword") String keyword,
+            @Param("tag") String tag);
 
     interface CategoryCount {
         String getCategory();

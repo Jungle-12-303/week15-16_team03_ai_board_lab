@@ -21,6 +21,7 @@ export default function usePosts(currentUser, postQuery = {}) {
   const {
     searchTerm = '',
     selectedCategory = 'All',
+    selectedTag = '',
     currentPage = 1,
     postsPerPage = 100,
   } = postQuery;
@@ -39,6 +40,7 @@ export default function usePosts(currentUser, postQuery = {}) {
         const serverPostPage = await fetchPosts({
           keyword: searchTerm,
           category: selectedCategory,
+          tag: selectedTag,
           page: currentPage - 1,
           size: postsPerPage,
         });
@@ -70,7 +72,7 @@ export default function usePosts(currentUser, postQuery = {}) {
     return () => {
       ignore = true;
     };
-  }, [searchTerm, selectedCategory, currentPage, postsPerPage]);
+  }, [searchTerm, selectedCategory, selectedTag, currentPage, postsPerPage]);
 
   useEffect(() => {
     saveStoredPosts(posts);

@@ -44,25 +44,17 @@ export default function App() {
   } = usePosts(currentUser, {
     searchTerm,
     selectedCategory,
+    selectedTag,
     currentPage,
     postsPerPage,
   });
 
   const isLoggedIn = currentUser !== null;
   const canSubmit = isLoggedIn && title.trim().length > 0 && content.trim().length > 0;
-  const normalizedSelectedTag = selectedTag.trim().toLowerCase();
-  const filteredPosts = posts.filter((post) => {
-    const matchesTag =
-      normalizedSelectedTag.length === 0 ||
-      post.tags.some((tag) => tag.toLowerCase().includes(normalizedSelectedTag));
-
-    return matchesTag;
-  });
   const totalPages = postPageInfo.totalPages;
   const safeCurrentPage = Math.min(currentPage, totalPages);
-  const paginatedPosts = filteredPosts;
-  const filteredPostCount =
-    normalizedSelectedTag.length === 0 ? postPageInfo.totalElements : filteredPosts.length;
+  const paginatedPosts = posts;
+  const filteredPostCount = postPageInfo.totalElements;
 
   async function handleSubmit(event) {
     event.preventDefault();

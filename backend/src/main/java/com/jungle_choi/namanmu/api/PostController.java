@@ -70,15 +70,21 @@ public class PostController {
     public PostPageResponse listPosts(
             @RequestParam(defaultValue = "") String keyword,
             @RequestParam(defaultValue = "All") String category,
+            @RequestParam(defaultValue = "") String tag,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "100") int size) {
         String normalizedKeyword = keyword.trim();
         String normalizedCategory = category.trim();
+        String normalizedTag = tag.trim();
         PageRequest pageRequest = PageRequest.of(
                 normalizePage(page),
                 normalizeSize(size),
                 Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<Post> postPage = searchPosts(normalizedKeyword, normalizedCategory, pageRequest);
+        Page<Post> postPage = searchPosts(
+                normalizedKeyword,
+                normalizedCategory,
+                normalizedTag,
+                pageRequest);
 
         return new PostPageResponse(
                 postPage.getContent()
@@ -89,14 +95,19 @@ public class PostController {
                 postPage.getSize(),
                 postPage.getTotalElements(),
                 postPage.getTotalPages(),
-                countCategories(normalizedKeyword));
+                countCategories(normalizedKeyword, normalizedTag));
     }
 
-    private Page<Post> searchPosts(String keyword, String category, PageRequest pageRequest) {
+    private Page<Post> searchPosts(
+            String keyword,
+            String category,
+            String tag,
+            PageRequest pageRequest) {
         return postRepository.search(
                 PostStatus.PUBLISHED,
                 keyword,
                 category,
+                tag,
                 pageRequest);
     }
 
@@ -110,8 +121,8 @@ public class PostController {
         return toResponse(post);
     }
 
-    private List<CategoryCountResponse> countCategories(String keyword) {
-        return postRepository.countByCategory(PostStatus.PUBLISHED, keyword)
+    private List<CategoryCountResponse> countCategories(String keyword, String tag) {
+        return postRepository.countByCategory(PostStatus.PUBLISHED, keyword, tag)
                 .stream()
                 .map((categoryCount) -> new CategoryCountResponse(
                         categoryCount.getCategory(),
