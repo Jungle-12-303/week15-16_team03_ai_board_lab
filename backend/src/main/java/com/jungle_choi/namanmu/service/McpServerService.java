@@ -78,7 +78,7 @@ public class McpServerService {
                 JSON_RPC_VERSION,
                 "tools/call",
                 params,
-                objectMapper.valueToTree("external-facts-weather")));
+                objectMapper.valueToTree("weather-fact-check")));
 
         if (response.error() != null) {
             throw new IllegalStateException(response.error().message());

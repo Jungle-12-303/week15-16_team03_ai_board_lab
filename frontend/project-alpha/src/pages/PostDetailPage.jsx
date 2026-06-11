@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { checkWeatherFact } from '../api/mcpApi';
 import { fetchPost } from '../api/postApi';
+import WeatherFactCheckPanel from '../components/WeatherFactCheckPanel';
 
 export default function PostDetailPage({
   currentUser,
@@ -14,10 +16,15 @@ export default function PostDetailPage({
   const [post, setPost] = useState(null);
   const [isLoadingPost, setIsLoadingPost] = useState(true);
   const [postError, setPostError] = useState('');
+  const [weatherFactCheck, setWeatherFactCheck] = useState(null);
+  const [weatherFactCheckError, setWeatherFactCheckError] = useState('');
+  const [isCheckingWeatherFact, setIsCheckingWeatherFact] = useState(false);
   const [commentInput, setCommentInput] = useState('');
 
   useEffect(() => {
     let ignore = false;
+    setWeatherFactCheck(null);
+    setWeatherFactCheckError('');
 
     async function loadPost() {
       try {
@@ -55,6 +62,25 @@ export default function PostDetailPage({
       setPostError('');
     } catch {
       setPostError('Post could not be refreshed.');
+    }
+  }
+
+  async function handleCheckWeatherFact() {
+    if (post === null) {
+      return;
+    }
+
+    try {
+      setIsCheckingWeatherFact(true);
+      setWeatherFactCheckError('');
+
+      const result = await checkWeatherFact(post.id, currentUser.token);
+      setWeatherFactCheck(result);
+    } catch {
+      setWeatherFactCheck(null);
+      setWeatherFactCheckError('Weather fact check could not be completed.');
+    } finally {
+      setIsCheckingWeatherFact(false);
     }
   }
 
@@ -161,6 +187,13 @@ export default function PostDetailPage({
           </div>
         )}
       </article>
+
+      <WeatherFactCheckPanel
+        result={weatherFactCheck}
+        error={weatherFactCheckError}
+        isLoading={isCheckingWeatherFact}
+        onCheck={handleCheckWeatherFact}
+      />
 
       <section className="box comments-panel">
         <div className="box-header">

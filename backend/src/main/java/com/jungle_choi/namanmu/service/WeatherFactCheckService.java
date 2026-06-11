@@ -6,7 +6,7 @@ import java.util.Locale;
 import org.springframework.stereotype.Service;
 
 @Service
-public class ExternalFactDraftService {
+public class WeatherFactCheckService {
 
     private static final String WEATHER_TOOL_NAME = "weather.current_forecast";
     private static final String DEFAULT_LOCATION = "서울";
@@ -15,24 +15,22 @@ public class ExternalFactDraftService {
     private static final List<String> LOCATION_CANDIDATES = List.of(
             "서울", "부산", "인천", "대구", "대전", "광주", "울산", "세종", "제주",
             "수원", "성남", "고양", "용인", "청주", "천안", "전주", "포항", "창원", "춘천", "강릉");
-    private static final String EXTERNAL_FACT_INSTRUCTIONS = """
-            You are a writing assistant for Project Alpha.
+    private static final String FACT_CHECK_INSTRUCTIONS = """
+            You are a fact checker for Project Alpha.
 
-            The user is writing a Korean board post. You will receive the user's current draft
-            and external facts retrieved through an MCP tool.
-
-            Write only the updated post body in Korean.
-            Keep the user's intent and tone.
-            Use the external facts only when they are relevant.
-            Include the data source and observed time naturally when useful.
-            Do not invent facts that are not present in the external facts.
+            You will receive a Korean board post and weather facts retrieved through an MCP tool.
+            Check only weather-related claims in the post.
+            Do not judge claims that are not covered by the external facts.
+            Write in Korean.
+            Keep the result concise and practical.
+            Include a clear judgement and a safer wording suggestion when needed.
             """;
 
     private final McpServerService mcpServerService;
     private final OpenAiTextClient openAiTextClient;
     private final ObjectMapper objectMapper;
 
-    public ExternalFactDraftService(
+    public WeatherFactCheckService(
             McpServerService mcpServerService,
             OpenAiTextClient openAiTextClient,
             ObjectMapper objectMapper) {
@@ -41,7 +39,7 @@ public class ExternalFactDraftService {
         this.objectMapper = objectMapper;
     }
 
-    public ExternalFactDraftResult createDraft(
+    public WeatherFactCheckResult check(
             String category,
             String title,
             String content,
@@ -49,11 +47,15 @@ public class ExternalFactDraftService {
         String joinedText = String.join(" ", normalize(category), normalize(title), normalize(content));
 
         if (!hasWeatherIntent(joinedText, tags)) {
-            return new ExternalFactDraftResult(
+            return new WeatherFactCheckResult(
+                    "NOT_SUPPORTED",
+                    "이 게시글에서 날씨 관련 팩트체크 대상을 찾지 못했습니다.",
+                    WEATHER_TOOL_NAME,
                     "",
-                    "현재 작성글에서 호출할 수 있는 외부 데이터 의도를 찾지 못했습니다. 지금은 날씨 관련 문맥을 지원합니다.",
                     "",
-                    List.of());
+                    "",
+                    "",
+                    "");
         }
 
         String location = extractLocation(joinedText);
@@ -64,17 +66,17 @@ public class ExternalFactDraftService {
                 WeatherApiClient.WeatherReport.class);
         String promptInput = buildPromptInput(category, title, content, tags, weatherReport);
         OpenAiTextClient.TextGenerationResult textGenerationResult =
-                openAiTextClient.generateText(EXTERNAL_FACT_INSTRUCTIONS, promptInput);
+                openAiTextClient.generateText(FACT_CHECK_INSTRUCTIONS, promptInput);
 
-        return new ExternalFactDraftResult(
-                textGenerationResult.text(),
-                "MCP weather tool로 외부 데이터를 조회해 초안을 보강했습니다.",
+        return new WeatherFactCheckResult(
+                "CHECKED",
+                "MCP weather tool로 외부 날씨 정보를 조회해 게시글을 팩트체크했습니다.",
                 WEATHER_TOOL_NAME,
-                List.of(new ExternalFactSource(
-                        WEATHER_TOOL_NAME,
-                        weatherReport.source(),
-                        weatherReport.location(),
-                        weatherReport.observedAt())));
+                weatherReport.location(),
+                weatherReport.source(),
+                weatherReport.observedAt(),
+                weatherReport.toBriefingText(),
+                textGenerationResult.text());
     }
 
     private static String buildPromptInput(
@@ -84,19 +86,23 @@ public class ExternalFactDraftService {
             List<String> tags,
             WeatherApiClient.WeatherReport weatherReport) {
         return """
-                User draft:
+                Board post:
                 Category: %s
                 Title: %s
                 Tags: %s
-                Current content:
+                Content:
                 %s
 
-                External facts from MCP tool:
+                Weather facts from MCP tool:
                 %s
 
                 Task:
-                Rewrite the current content into a stronger board post body using the external facts.
-                If the current content is short, expand it into a useful first draft.
+                Compare the post with the weather facts.
+                Return this structure:
+                판정: weather-related claim status
+                확인한 외부정보: key weather facts
+                근거: why the post is accurate, uncertain, or needs caution
+                수정 제안: safer wording if needed
                 """.formatted(
                 normalize(category),
                 normalize(title),
@@ -126,7 +132,7 @@ public class ExternalFactDraftService {
         }
 
         String joinedTags = String.join(", ", tags.stream()
-                .map(ExternalFactDraftService::normalize)
+                .map(WeatherFactCheckService::normalize)
                 .filter((tag) -> !tag.isBlank())
                 .toList());
 
@@ -145,17 +151,14 @@ public class ExternalFactDraftService {
         return text.trim();
     }
 
-    public record ExternalFactDraftResult(
-            String draft,
+    public record WeatherFactCheckResult(
+            String status,
             String message,
             String toolName,
-            List<ExternalFactSource> sources) {
-    }
-
-    public record ExternalFactSource(
-            String toolName,
-            String source,
             String location,
-            String observedAt) {
+            String source,
+            String observedAt,
+            String externalFact,
+            String judgement) {
     }
 }
