@@ -215,8 +215,9 @@ export default function App() {
     resetSimilarPosts();
   }
 
-  function startEditPost(postId) {
-    const postToEdit = posts.find((post) => post.id === postId);
+  function startEditPost(postOrId) {
+    const postToEdit =
+      typeof postOrId === 'object' ? postOrId : posts.find((post) => post.id === postOrId);
 
     if (!postToEdit) {
       return;
@@ -279,7 +280,6 @@ export default function App() {
               path="/posts/:postId"
               element={
                 <PostDetailPage
-                  posts={posts}
                   currentUser={currentUser}
                   onAddComment={addComment}
                   onDeleteComment={deleteComment}

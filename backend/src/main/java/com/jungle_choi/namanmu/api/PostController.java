@@ -100,6 +100,16 @@ public class PostController {
                 pageRequest);
     }
 
+    @GetMapping("/{postId}")
+    @Transactional(readOnly = true)
+    public PostResponse getPost(@PathVariable Long postId) {
+        Post post = postRepository.findById(postId)
+                .filter((foundPost) -> foundPost.getStatus() == PostStatus.PUBLISHED)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        return toResponse(post);
+    }
+
     private List<CategoryCountResponse> countCategories(String keyword) {
         return postRepository.countByCategory(PostStatus.PUBLISHED, keyword)
                 .stream()

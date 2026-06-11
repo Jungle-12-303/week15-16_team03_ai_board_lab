@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { fetchPost } from '../api/postApi';
 
 export default function PostDetailPage({
-  posts,
   currentUser,
   onAddComment,
   onDeleteComment,
@@ -11,8 +11,63 @@ export default function PostDetailPage({
 }) {
   const { postId } = useParams();
   const navigate = useNavigate();
+  const [post, setPost] = useState(null);
+  const [isLoadingPost, setIsLoadingPost] = useState(true);
+  const [postError, setPostError] = useState('');
   const [commentInput, setCommentInput] = useState('');
-  const post = posts.find((item) => item.id === Number(postId));
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadPost() {
+      try {
+        setIsLoadingPost(true);
+
+        const nextPost = await fetchPost(postId);
+
+        if (!ignore) {
+          setPost(nextPost);
+          setPostError('');
+        }
+      } catch {
+        if (!ignore) {
+          setPost(null);
+          setPostError('Post could not be loaded.');
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoadingPost(false);
+        }
+      }
+    }
+
+    loadPost();
+
+    return () => {
+      ignore = true;
+    };
+  }, [postId]);
+
+  async function reloadPost() {
+    try {
+      const nextPost = await fetchPost(postId);
+      setPost(nextPost);
+      setPostError('');
+    } catch {
+      setPostError('Post could not be refreshed.');
+    }
+  }
+
+  if (isLoadingPost) {
+    return (
+      <section className="empty-state">
+        <Link className="plain-link back-link" to="/">
+          Back to board
+        </Link>
+        <h2>Loading post...</h2>
+      </section>
+    );
+  }
 
   if (!post) {
     return (
@@ -21,6 +76,7 @@ export default function PostDetailPage({
           Back to board
         </Link>
         <h2>Post not found</h2>
+        {postError.length > 0 && <p className="feed-status error-status">{postError}</p>}
       </section>
     );
   }
@@ -39,6 +95,17 @@ export default function PostDetailPage({
     }
 
     setCommentInput('');
+    await reloadPost();
+  }
+
+  async function handleDeleteComment(commentId) {
+    const isDeleted = await onDeleteComment(post.id, commentId);
+
+    if (!isDeleted) {
+      return;
+    }
+
+    await reloadPost();
   }
 
   async function handleDeletePost() {
@@ -52,7 +119,7 @@ export default function PostDetailPage({
   }
 
   function handleEditPost() {
-    onEditPost(post.id);
+    onEditPost(post);
     navigate('/');
   }
 
@@ -115,7 +182,7 @@ export default function PostDetailPage({
                   <button
                     type="button"
                     className="plain-button"
-                    onClick={() => onDeleteComment(post.id, comment.id)}
+                    onClick={() => handleDeleteComment(comment.id)}
                   >
                     Delete
                   </button>

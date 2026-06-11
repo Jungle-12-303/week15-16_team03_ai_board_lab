@@ -30,6 +30,16 @@ export async function fetchPosts({ keyword = '', category = 'All', page = 0, siz
   };
 }
 
+export async function fetchPost(postId) {
+  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}`);
+
+  if (!response.ok) {
+    throw new Error('Failed to load post.');
+  }
+
+  return normalizePost(await response.json());
+}
+
 export async function createPost({ title, content, category, tags, token }) {
   const response = await fetch(`${apiBaseUrl}/api/posts`, {
     method: 'POST',
