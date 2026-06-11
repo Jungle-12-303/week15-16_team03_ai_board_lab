@@ -31,6 +31,9 @@ export default function BoardPage({
   draftError,
   draftMessage,
   isGeneratingDraft,
+  externalFactError,
+  externalFactMessage,
+  isLoadingExternalFacts,
   canSubmit,
   isEditing,
   onLogout,
@@ -46,6 +49,7 @@ export default function BoardPage({
   onTagInputChange,
   onFindSimilarPosts,
   onCreateDraftFromSources,
+  onCreateExternalFactDraft,
   onSubmit,
   onCloseComposer,
 }) {
@@ -108,6 +112,9 @@ export default function BoardPage({
           draftError={draftError}
           draftMessage={draftMessage}
           isGeneratingDraft={isGeneratingDraft}
+          externalFactError={externalFactError}
+          externalFactMessage={externalFactMessage}
+          isLoadingExternalFacts={isLoadingExternalFacts}
           canSubmit={canSubmit}
           isEditing={isEditing}
           onCategoryChange={onCategoryChange}
@@ -116,6 +123,7 @@ export default function BoardPage({
           onTagInputChange={onTagInputChange}
           onFindSimilarPosts={onFindSimilarPosts}
           onCreateDraftFromSources={onCreateDraftFromSources}
+          onCreateExternalFactDraft={onCreateExternalFactDraft}
           onSubmit={onSubmit}
           onClose={onCloseComposer}
         />

@@ -13,6 +13,9 @@ export default function ComposerModal({
   draftError,
   draftMessage,
   isGeneratingDraft,
+  externalFactError,
+  externalFactMessage,
+  isLoadingExternalFacts,
   canSubmit,
   isEditing,
   onCategoryChange,
@@ -21,6 +24,7 @@ export default function ComposerModal({
   onTagInputChange,
   onFindSimilarPosts,
   onCreateDraftFromSources,
+  onCreateExternalFactDraft,
   onSubmit,
   onClose,
 }) {
@@ -53,6 +57,9 @@ export default function ComposerModal({
           draftError={draftError}
           draftMessage={draftMessage}
           isGeneratingDraft={isGeneratingDraft}
+          externalFactError={externalFactError}
+          externalFactMessage={externalFactMessage}
+          isLoadingExternalFacts={isLoadingExternalFacts}
           canSubmit={canSubmit}
           onCategoryChange={onCategoryChange}
           onTitleChange={onTitleChange}
@@ -60,6 +67,7 @@ export default function ComposerModal({
           onTagInputChange={onTagInputChange}
           onFindSimilarPosts={onFindSimilarPosts}
           onCreateDraftFromSources={onCreateDraftFromSources}
+          onCreateExternalFactDraft={onCreateExternalFactDraft}
           onSubmit={onSubmit}
           isEditing={isEditing}
           onCancelEdit={onClose}

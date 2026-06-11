@@ -1,6 +1,7 @@
 package com.jungle_choi.namanmu.api;
 
 import com.jungle_choi.namanmu.service.EmbeddingJobProcessor;
+import com.jungle_choi.namanmu.service.ExternalFactDraftService;
 import com.jungle_choi.namanmu.service.OpenAiEmbeddingClient;
 import com.jungle_choi.namanmu.service.PostEmbeddingTextBuilder;
 import com.jungle_choi.namanmu.service.RagDraftService;
@@ -27,18 +28,21 @@ public class AiController {
     private final SimilarPostSearchService similarPostSearchService;
     private final EmbeddingJobProcessor embeddingJobProcessor;
     private final RagDraftService ragDraftService;
+    private final ExternalFactDraftService externalFactDraftService;
 
     public AiController(
             PostEmbeddingTextBuilder postEmbeddingTextBuilder,
             OpenAiEmbeddingClient openAiEmbeddingClient,
             SimilarPostSearchService similarPostSearchService,
             EmbeddingJobProcessor embeddingJobProcessor,
-            RagDraftService ragDraftService) {
+            RagDraftService ragDraftService,
+            ExternalFactDraftService externalFactDraftService) {
         this.postEmbeddingTextBuilder = postEmbeddingTextBuilder;
         this.openAiEmbeddingClient = openAiEmbeddingClient;
         this.similarPostSearchService = similarPostSearchService;
         this.embeddingJobProcessor = embeddingJobProcessor;
         this.ragDraftService = ragDraftService;
+        this.externalFactDraftService = externalFactDraftService;
     }
 
     @PostMapping("/similar-posts")
@@ -73,6 +77,16 @@ public class AiController {
                 request.tags(),
                 request.excludedPostId(),
                 request.limit());
+    }
+
+    @PostMapping("/external-facts")
+    public ExternalFactDraftService.ExternalFactDraftResult createExternalFactDraft(
+            @Valid @RequestBody ExternalFactDraftRequest request) {
+        return externalFactDraftService.createDraft(
+                request.category(),
+                request.title(),
+                request.content(),
+                request.tags());
     }
 
     @PostMapping("/embedding-jobs/process-one")
@@ -122,6 +136,19 @@ public class AiController {
             String content,
             List<@Size(max = 30, message = "tag must be 30 characters or fewer.") String> tags,
             int limit) {
+    }
+
+    public record ExternalFactDraftRequest(
+            @NotBlank(message = "category is required.")
+            @Size(max = 30, message = "category must be 30 characters or fewer.")
+            String category,
+            @NotBlank(message = "title is required.")
+            @Size(max = 120, message = "title must be 120 characters or fewer.")
+            String title,
+            @NotBlank(message = "content is required.")
+            @Size(max = 5000, message = "content must be 5000 characters or fewer.")
+            String content,
+            List<@Size(max = 30, message = "tag must be 30 characters or fewer.") String> tags) {
     }
 
     public record SimilarPostResponse(
