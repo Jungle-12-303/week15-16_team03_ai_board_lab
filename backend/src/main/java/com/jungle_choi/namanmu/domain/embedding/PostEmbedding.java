@@ -41,7 +41,7 @@ public class PostEmbedding {
     private int dimensions;
 
     @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "LONGTEXT")
     private String embeddingJson;
 
     @Column(nullable = false, length = 64)
