@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import './App.css';
+import { findSimilarPosts } from './api/aiApi';
 import Topbar from './components/Topbar';
 import { postsPerPage } from './constants/board';
 import useAuth from './hooks/useAuth';
@@ -22,6 +23,10 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedTag, setSelectedTag] = useState('');
   const [isComposerOpen, setIsComposerOpen] = useState(false);
+  const [similarPosts, setSimilarPosts] = useState([]);
+  const [similarPostsError, setSimilarPostsError] = useState('');
+  const [isLoadingSimilarPosts, setIsLoadingSimilarPosts] = useState(false);
+  const [hasSearchedSimilarPosts, setHasSearchedSimilarPosts] = useState(false);
   const { currentUser, login, signUp, logout } = useAuth();
   const {
     posts,
@@ -63,10 +68,7 @@ export default function App() {
       return;
     }
 
-    const nextTags = tagInput
-      .split(',')
-      .map((tag) => tag.trim())
-      .filter((tag) => tag.length > 0);
+    const nextTags = parseTagInput(tagInput);
 
     if (editingPostId !== null) {
       const updatedPost = await updatePost(editingPostId, {
@@ -104,6 +106,37 @@ export default function App() {
     setContent('');
     setTagInput('');
     setIsComposerOpen(false);
+    resetSimilarPosts();
+  }
+
+  async function handleFindSimilarPosts() {
+    if (!canSubmit || currentUser === null) {
+      return;
+    }
+
+    try {
+      setIsLoadingSimilarPosts(true);
+      setSimilarPostsError('');
+
+      const nextSimilarPosts = await findSimilarPosts({
+        category: category,
+        title: title,
+        content: content,
+        tags: parseTagInput(tagInput),
+        excludedPostId: editingPostId,
+        limit: 5,
+        token: currentUser.token,
+      });
+
+      setSimilarPosts(nextSimilarPosts);
+      setHasSearchedSimilarPosts(true);
+    } catch {
+      setSimilarPosts([]);
+      setSimilarPostsError('Similar posts could not be loaded.');
+      setHasSearchedSimilarPosts(true);
+    } finally {
+      setIsLoadingSimilarPosts(false);
+    }
   }
 
   function resetFilters() {
@@ -140,6 +173,7 @@ export default function App() {
     setTagInput('');
     setCategory('Learning');
     setIsComposerOpen(false);
+    resetSimilarPosts();
   }
 
   function startEditPost(postId) {
@@ -155,6 +189,21 @@ export default function App() {
     setCategory(postToEdit.category);
     setTagInput(postToEdit.tags.join(', '));
     setIsComposerOpen(true);
+    resetSimilarPosts();
+  }
+
+  function resetSimilarPosts() {
+    setSimilarPosts([]);
+    setSimilarPostsError('');
+    setIsLoadingSimilarPosts(false);
+    setHasSearchedSimilarPosts(false);
+  }
+
+  function parseTagInput(input) {
+    return input
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter((tag) => tag.length > 0);
   }
 
   if (currentUser === null) {
@@ -226,6 +275,10 @@ export default function App() {
       title={title}
       content={content}
       tagInput={tagInput}
+      similarPosts={similarPosts}
+      similarPostsError={similarPostsError}
+      isLoadingSimilarPosts={isLoadingSimilarPosts}
+      hasSearchedSimilarPosts={hasSearchedSimilarPosts}
       canSubmit={canSubmit}
       isEditing={editingPostId !== null}
       onLogout={handleLogout}
@@ -239,6 +292,7 @@ export default function App() {
       onTitleChange={setTitle}
       onContentChange={setContent}
       onTagInputChange={setTagInput}
+      onFindSimilarPosts={handleFindSimilarPosts}
       onSubmit={handleSubmit}
       onCloseComposer={cancelEditPost}
     />

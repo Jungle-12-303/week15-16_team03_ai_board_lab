@@ -6,12 +6,17 @@ export default function ComposerModal({
   title,
   content,
   tagInput,
+  similarPosts,
+  similarPostsError,
+  isLoadingSimilarPosts,
+  hasSearchedSimilarPosts,
   canSubmit,
   isEditing,
   onCategoryChange,
   onTitleChange,
   onContentChange,
   onTagInputChange,
+  onFindSimilarPosts,
   onSubmit,
   onClose,
 }) {
@@ -37,11 +42,16 @@ export default function ComposerModal({
           title={title}
           content={content}
           tagInput={tagInput}
+          similarPosts={similarPosts}
+          similarPostsError={similarPostsError}
+          isLoadingSimilarPosts={isLoadingSimilarPosts}
+          hasSearchedSimilarPosts={hasSearchedSimilarPosts}
           canSubmit={canSubmit}
           onCategoryChange={onCategoryChange}
           onTitleChange={onTitleChange}
           onContentChange={onContentChange}
           onTagInputChange={onTagInputChange}
+          onFindSimilarPosts={onFindSimilarPosts}
           onSubmit={onSubmit}
           isEditing={isEditing}
           onCancelEdit={onClose}

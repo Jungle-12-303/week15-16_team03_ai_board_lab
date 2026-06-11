@@ -4,11 +4,16 @@ export default function PostForm({
   title,
   content,
   tagInput,
+  similarPosts,
+  similarPostsError,
+  isLoadingSimilarPosts,
+  hasSearchedSimilarPosts,
   canSubmit,
   onCategoryChange,
   onTitleChange,
   onContentChange,
   onTagInputChange,
+  onFindSimilarPosts,
   onSubmit,
   isEditing,
   onCancelEdit,
@@ -52,7 +57,12 @@ export default function PostForm({
 
       <div className="composer-actions">
         <div className="assist-actions">
-          <button type="button" className="assist-button">
+          <button
+            type="button"
+            className="assist-button"
+            onClick={onFindSimilarPosts}
+            disabled={!canSubmit || isLoadingSimilarPosts}
+          >
             Related posts
           </button>
           <button type="button" className="assist-button">
@@ -67,6 +77,36 @@ export default function PostForm({
           {isEditing ? 'Update post' : 'Publish'}
         </button>
       </div>
+
+      {(isLoadingSimilarPosts ||
+        hasSearchedSimilarPosts ||
+        similarPostsError.length > 0 ||
+        similarPosts.length > 0) && (
+        <section className="assist-panel" aria-label="Related posts results">
+          {isLoadingSimilarPosts && <p className="feed-status">Finding related posts...</p>}
+          {similarPostsError.length > 0 && (
+            <p className="feed-status error-status">{similarPostsError}</p>
+          )}
+          {hasSearchedSimilarPosts &&
+            !isLoadingSimilarPosts &&
+            similarPostsError.length === 0 &&
+            similarPosts.length === 0 && (
+              <p className="feed-status">No related posts found.</p>
+            )}
+          {similarPosts.length > 0 && (
+            <ul className="similar-list">
+              {similarPosts.map((post) => (
+                <li key={post.postId}>
+                  <strong>{post.title}</strong>
+                  <span>
+                    {post.category} · score {post.score.toFixed(3)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       {isEditing && (
         <button type="button" className="plain-button" onClick={onCancelEdit}>

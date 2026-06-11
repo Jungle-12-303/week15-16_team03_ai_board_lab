@@ -103,6 +103,10 @@ public class Post {
         return content;
     }
 
+    public PostStatus getStatus() {
+        return status;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }

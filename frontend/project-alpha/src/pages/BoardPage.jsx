@@ -23,6 +23,10 @@ export default function BoardPage({
   title,
   content,
   tagInput,
+  similarPosts,
+  similarPostsError,
+  isLoadingSimilarPosts,
+  hasSearchedSimilarPosts,
   canSubmit,
   isEditing,
   onLogout,
@@ -36,6 +40,7 @@ export default function BoardPage({
   onTitleChange,
   onContentChange,
   onTagInputChange,
+  onFindSimilarPosts,
   onSubmit,
   onCloseComposer,
 }) {
@@ -90,12 +95,17 @@ export default function BoardPage({
           title={title}
           content={content}
           tagInput={tagInput}
+          similarPosts={similarPosts}
+          similarPostsError={similarPostsError}
+          isLoadingSimilarPosts={isLoadingSimilarPosts}
+          hasSearchedSimilarPosts={hasSearchedSimilarPosts}
           canSubmit={canSubmit}
           isEditing={isEditing}
           onCategoryChange={onCategoryChange}
           onTitleChange={onTitleChange}
           onContentChange={onContentChange}
           onTagInputChange={onTagInputChange}
+          onFindSimilarPosts={onFindSimilarPosts}
           onSubmit={onSubmit}
           onClose={onCloseComposer}
         />
