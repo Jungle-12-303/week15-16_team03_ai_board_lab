@@ -5,6 +5,8 @@ import com.jungle_choi.namanmu.domain.embedding.EmbeddingJobRepository;
 import com.jungle_choi.namanmu.domain.embedding.EmbeddingJobStatus;
 import com.jungle_choi.namanmu.domain.embedding.PostEmbeddingRepository;
 import com.jungle_choi.namanmu.service.OpenAiEmbeddingClient.EmbeddingResult;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -13,6 +15,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 public class EmbeddingJobProcessor {
 
     private static final int MAX_ERROR_MESSAGE_LENGTH = 1000;
+    private static final int MAX_BATCH_SIZE = 20;
 
     private final EmbeddingJobRepository embeddingJobRepository;
     private final PostEmbeddingRepository postEmbeddingRepository;
@@ -37,9 +40,44 @@ public class EmbeddingJobProcessor {
     }
 
     public ProcessEmbeddingJobResult processOnePendingJob() {
+        if (!openAiEmbeddingClient.isConfigured()) {
+            return ProcessEmbeddingJobResult.notConfigured();
+        }
+
         return claimPendingJob()
                 .map(this::processClaimedJob)
                 .orElseGet(ProcessEmbeddingJobResult::noJob);
+    }
+
+    public ProcessEmbeddingJobsResult processPendingJobs(int requestedLimit) {
+        int limit = normalizeBatchLimit(requestedLimit);
+        List<ProcessEmbeddingJobResult> results = new ArrayList<>();
+
+        for (int index = 0; index < limit; index++) {
+            ProcessEmbeddingJobResult result = processOnePendingJob();
+            results.add(result);
+
+            if (!result.processed() || !result.succeeded()) {
+                break;
+            }
+        }
+
+        int processedCount = (int) results.stream()
+                .filter(ProcessEmbeddingJobResult::processed)
+                .count();
+        int succeededCount = (int) results.stream()
+                .filter((result) -> result.processed() && result.succeeded())
+                .count();
+        int failedCount = (int) results.stream()
+                .filter((result) -> !result.succeeded())
+                .count();
+
+        return new ProcessEmbeddingJobsResult(
+                limit,
+                processedCount,
+                succeededCount,
+                failedCount,
+                results);
     }
 
     private Optional<ClaimedEmbeddingJob> claimPendingJob() {
@@ -116,6 +154,10 @@ public class EmbeddingJobProcessor {
         return message.substring(0, MAX_ERROR_MESSAGE_LENGTH);
     }
 
+    private static int normalizeBatchLimit(int requestedLimit) {
+        return Math.min(Math.max(requestedLimit, 1), MAX_BATCH_SIZE);
+    }
+
     private record ClaimedEmbeddingJob(Long jobId, Long postId) {
     }
 
@@ -135,6 +177,15 @@ public class EmbeddingJobProcessor {
                     "No pending embedding job.");
         }
 
+        public static ProcessEmbeddingJobResult notConfigured() {
+            return new ProcessEmbeddingJobResult(
+                    false,
+                    false,
+                    null,
+                    null,
+                    "OPENAI_API_KEY is required to process embedding jobs.");
+        }
+
         public static ProcessEmbeddingJobResult completed(
                 Long jobId,
                 Long postId,
@@ -148,5 +199,13 @@ public class EmbeddingJobProcessor {
                 String message) {
             return new ProcessEmbeddingJobResult(true, false, jobId, postId, message);
         }
+    }
+
+    public record ProcessEmbeddingJobsResult(
+            int requestedLimit,
+            int processedCount,
+            int succeededCount,
+            int failedCount,
+            List<ProcessEmbeddingJobResult> results) {
     }
 }

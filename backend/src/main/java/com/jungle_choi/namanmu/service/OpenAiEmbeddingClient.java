@@ -35,6 +35,10 @@ public class OpenAiEmbeddingClient {
         return toResult(response);
     }
 
+    public boolean isConfigured() {
+        return openAiProperties.hasApiKey();
+    }
+
     private static EmbeddingResult toResult(EmbeddingResponse response) {
         if (response == null || response.data() == null || response.data().isEmpty()) {
             throw new IllegalStateException("OpenAI embedding response has no data.");
