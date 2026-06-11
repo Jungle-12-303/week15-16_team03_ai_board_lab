@@ -9,8 +9,6 @@ import org.springframework.data.repository.query.Param;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
 
-    long countByAuthor_Email(String email);
-
     @EntityGraph(attributePaths = "author")
     @Query("""
             select post

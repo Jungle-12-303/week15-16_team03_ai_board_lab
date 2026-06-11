@@ -16,8 +16,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -202,6 +204,7 @@ public class PostController {
 
     private static Set<String> normalizeTags(List<String> tagNames) {
         Set<String> normalizedTags = new LinkedHashSet<>();
+        Set<String> normalizedTagKeys = new HashSet<>();
 
         if (tagNames == null) {
             return normalizedTags;
@@ -210,7 +213,12 @@ public class PostController {
         tagNames.stream()
                 .map(String::trim)
                 .filter((tagName) -> !tagName.isBlank())
-                .forEach(normalizedTags::add);
+                .forEach((tagName) -> {
+                    String tagKey = tagName.toLowerCase(Locale.ROOT);
+                    if (normalizedTagKeys.add(tagKey)) {
+                        normalizedTags.add(tagName);
+                    }
+                });
 
         return normalizedTags;
     }
