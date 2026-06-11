@@ -72,11 +72,13 @@ public class PostController {
             @RequestParam(defaultValue = "All") String category,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "100") int size) {
+        String normalizedKeyword = keyword.trim();
+        String normalizedCategory = category.trim();
         PageRequest pageRequest = PageRequest.of(
                 normalizePage(page),
                 normalizeSize(size),
                 Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<Post> postPage = searchPosts(keyword, category, pageRequest);
+        Page<Post> postPage = searchPosts(normalizedKeyword, normalizedCategory, pageRequest);
 
         return new PostPageResponse(
                 postPage.getContent()
@@ -86,18 +88,25 @@ public class PostController {
                 postPage.getNumber(),
                 postPage.getSize(),
                 postPage.getTotalElements(),
-                postPage.getTotalPages());
+                postPage.getTotalPages(),
+                countCategories(normalizedKeyword));
     }
 
     private Page<Post> searchPosts(String keyword, String category, PageRequest pageRequest) {
-        String normalizedKeyword = keyword.trim();
-        String normalizedCategory = category.trim();
-
         return postRepository.search(
                 PostStatus.PUBLISHED,
-                normalizedKeyword,
-                normalizedCategory,
+                keyword,
+                category,
                 pageRequest);
+    }
+
+    private List<CategoryCountResponse> countCategories(String keyword) {
+        return postRepository.countByCategory(PostStatus.PUBLISHED, keyword)
+                .stream()
+                .map((categoryCount) -> new CategoryCountResponse(
+                        categoryCount.getCategory(),
+                        categoryCount.getPostCount()))
+                .toList();
     }
 
     private static int normalizePage(int page) {
@@ -272,7 +281,11 @@ public class PostController {
             int page,
             int size,
             long totalElements,
-            int totalPages) {
+            int totalPages,
+            List<CategoryCountResponse> categoryCounts) {
+    }
+
+    public record CategoryCountResponse(String category, long count) {
     }
 
     public record CommentResponse(Long id, String author, String content) {

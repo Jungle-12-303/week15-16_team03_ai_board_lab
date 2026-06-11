@@ -11,6 +11,7 @@ export default function BoardPage({
   posts,
   isLoadingPosts,
   postsError,
+  categoryCounts,
   paginatedPosts,
   currentPage,
   totalPages,
@@ -60,6 +61,7 @@ export default function BoardPage({
       <main className="layout">
         <BoardSidebar
           posts={posts}
+          categoryCounts={categoryCounts}
           selectedCategory={selectedCategory}
           onSelectCategory={onSelectCategory}
         />

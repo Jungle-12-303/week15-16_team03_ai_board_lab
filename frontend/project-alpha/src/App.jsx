@@ -305,6 +305,7 @@ export default function App() {
       posts={posts}
       isLoadingPosts={isLoadingPosts}
       postsError={postsError}
+      categoryCounts={postPageInfo.categoryCounts}
       paginatedPosts={paginatedPosts}
       currentPage={safeCurrentPage}
       totalPages={totalPages}

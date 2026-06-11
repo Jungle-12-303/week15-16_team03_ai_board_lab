@@ -1,9 +1,24 @@
 import { categories } from '../constants/board';
 
-export default function BoardSidebar({ posts, selectedCategory, onSelectCategory }) {
+export default function BoardSidebar({
+  posts,
+  categoryCounts,
+  selectedCategory,
+  onSelectCategory,
+}) {
+  const hasServerCounts = Object.keys(categoryCounts).length > 0;
+
   function countPostsByCategory(categoryName) {
+    if (hasServerCounts) {
+      return categoryCounts[categoryName] ?? 0;
+    }
+
     return posts.filter((post) => post.category === categoryName).length;
   }
+
+  const totalPostCount = hasServerCounts
+    ? categories.reduce((total, categoryName) => total + countPostsByCategory(categoryName), 0)
+    : posts.length;
 
   return (
     <aside className="sidebar">
@@ -14,7 +29,7 @@ export default function BoardSidebar({ posts, selectedCategory, onSelectCategory
             <button type="button" onClick={() => onSelectCategory('All')}>
               All
             </button>
-            <span className="count">{posts.length}</span>
+            <span className="count">{totalPostCount}</span>
           </li>
 
           {categories.map((categoryName) => (

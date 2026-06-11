@@ -14,6 +14,7 @@ const defaultPostPageInfo = {
   size: 100,
   totalElements: 0,
   totalPages: 1,
+  categoryCounts: {},
 };
 
 export default function usePosts(currentUser, postQuery = {}) {
@@ -49,6 +50,7 @@ export default function usePosts(currentUser, postQuery = {}) {
             size: serverPostPage.size,
             totalElements: serverPostPage.totalElements,
             totalPages: Math.max(1, serverPostPage.totalPages),
+            categoryCounts: serverPostPage.categoryCounts,
           });
           setPostsError('');
         }

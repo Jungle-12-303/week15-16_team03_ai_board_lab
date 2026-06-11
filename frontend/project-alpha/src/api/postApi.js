@@ -26,6 +26,7 @@ export async function fetchPosts({ keyword = '', category = 'All', page = 0, siz
     size: Number(postsResponse.size ?? posts.length),
     totalElements: Number(postsResponse.totalElements ?? posts.length),
     totalPages: Number(postsResponse.totalPages ?? 1),
+    categoryCounts: normalizeCategoryCounts(postsResponse.categoryCounts),
   };
 }
 
@@ -133,6 +134,25 @@ function normalizePost(post) {
     tags: Array.isArray(post.tags) ? post.tags.map(String) : [],
     comments: Array.isArray(post.comments) ? post.comments.map(normalizeComment) : [],
   };
+}
+
+function normalizeCategoryCounts(categoryCounts) {
+  if (!Array.isArray(categoryCounts)) {
+    return {};
+  }
+
+  return categoryCounts.reduce((counts, categoryCount) => {
+    const category = String(categoryCount.category ?? '');
+
+    if (category.length === 0) {
+      return counts;
+    }
+
+    return {
+      ...counts,
+      [category]: Number(categoryCount.count ?? 0),
+    };
+  }, {});
 }
 
 function normalizeComment(comment) {
