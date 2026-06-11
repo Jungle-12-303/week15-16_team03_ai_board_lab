@@ -11,9 +11,6 @@ export default function PostForm({
   draftError,
   draftMessage,
   isGeneratingDraft,
-  externalFactError,
-  externalFactMessage,
-  isLoadingExternalFacts,
   canSubmit,
   onCategoryChange,
   onTitleChange,
@@ -21,7 +18,6 @@ export default function PostForm({
   onTagInputChange,
   onFindSimilarPosts,
   onCreateDraftFromSources,
-  onCreateExternalFactDraft,
   onSubmit,
   isEditing,
   onCancelEdit,
@@ -81,14 +77,6 @@ export default function PostForm({
           >
             {isGeneratingDraft ? 'Drafting...' : 'Draft from sources'}
           </button>
-          <button
-            type="button"
-            className="assist-button"
-            onClick={onCreateExternalFactDraft}
-            disabled={!canSubmit || isLoadingExternalFacts}
-          >
-            {isLoadingExternalFacts ? 'Checking...' : 'External facts'}
-          </button>
         </div>
 
         <button type="submit" className="primary-button" disabled={!canSubmit}>
@@ -98,36 +86,25 @@ export default function PostForm({
 
       {(isLoadingSimilarPosts ||
         isGeneratingDraft ||
-        isLoadingExternalFacts ||
         hasSearchedSimilarPosts ||
         similarPostsError.length > 0 ||
         draftError.length > 0 ||
         draftMessage.length > 0 ||
-        externalFactError.length > 0 ||
-        externalFactMessage.length > 0 ||
         similarPosts.length > 0) && (
         <section className="assist-panel" aria-label="AI assist results">
           {isLoadingSimilarPosts && <p className="feed-status">Finding related posts...</p>}
           {isGeneratingDraft && <p className="feed-status">Drafting from related posts...</p>}
-          {isLoadingExternalFacts && <p className="feed-status">Checking external facts...</p>}
           {similarPostsError.length > 0 && (
             <p className="feed-status error-status">{similarPostsError}</p>
           )}
           {draftError.length > 0 && (
             <p className="feed-status error-status">{draftError}</p>
           )}
-          {externalFactError.length > 0 && (
-            <p className="feed-status error-status">{externalFactError}</p>
-          )}
           {draftMessage.length > 0 && <p className="feed-status">{draftMessage}</p>}
-          {externalFactMessage.length > 0 && (
-            <p className="feed-status">{externalFactMessage}</p>
-          )}
           {hasSearchedSimilarPosts &&
             !isLoadingSimilarPosts &&
             similarPostsError.length === 0 &&
             draftMessage.length === 0 &&
-            externalFactMessage.length === 0 &&
             similarPosts.length === 0 && (
               <p className="feed-status">No related posts found.</p>
             )}

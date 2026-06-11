@@ -1,11 +1,7 @@
 import { useState } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import './App.css';
-import {
-  createDraftFromSources,
-  createExternalFactDraft,
-  findSimilarPosts,
-} from './api/aiApi';
+import { createDraftFromSources, findSimilarPosts } from './api/ragApi';
 import Topbar from './components/Topbar';
 import { postsPerPage } from './constants/board';
 import useAuth from './hooks/useAuth';
@@ -34,9 +30,6 @@ export default function App() {
   const [draftError, setDraftError] = useState('');
   const [draftMessage, setDraftMessage] = useState('');
   const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
-  const [externalFactError, setExternalFactError] = useState('');
-  const [externalFactMessage, setExternalFactMessage] = useState('');
-  const [isLoadingExternalFacts, setIsLoadingExternalFacts] = useState(false);
   const { currentUser, login, signUp, logout } = useAuth();
   const {
     posts,
@@ -185,37 +178,6 @@ export default function App() {
     }
   }
 
-  async function handleCreateExternalFactDraft() {
-    if (!canSubmit || currentUser === null) {
-      return;
-    }
-
-    try {
-      setIsLoadingExternalFacts(true);
-      setExternalFactError('');
-      setExternalFactMessage('');
-
-      const draftResult = await createExternalFactDraft({
-        category: category,
-        title: title,
-        content: content,
-        tags: parseTagInput(tagInput),
-        token: currentUser.token,
-      });
-
-      if (draftResult.draft.trim().length > 0) {
-        setContent(draftResult.draft);
-      }
-
-      setExternalFactMessage(draftResult.message);
-    } catch {
-      setExternalFactMessage('');
-      setExternalFactError('External facts could not be loaded.');
-    } finally {
-      setIsLoadingExternalFacts(false);
-    }
-  }
-
   function resetFilters() {
     setSearchTerm('');
     setSelectedCategory('All');
@@ -277,9 +239,6 @@ export default function App() {
     setDraftError('');
     setDraftMessage('');
     setIsGeneratingDraft(false);
-    setExternalFactError('');
-    setExternalFactMessage('');
-    setIsLoadingExternalFacts(false);
   }
 
   function parseTagInput(input) {
@@ -366,9 +325,6 @@ export default function App() {
       draftError={draftError}
       draftMessage={draftMessage}
       isGeneratingDraft={isGeneratingDraft}
-      externalFactError={externalFactError}
-      externalFactMessage={externalFactMessage}
-      isLoadingExternalFacts={isLoadingExternalFacts}
       canSubmit={canSubmit}
       isEditing={editingPostId !== null}
       onLogout={handleLogout}
@@ -384,7 +340,6 @@ export default function App() {
       onTagInputChange={setTagInput}
       onFindSimilarPosts={handleFindSimilarPosts}
       onCreateDraftFromSources={handleCreateDraftFromSources}
-      onCreateExternalFactDraft={handleCreateExternalFactDraft}
       onSubmit={handleSubmit}
       onCloseComposer={cancelEditPost}
     />
