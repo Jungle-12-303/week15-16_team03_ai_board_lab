@@ -6,6 +6,7 @@ type Post = {
   content: string
   authorName: string
   createdAt: string
+  tags:Tag[]
 }
 
 type Comment = {
@@ -13,6 +14,11 @@ type Comment = {
   content:string
   authorName:string
   createdAt:string
+}
+
+type Tag = {
+  id:number
+  name:string
 }
 
 function App() {
@@ -27,6 +33,8 @@ function App() {
   const [commentContent, setCommentContent] = useState('')
   const [commentAuthorName, setCommentAuthorName] = useState('')
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null)
+  const [tagInput, setTagInput] = useState("")
+  const [tagNames, setTagNames] = useState<string[]>([])
 
   useEffect(() => {
   fetch(`http://localhost:8080/api/posts`)
@@ -65,6 +73,7 @@ function App() {
         title:title,
         content:content,
         authorName:authorName,
+        tagNames: tagNames,
       }),
     })
     .then((response)=>response.json())
@@ -73,6 +82,8 @@ function App() {
       setTitle('')
       setContent('')
       setAuthorName('')
+      setTagInput('')
+      setTagNames([])
     })
   }
   
@@ -94,6 +105,7 @@ function App() {
     setTitle(post.title)
     setContent(post.content)
     setAuthorName(post.authorName)
+    setTagNames(post.tags.map((tag) => tag.name))
   }
 
   const handleUpdatePost = ()=> {
@@ -110,6 +122,7 @@ function App() {
         title:title,
         content:content,
         authorName:authorName,
+        tagNames:tagNames,
       }),
     })
       .then((response)=>response.json())
@@ -121,6 +134,8 @@ function App() {
         setTitle('')
         setContent('')
         setAuthorName('')
+        setTagInput('')
+        setTagNames([])
       })
   }
 
@@ -185,6 +200,30 @@ function App() {
     })
   }
 
+  const handleTagKeyDown = (e:React.KeyboardEvent<HTMLInputElement>)=>{
+    if(e.key !== 'Enter'){
+      return
+    }
+    e.preventDefault()
+    const trimmedTag = tagInput.trim()
+
+    if(trimmedTag === ''){
+      return
+    }
+
+    if(tagNames.includes(trimmedTag)){
+      setTagInput('')
+      return
+    }
+
+    setTagNames([...tagNames, trimmedTag])
+    setTagInput('')
+  }
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setTagNames(tagNames.filter((tag) => tag !== tagToRemove))
+  }
+
   return (
     <div>
       <div>
@@ -211,6 +250,23 @@ function App() {
           onChange={(e)=>setAuthorName(e.target.value)}
         />
         <br></br>
+
+        <input
+          type='text'
+          placeholder='태그를 입력 후 Enter'
+          value={tagInput}
+          onChange={(e)=>setTagInput(e.target.value)}
+          onKeyDown={handleTagKeyDown}
+        />
+        <div>
+          {tagNames.map((tag) => (
+            <span key={tag}>
+              {tag}
+              <button onClick={() => handleRemoveTag(tag)}>x</button>
+            </span>
+          ))}
+        </div>
+
          <button onClick={editingPostId === null ? handleCreatePost : handleUpdatePost}>
           {editingPostId === null ? '작성하기' : '수정하기'}
         </button>
@@ -219,15 +275,16 @@ function App() {
 
       <h1>게시글 목록</h1>
       <ul>
-        {posts.map((post) => (  
+        {posts.map((post) => (
           <li key={post.id}>
-            <button onClick={()=> setSelectedPostId(post.id)}>
+            <button onClick={() => setSelectedPostId(post.id)}>
               {post.title}
-            </button>       
-            <button onClick={()=>handleStartEdit(post)}>
-              수정
             </button>
-            <button onClick={()=>handleDeletePost(post.id)}>삭제</button>     
+            <button onClick={() => handleStartEdit(post)}>수정</button>
+            <button onClick={() => handleDeletePost(post.id)}>삭제</button>
+            <div>
+              {post.tags.map((tag) => tag.name).join(', ')}
+            </div>
           </li>
         ))}
       </ul>
@@ -238,6 +295,11 @@ function App() {
           <p>제목: {selectedPost.title}</p>
           <p>내용: {selectedPost.content}</p>
           <p>작성자: {selectedPost.authorName}</p>
+          <p>
+            태그:
+            {selectedPost.tags.map((tag)=>tag.name).join(',')}
+          </p>
+
           
           <h3>댓글</h3>
           <ul>
