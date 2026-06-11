@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -67,6 +68,11 @@ public class AiController {
     public EmbeddingJobProcessor.ProcessEmbeddingJobsResult processEmbeddingJobs(
             @RequestParam(defaultValue = "5") int limit) {
         return embeddingJobProcessor.processPendingJobs(limit);
+    }
+
+    @GetMapping("/embedding-jobs/status")
+    public EmbeddingJobProcessor.EmbeddingJobStatusSummary getEmbeddingJobStatus() {
+        return embeddingJobProcessor.summarizeStatus();
     }
 
     public record SimilarPostsRequest(

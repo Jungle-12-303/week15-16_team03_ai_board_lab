@@ -80,6 +80,21 @@ public class EmbeddingJobProcessor {
                 results);
     }
 
+    public EmbeddingJobStatusSummary summarizeStatus() {
+        long pendingCount = embeddingJobRepository.countByStatus(EmbeddingJobStatus.PENDING);
+        long processingCount = embeddingJobRepository.countByStatus(EmbeddingJobStatus.PROCESSING);
+        long completedCount = embeddingJobRepository.countByStatus(EmbeddingJobStatus.COMPLETED);
+        long failedCount = embeddingJobRepository.countByStatus(EmbeddingJobStatus.FAILED);
+
+        return new EmbeddingJobStatusSummary(
+                pendingCount,
+                processingCount,
+                completedCount,
+                failedCount,
+                pendingCount + processingCount + completedCount + failedCount,
+                postEmbeddingRepository.count());
+    }
+
     private Optional<ClaimedEmbeddingJob> claimPendingJob() {
         return transactionTemplate.execute((status) ->
                 embeddingJobRepository.findFirstByStatusOrderByCreatedAtAsc(EmbeddingJobStatus.PENDING)
@@ -207,5 +222,14 @@ public class EmbeddingJobProcessor {
             int succeededCount,
             int failedCount,
             List<ProcessEmbeddingJobResult> results) {
+    }
+
+    public record EmbeddingJobStatusSummary(
+            long pendingCount,
+            long processingCount,
+            long completedCount,
+            long failedCount,
+            long totalJobCount,
+            long storedEmbeddingCount) {
     }
 }
