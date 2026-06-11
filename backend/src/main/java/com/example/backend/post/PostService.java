@@ -55,9 +55,13 @@ public class PostService {
         this.tagRepository = tagRepository;
     }
 
-    public List<Post> getPosts(){
-        return postRepository.findAll();
-    }
+    public List<Post> getPosts(String keyword){
+        if (keyword == null || keyword.isBlank()) {
+            return postRepository.findAll();
+        }
+
+        return postRepository.findByTitleContainingOrContentContaining(keyword, keyword);
+    }   
 
     public Post getPost(Long id) {
         return postRepository.findById(id)

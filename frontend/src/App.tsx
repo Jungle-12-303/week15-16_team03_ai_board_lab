@@ -35,6 +35,7 @@ function App() {
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null)
   const [tagInput, setTagInput] = useState("")
   const [tagNames, setTagNames] = useState<string[]>([])
+  const [keyword, setKeyword] = useState('')
 
   useEffect(() => {
   fetch(`http://localhost:8080/api/posts`)
@@ -224,9 +225,27 @@ function App() {
     setTagNames(tagNames.filter((tag) => tag !== tagToRemove))
   }
 
+  const handleSearchPosts = () => {
+    fetch(`http://localhost:8080/api/posts?keyword=${keyword}`)
+      .then((response) => response.json())
+      .then((data) => setPosts(data))
+  }
+
   return (
     <div>
       <div>
+        <input
+          type="text"
+          placeholder="검색어 입력"
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              handleSearchPosts()
+            }
+          }}
+        />
+        <button onClick={handleSearchPosts}>검색</button>
         <h2>게시글 작성</h2>
 
         <input

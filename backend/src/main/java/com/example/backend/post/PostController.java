@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.CrossOrigin;
-
+import org.springframework.web.bind.annotation.RequestParam;
 
 @CrossOrigin(origins = "http://localhost:5173")
 @RestController
@@ -22,8 +22,8 @@ public class PostController {
     }
 
     @GetMapping("/api/posts")
-    public List<Post> getPosts() {
-        return postService.getPosts();
+    public List<Post> getPosts(@RequestParam(required = false) String keyword) {
+        return postService.getPosts(keyword);
     }
     
     @GetMapping("/api/posts/{id}")
