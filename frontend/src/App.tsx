@@ -36,12 +36,18 @@ function App() {
   const [tagInput, setTagInput] = useState("")
   const [tagNames, setTagNames] = useState<string[]>([])
   const [keyword, setKeyword] = useState('')
+  const [page, setPage] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const [searchKeyword, setSearchKeyword] = useState('')
 
   useEffect(() => {
-  fetch(`http://localhost:8080/api/posts`)
-    .then((response) => response.json())
-    .then((data) => setPosts(data))
-  }, [])
+    fetch(`http://localhost:8080/api/posts?keyword=${searchKeyword}&page=${page}&size=10`)
+      .then((response) => response.json())
+      .then((data) => {
+        setPosts(data.content)
+        setTotalPages(data.totalPages)
+      })
+  }, [page, searchKeyword])
 
   useEffect(() => {
     if(selectedPostId === null){
@@ -226,9 +232,8 @@ function App() {
   }
 
   const handleSearchPosts = () => {
-    fetch(`http://localhost:8080/api/posts?keyword=${keyword}`)
-      .then((response) => response.json())
-      .then((data) => setPosts(data))
+    setPage(0)
+    setSearchKeyword(keyword)
   }
 
   return (
@@ -307,6 +312,25 @@ function App() {
           </li>
         ))}
       </ul>
+      <div>
+        <button
+          onClick={() => setPage(page - 1)}
+          disabled={page === 0}
+        >
+          이전
+        </button>
+
+        <span>
+          {page + 1} / {totalPages}
+        </span>
+
+        <button
+          onClick={() => setPage(page + 1)}
+          disabled={page + 1 >= totalPages}
+        >
+          다음
+        </button>
+      </div>
 
       {selectedPost && ( 
         <div>

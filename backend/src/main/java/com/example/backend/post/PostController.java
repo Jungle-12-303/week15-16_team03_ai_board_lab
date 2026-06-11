@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @CrossOrigin(origins = "http://localhost:5173")
 @RestController
@@ -22,8 +24,11 @@ public class PostController {
     }
 
     @GetMapping("/api/posts")
-    public List<Post> getPosts(@RequestParam(required = false) String keyword) {
-        return postService.getPosts(keyword);
+    public Page<Post> getPosts(
+        @RequestParam(required = false) String keyword,
+        Pageable pageable
+    ) {
+        return postService.getPosts(keyword, pageable);
     }
     
     @GetMapping("/api/posts/{id}")

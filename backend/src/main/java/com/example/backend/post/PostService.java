@@ -8,6 +8,8 @@ import com.example.backend.tag.Tag;
 import java.util.ArrayList;
 import java.util.List;
 import com.example.backend.tag.TagRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @Service
 public class PostService {
@@ -55,13 +57,13 @@ public class PostService {
         this.tagRepository = tagRepository;
     }
 
-    public List<Post> getPosts(String keyword){
+    public Page<Post> getPosts(String keyword, Pageable pageable){
         if (keyword == null || keyword.isBlank()) {
-            return postRepository.findAll();
+            return postRepository.findAll(pageable);
         }
 
-        return postRepository.findByTitleContainingOrContentContaining(keyword, keyword);
-    }   
+        return postRepository.findByTitleContainingOrContentContaining(keyword, keyword, pageable);
+    }
 
     public Post getPost(Long id) {
         return postRepository.findById(id)
