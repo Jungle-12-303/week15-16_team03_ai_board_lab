@@ -30,7 +30,7 @@ export default function PostDetailPage({
       try {
         setIsLoadingPost(true);
 
-        const nextPost = await fetchPost(postId);
+        const nextPost = await fetchPost(postId, currentUser.token);
 
         if (!ignore) {
           setPost(nextPost);
@@ -53,11 +53,11 @@ export default function PostDetailPage({
     return () => {
       ignore = true;
     };
-  }, [postId]);
+  }, [postId, currentUser.token]);
 
   async function reloadPost() {
     try {
-      const nextPost = await fetchPost(postId);
+      const nextPost = await fetchPost(postId, currentUser.token);
       setPost(nextPost);
       setPostError('');
     } catch {

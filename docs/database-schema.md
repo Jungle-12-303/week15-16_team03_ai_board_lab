@@ -9,10 +9,12 @@
 erDiagram
     users ||--o{ posts : writes
     users ||--o{ comments : writes
+    users ||--o{ post_reads : reads
     posts ||--o{ comments : has
     posts ||--o{ post_tags : has
     posts ||--o| post_embeddings : has
     posts ||--o{ embedding_jobs : queues
+    posts ||--o{ post_reads : read_by
     tags ||--o{ post_tags : attached
 
     users {
@@ -81,6 +83,14 @@ erDiagram
         datetime created_at
         datetime updated_at
     }
+
+    post_reads {
+        bigint id PK
+        bigint user_id FK
+        bigint post_id FK
+        datetime read_at
+        datetime created_at
+    }
 ```
 
 ## 기능별 테이블
@@ -94,6 +104,7 @@ erDiagram
 | 게시글-태그 연결 | `post_tags` | `PostTag` | 게시글과 태그의 다대다 관계 연결 |
 | RAG 유사 게시글 | `post_embeddings` | `PostEmbedding` | 게시글별 임베딩 벡터와 원본 해시 저장 |
 | RAG 임베딩 작업 큐 | `embedding_jobs` | `EmbeddingJob` | 게시글 임베딩 생성 작업의 상태와 실패 기록 저장 |
+| Agent 읽음 기록 | `post_reads` | `PostRead` | 사용자별 게시글 읽음 여부와 마지막 읽은 시간 저장 |
 
 ## 테이블 상세
 
@@ -202,6 +213,21 @@ RAG 유사 게시글 검색을 위한 게시글 임베딩 저장 테이블이다
 
 이 테이블은 완성된 벡터를 저장하지 않는다. 완성된 결과는 `post_embeddings`에 저장하고, `embedding_jobs`는 처리해야 할 일과 처리 상태만 관리한다.
 
+### post_reads
+
+Agent의 놓친 글 추천 기능을 위한 읽음 기록 테이블이다.
+사용자가 게시글 상세 페이지를 열면 `GET /api/posts/{postId}` 요청에서 JWT 사용자 정보를 확인하고 이 테이블에 읽음 기록을 저장한다.
+
+| 컬럼 | 타입 | 제약 | 설명 |
+| --- | --- | --- | --- |
+| `id` | `BIGINT` | PK, AUTO_INCREMENT | 읽음 기록 식별자 |
+| `user_id` | `BIGINT` | FK, NOT NULL | 글을 읽은 사용자. `users.id` 참조 |
+| `post_id` | `BIGINT` | FK, NOT NULL | 읽은 게시글. `posts.id` 참조 |
+| `read_at` | `DATETIME` | NOT NULL | 마지막으로 읽은 시간 |
+| `created_at` | `DATETIME` | NOT NULL | 최초 읽음 기록 생성 시간 |
+
+`user_id`, `post_id` 조합에는 unique 제약을 둔다. 같은 사용자가 같은 글을 여러 번 읽으면 새 행을 만들지 않고 `read_at`만 갱신한다.
+
 ## 현재 API 연결 상태
 
 | API | 현재 상태 |
@@ -222,7 +248,7 @@ AI 기능과 개인화 기능은 아직 테이블로 만들지 않았다. 구현
 | --- | --- | --- |
 | AI 초안 생성 기록 | `ai_draft_logs` | 입력 초안, 참조 게시글, 생성 결과, 모델명 저장 |
 | MCP 날씨 브리핑 | `weather_briefing_logs` | 지역, 날씨 원본 데이터, 생성된 브리핑 저장 |
-| 놓친 글 추천 Agent | `post_reads`, `user_interests` | 읽은 글 기록, 사용자 선호 태그 저장 |
+| 놓친 글 추천 Agent | `user_interests` | 사용자 선호 태그 저장 |
 
 ## 유지보수 규칙
 

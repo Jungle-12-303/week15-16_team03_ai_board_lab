@@ -37,8 +37,10 @@ export async function fetchPosts({
   };
 }
 
-export async function fetchPost(postId) {
-  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}`);
+export async function fetchPost(postId, token) {
+  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}`, {
+    headers: authHeaders(token),
+  });
 
   if (!response.ok) {
     throw new Error('Failed to load post.');

@@ -11,6 +11,7 @@ import com.jungle_choi.namanmu.domain.tag.Tag;
 import com.jungle_choi.namanmu.domain.tag.TagRepository;
 import com.jungle_choi.namanmu.domain.user.User;
 import com.jungle_choi.namanmu.service.EmbeddingJobService;
+import com.jungle_choi.namanmu.service.PostReadService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -52,18 +53,21 @@ public class PostController {
     private final TagRepository tagRepository;
     private final PostTagRepository postTagRepository;
     private final EmbeddingJobService embeddingJobService;
+    private final PostReadService postReadService;
 
     public PostController(
             PostRepository postRepository,
             CommentRepository commentRepository,
             TagRepository tagRepository,
             PostTagRepository postTagRepository,
-            EmbeddingJobService embeddingJobService) {
+            EmbeddingJobService embeddingJobService,
+            PostReadService postReadService) {
         this.postRepository = postRepository;
         this.commentRepository = commentRepository;
         this.tagRepository = tagRepository;
         this.postTagRepository = postTagRepository;
         this.embeddingJobService = embeddingJobService;
+        this.postReadService = postReadService;
     }
 
     @GetMapping
@@ -112,11 +116,14 @@ public class PostController {
     }
 
     @GetMapping("/{postId}")
-    @Transactional(readOnly = true)
-    public PostResponse getPost(@PathVariable Long postId) {
+    @Transactional
+    public PostResponse getPost(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long postId) {
         Post post = postRepository.findById(postId)
                 .filter((foundPost) -> foundPost.getStatus() == PostStatus.PUBLISHED)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        postReadService.markRead(user, post);
 
         return toResponse(post);
     }
