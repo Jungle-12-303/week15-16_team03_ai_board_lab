@@ -26,7 +26,7 @@ flowchart LR
 | `frontend/project-alpha/src/pages/LoginPage.jsx` | 로그인 폼 | 인증 화면 |
 | `frontend/project-alpha/src/pages/SignupPage.jsx` | 회원가입 폼 | 인증 화면 |
 | `frontend/project-alpha/src/hooks/useAuth.js` | 로그인, 회원가입, 로그아웃 상태 관리 | JWT가 프론트에 저장되는 위치 |
-| `frontend/project-alpha/src/hooks/usePosts.js` | 게시글/댓글 API 호출 결과를 React 상태로 관리 | CRUD가 화면에 반영되는 방식 |
+| `frontend/project-alpha/src/hooks/usePosts.js` | 서버 게시글/댓글 API 호출 결과를 React 상태로 관리 | DB 데이터가 화면에 반영되는 방식 |
 | `frontend/project-alpha/src/hooks/usePostComposer.js` | 글 작성/수정 폼 상태 관리 | 제목, 본문, 태그, 수정 모드 상태 |
 | `frontend/project-alpha/src/hooks/useRagDraft.js` | 유사 게시글 검색과 RAG 초안 생성 상태 관리 | RAG 버튼의 loading/error/result 상태 |
 | `frontend/project-alpha/src/api/postApi.js` | 게시글/댓글 HTTP 요청 함수 | 백엔드 게시판 API 주소 |
@@ -112,4 +112,4 @@ flowchart LR
 
 ## 현재 정리 필요 지점
 
-- `frontend/project-alpha/src/storage/postStorage.js`는 초기 로컬 저장 학습 단계의 흔적이다. 서버 DB 기준으로 완전히 전환하면 제거하거나 fallback 용도라고 명확히 표시한다.
+- AI 기능이 늘어나면 `backend/src/main/java/com/jungle_choi/namanmu/service` 아래의 RAG, MCP, Agent 서비스를 기능별 하위 패키지로 한 번 더 나눌 수 있다.

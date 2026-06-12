@@ -7,7 +7,6 @@ import {
   fetchPosts,
   updatePost as updateServerPost,
 } from '../api/postApi';
-import { loadStoredPosts, saveStoredPosts } from '../storage/postStorage';
 
 const defaultPostPageInfo = {
   page: 0,
@@ -25,7 +24,7 @@ export default function usePosts(currentUser, postQuery = {}) {
     currentPage = 1,
     postsPerPage = 100,
   } = postQuery;
-  const [posts, setPosts] = useState(loadStoredPosts);
+  const [posts, setPosts] = useState([]);
   const [postPageInfo, setPostPageInfo] = useState(defaultPostPageInfo);
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
   const [postsError, setPostsError] = useState('');
@@ -58,7 +57,9 @@ export default function usePosts(currentUser, postQuery = {}) {
         }
       } catch {
         if (!ignore) {
-          setPostsError('Server posts are unavailable. Local data is shown.');
+          setPosts([]);
+          setPostPageInfo(defaultPostPageInfo);
+          setPostsError('Server posts are unavailable.');
         }
       } finally {
         if (!ignore) {
@@ -73,10 +74,6 @@ export default function usePosts(currentUser, postQuery = {}) {
       ignore = true;
     };
   }, [searchTerm, selectedCategory, selectedTag, currentPage, postsPerPage]);
-
-  useEffect(() => {
-    saveStoredPosts(posts);
-  }, [posts]);
 
   async function createPost({ title, content, category, tags }) {
     if (currentUser === null) {
