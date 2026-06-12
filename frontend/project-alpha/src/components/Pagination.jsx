@@ -1,4 +1,6 @@
 export default function Pagination({ currentPage, totalPages, onPageChange }) {
+  const visiblePageNumbers = getVisiblePageNumbers(currentPage, totalPages);
+
   return (
     <div className="pagination">
       <button
@@ -10,21 +12,17 @@ export default function Pagination({ currentPage, totalPages, onPageChange }) {
         Previous
       </button>
 
-      {Array.from({ length: totalPages }, (_, index) => {
-        const pageNumber = index + 1;
-
-        return (
-          <button
-            key={pageNumber}
-            type="button"
-            className="plain-button"
-            onClick={() => onPageChange(pageNumber)}
-            aria-current={currentPage === pageNumber ? 'page' : undefined}
-          >
-            {pageNumber}
-          </button>
-        );
-      })}
+      {visiblePageNumbers.map((pageNumber) => (
+        <button
+          key={pageNumber}
+          type="button"
+          className="plain-button"
+          onClick={() => onPageChange(pageNumber)}
+          aria-current={currentPage === pageNumber ? 'page' : undefined}
+        >
+          {pageNumber}
+        </button>
+      ))}
 
       <button
         type="button"
@@ -35,5 +33,19 @@ export default function Pagination({ currentPage, totalPages, onPageChange }) {
         Next
       </button>
     </div>
+  );
+}
+
+function getVisiblePageNumbers(currentPage, totalPages) {
+  const pageCandidates = [
+    1,
+    currentPage - 1,
+    currentPage,
+    currentPage + 1,
+    totalPages,
+  ];
+
+  return [...new Set(pageCandidates)].filter(
+    (pageNumber) => pageNumber >= 1 && pageNumber <= totalPages,
   );
 }
