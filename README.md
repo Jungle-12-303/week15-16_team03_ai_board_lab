@@ -78,6 +78,28 @@ npm run dev
 
 프론트 주소는 `http://127.0.0.1:5173/` 입니다.
 
+## 외부 웹 텍스트 코퍼스 주입
+
+RAG 실험용 외부 텍스트는 `posts` 테이블에 일반 게시글처럼 저장합니다.
+소스 목록은 [corpus-sources.tsv](backend/src/main/resources/corpus-sources.tsv)에 `category`, `tags`, `url` 순서로 추가합니다.
+
+```powershell
+cd backend
+.\gradlew.bat bootRun --args="--app.corpus-import.enabled=true --app.corpus-import.max-items=5"
+```
+
+importer는 아래 순서로 동작합니다.
+
+1. URL에서 HTML 본문 텍스트를 추출
+2. `crawler` 작성자 계정 생성 또는 재사용
+3. 원문 텍스트를 `posts.content`에 저장
+4. 본문 끝에 `Source: 원문URL` 추가
+5. 기본 태그와 자동 태그를 `tags`, `post_tags`에 저장
+6. `embedding_jobs`에 임베딩 작업 예약
+
+기본값은 `app.corpus-import.enabled=false`이므로 평소 서버 실행에는 크롤링이 돌지 않습니다.
+중복 URL과 같은 crawler 작성자의 같은 제목은 다시 저장하지 않습니다.
+
 ## 환경 변수
 
 Backend는 `backend/.env` 파일을 선택적으로 읽습니다.
@@ -107,6 +129,7 @@ API key와 DB 비밀번호는 Git에 커밋하지 않습니다.
 9. [AI controller](backend/src/main/java/com/jungle_choi/namanmu/api/AiController.java)
 10. [RAG draft service](backend/src/main/java/com/jungle_choi/namanmu/service/RagDraftService.java)
 11. [MCP fact check service](backend/src/main/java/com/jungle_choi/namanmu/service/WeatherFactCheckService.java)
+12. [Corpus importer](backend/src/main/java/com/jungle_choi/namanmu/corpus/CorpusImportRunner.java)
 
 더 자세한 파일별 역할은 [Code Map](docs/code-map.md)을 참고합니다.
 

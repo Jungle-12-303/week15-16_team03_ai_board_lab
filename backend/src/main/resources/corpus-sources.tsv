@@ -1,0 +1,15 @@
+# category	tags	url
+# Run example:
+# .\gradlew.bat bootRun --args="--app.corpus-import.enabled=true --app.corpus-import.max-items=5"
+Development	React,Frontend,JavaScript	https://ko.react.dev/learn
+Development	React,State,Frontend	https://ko.react.dev/reference/react/useState
+Development	JavaScript,Frontend,API	https://developer.mozilla.org/ko/docs/Web/JavaScript/Guide
+Development	JavaScript,API,Frontend	https://developer.mozilla.org/ko/docs/Web/API/Fetch_API
+Learning	GitHub,Git,Project	https://docs.github.com/ko/get-started/using-git/about-git
+Project	GitHub,CI,Project	https://docs.github.com/ko/actions
+Project	AWS,Cloud,VPC	https://docs.aws.amazon.com/ko_kr/vpc/latest/userguide/what-is-amazon-vpc.html
+Project	AWS,Cloud,S3	https://docs.aws.amazon.com/ko_kr/AmazonS3/latest/userguide/Welcome.html
+Briefing	AWS,Cloud,EC2	https://docs.aws.amazon.com/ko_kr/AWSEC2/latest/UserGuide/concepts.html
+Briefing	Data,Public API,Policy	https://www.data.go.kr/data/15095295/openapi.do
+Review	Java,Backend,Spring	https://spring.io/projects/spring-boot
+Learning	Java,Backend,Spring	https://spring.io/guides

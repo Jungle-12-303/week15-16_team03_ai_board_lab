@@ -14,6 +14,18 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @EntityGraph(attributePaths = "author")
     Optional<Post> findWithAuthorById(Long id);
 
+    boolean existsByAuthor_EmailAndTitle(String authorEmail, String title);
+
+    @Query("""
+            select count(post) > 0
+            from Post post
+            where post.author.email = :authorEmail
+              and post.content like concat('%', :sourceMarker, '%')
+            """)
+    boolean existsImportedSource(
+            @Param("authorEmail") String authorEmail,
+            @Param("sourceMarker") String sourceMarker);
+
     @EntityGraph(attributePaths = "author")
     @Query("""
             select post

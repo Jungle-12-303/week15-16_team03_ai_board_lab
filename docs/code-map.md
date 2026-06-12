@@ -14,6 +14,8 @@ flowchart LR
     Repository --> MySQL["MySQL tables"]
     Service --> OpenAI["OpenAI API"]
     Service --> ExternalApi["External API through MCP"]
+    Corpus["Corpus importer"] --> Repository
+    Corpus --> Web["External web pages"]
 ```
 
 ## Frontend
@@ -66,6 +68,12 @@ flowchart LR
 | `backend/src/main/java/com/jungle_choi/namanmu/service/WeatherApiClient.java` | 외부 날씨 API 호출 | MCP 외부 연동 |
 | `backend/src/main/java/com/jungle_choi/namanmu/service/WeatherFactCheckService.java` | 날씨 도구 결과로 게시글 팩트체크 | MCP 응용 기능 |
 | `backend/src/main/java/com/jungle_choi/namanmu/service/PostReadService.java` | 상세 조회 시 읽음 기록 저장 | Agent 데이터 수집 |
+| `backend/src/main/java/com/jungle_choi/namanmu/corpus/CorpusImportRunner.java` | 외부 웹 텍스트를 posts에 넣는 import 실행기 | 코퍼스 주입 진입점 |
+| `backend/src/main/java/com/jungle_choi/namanmu/corpus/CorpusSourceLoader.java` | `corpus-sources.tsv` 읽기 | URL 목록 파싱 |
+| `backend/src/main/java/com/jungle_choi/namanmu/corpus/CorpusWebCrawler.java` | URL의 HTML에서 본문 텍스트 추출 | 크롤링/본문 추출 |
+| `backend/src/main/java/com/jungle_choi/namanmu/corpus/CorpusClassifier.java` | 카테고리 정규화와 태그 자동 보강 | 태그 처리 |
+| `backend/src/main/java/com/jungle_choi/namanmu/corpus/CorpusPostImportService.java` | crawler 작성자로 posts 저장, 태그 저장, 임베딩 작업 예약 | DB 주입 |
+| `backend/src/main/resources/corpus-sources.tsv` | 카테고리, 기본 태그, URL 목록 | 코퍼스 입력 파일 |
 
 ## 기능별 읽기 순서
 
@@ -91,6 +99,17 @@ flowchart LR
 6. `RagDraftService.createDraft`
 7. `SimilarPostSearchService.searchSimilarPosts`
 8. `OpenAiTextClient.generateText`
+
+### 외부 웹 텍스트 코퍼스 주입
+
+1. `corpus-sources.tsv`
+2. `CorpusImportRunner`
+3. `CorpusSourceLoader.load`
+4. `CorpusWebCrawler.crawl`
+5. `CorpusClassifier.buildTags`
+6. `CorpusPostImportService.importDocument`
+7. `PostService.createPost`
+8. `EmbeddingJobService.enqueuePostEmbedding`
 
 ### MCP 날씨 팩트체크
 
