@@ -97,8 +97,8 @@ class SimilarPostSearchServiceTest {
     void searchSimilarPostsBoostsDirectKeywordMatches() {
         when(postEmbeddingRepository.findAllByEmbeddingModel(EMBEDDING_MODEL))
                 .thenReturn(List.of(
-                        embedding(1L, "쿠키런 런칭 회고", "서비스 회고 내용", "[1.0,0.0]"),
-                        embedding(2L, "GitHub Actions 자동화", "GitHub 워크플로와 CI 정리", "[0.0,1.0]")));
+                        embedding(1L, "쿠키런 런칭 회고", "서비스 회고 내용", "[0.0,1.0]"),
+                        embedding(2L, "GitHub Actions 자동화", "GitHub 워크플로와 CI 정리", "[1.0,0.0]")));
 
         List<SimilarPostSearchService.SimilarPostResult> results =
                 similarPostSearchService.searchSimilarPosts(
@@ -113,6 +113,36 @@ class SimilarPostSearchServiceTest {
         assertThat(results)
                 .extracting(SimilarPostSearchService.SimilarPostResult::postId)
                 .containsExactly(2L);
+    }
+
+    @Test
+    void searchSimilarPostsDropsRankedResultsBelowStrictDisplayScore() {
+        when(postEmbeddingRepository.findAllByEmbeddingModel(EMBEDDING_MODEL))
+                .thenReturn(List.of(
+                        embedding(
+                                1L,
+                                "GitHub Actions 배포 자동화",
+                                "github actions workflow 배포 자동화를 정리한다.",
+                                "[1.0,0.0]"),
+                        embedding(
+                                2L,
+                                "GitHub Actions 배포 자동화",
+                                "github actions workflow 배포 자동화를 정리한다.",
+                                "[0.5,0.5]")));
+
+        List<SimilarPostSearchService.SimilarPostResult> results =
+                similarPostSearchService.searchSimilarPosts(
+                        List.of(1.0, 0.0),
+                        null,
+                        5,
+                        "All",
+                        "github actions",
+                        "github actions workflow 설정을 찾는다.",
+                        List.of());
+
+        assertThat(results)
+                .extracting(SimilarPostSearchService.SimilarPostResult::postId)
+                .containsExactly(1L);
     }
 
     @Test

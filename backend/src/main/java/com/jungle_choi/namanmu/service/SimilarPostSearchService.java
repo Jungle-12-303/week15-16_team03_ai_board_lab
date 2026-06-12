@@ -33,6 +33,7 @@ public class SimilarPostSearchService {
     private static final int MAX_LIMIT = 10;
     private static final double MIN_VECTOR_RELEVANCE_SCORE = 0.45;
     private static final double MIN_HYBRID_RELEVANCE_SCORE = 0.38;
+    private static final double MIN_RANKED_RESULT_SCORE = 0.99;
     private static final double BM25_K1 = 1.2;
     private static final double BM25_B = 0.75;
     private static final double VECTOR_WEIGHT_WITH_QUERY_TERMS = 0.35;
@@ -135,6 +136,7 @@ public class SimilarPostSearchService {
 
         return postResults.stream()
                 .map((result) -> applyChunkEvidenceBoost(result, chunkScoresByPostId))
+                .filter((result) -> passesResultScoreThreshold(result, queryTerms))
                 .sorted(Comparator.comparingDouble(SimilarPostResult::score).reversed()
                         .thenComparing(SimilarPostResult::postId))
                 .limit(normalizedLimit)
@@ -175,7 +177,11 @@ public class SimilarPostSearchService {
     private static SimilarPostResult applyChunkEvidenceBoost(
             SimilarPostResult postResult,
             Map<Long, Double> chunkScoresByPostId) {
-        double chunkScore = chunkScoresByPostId.getOrDefault(postResult.postId(), 0.0);
+        Double chunkScore = chunkScoresByPostId.get(postResult.postId());
+        if (chunkScore == null) {
+            return postResult;
+        }
+
         double boostedScore = (postResult.score() * (1.0 - CHUNK_EVIDENCE_WEIGHT))
                 + (chunkScore * CHUNK_EVIDENCE_WEIGHT);
 
@@ -185,6 +191,16 @@ public class SimilarPostSearchService {
                 postResult.category(),
                 postResult.content(),
                 boostedScore);
+    }
+
+    private static boolean passesResultScoreThreshold(
+            SimilarPostResult result,
+            List<String> queryTerms) {
+        if (queryTerms.isEmpty()) {
+            return true;
+        }
+
+        return result.score() >= MIN_RANKED_RESULT_SCORE;
     }
 
     private List<PostEmbeddingChunk> findChunkCandidates(SearchMetadata metadata, Long excludedPostId) {
