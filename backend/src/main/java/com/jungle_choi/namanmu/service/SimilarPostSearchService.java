@@ -36,7 +36,7 @@ public class SimilarPostSearchService {
     private static final double BM25_B = 0.75;
     private static final double VECTOR_WEIGHT_WITH_QUERY_TERMS = 0.35;
     private static final double BM25_WEIGHT_WITH_QUERY_TERMS = 0.65;
-    private static final double CHUNK_EVIDENCE_WEIGHT = 0.05;
+    private static final double CHUNK_EVIDENCE_WEIGHT = 0.01;
     private static final double RRF_RANK_CONSTANT = 60.0;
     private static final TypeReference<List<Double>> EMBEDDING_VECTOR_TYPE = new TypeReference<>() {
     };
