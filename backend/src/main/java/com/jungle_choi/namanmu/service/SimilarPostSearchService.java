@@ -10,9 +10,12 @@ import com.jungle_choi.namanmu.domain.post.Post;
 import com.jungle_choi.namanmu.domain.post.PostStatus;
 import com.jungle_choi.namanmu.domain.post.PostTagRepository;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -24,6 +27,10 @@ public class SimilarPostSearchService {
 
     private static final int MAX_LIMIT = 10;
     private static final double MIN_RELEVANCE_SCORE = 0.38;
+    private static final double BM25_K1 = 1.2;
+    private static final double BM25_B = 0.75;
+    private static final double VECTOR_WEIGHT_WITH_QUERY_TERMS = 0.35;
+    private static final double BM25_WEIGHT_WITH_QUERY_TERMS = 0.65;
     private static final TypeReference<List<Double>> EMBEDDING_VECTOR_TYPE = new TypeReference<>() {
     };
 
@@ -74,40 +81,51 @@ public class SimilarPostSearchService {
         int normalizedLimit = normalizeLimit(limit);
         List<String> queryTerms = buildQueryTerms(title, content, tags);
         SearchMetadata metadata = SearchMetadata.from(category, tags);
-
-        return postEmbeddingRepository.findAllByEmbeddingModel(openAiProperties.embeddingModel())
+        List<PostEmbedding> candidates = postEmbeddingRepository.findAllByEmbeddingModel(openAiProperties.embeddingModel())
                 .stream()
+                .filter((postEmbedding) -> isSearchCandidate(postEmbedding, metadata, excludedPostId))
+                .toList();
+        Bm25CorpusStats bm25CorpusStats = Bm25CorpusStats.from(
+                candidates.stream()
+                        .map(PostEmbedding::getPost)
+                        .toList(),
+                queryTerms);
+
+        return candidates.stream()
                 .map((postEmbedding) -> toSimilarPostResult(
                         postEmbedding,
                         queryEmbedding,
                         queryTerms,
-                        metadata,
-                        excludedPostId))
+                        bm25CorpusStats))
                 .flatMap(Optional::stream)
                 .sorted(Comparator.comparingDouble(SimilarPostResult::score).reversed())
                 .limit(normalizedLimit)
                 .toList();
     }
 
-    private Optional<SimilarPostResult> toSimilarPostResult(
+    private boolean isSearchCandidate(
             PostEmbedding postEmbedding,
-            List<Double> queryEmbedding,
-            List<String> queryTerms,
             SearchMetadata metadata,
             Long excludedPostId) {
         Post post = postEmbedding.getPost();
 
         if (post.getStatus() != PostStatus.PUBLISHED) {
-            return Optional.empty();
+            return false;
         }
 
         if (Objects.equals(post.getId(), excludedPostId)) {
-            return Optional.empty();
+            return false;
         }
 
-        if (!matchesMetadata(post, metadata)) {
-            return Optional.empty();
-        }
+        return matchesMetadata(post, metadata);
+    }
+
+    private Optional<SimilarPostResult> toSimilarPostResult(
+            PostEmbedding postEmbedding,
+            List<Double> queryEmbedding,
+            List<String> queryTerms,
+            Bm25CorpusStats bm25CorpusStats) {
+        Post post = postEmbedding.getPost();
 
         List<Double> storedEmbedding = parseEmbedding(postEmbedding);
         if (storedEmbedding.size() != queryEmbedding.size()) {
@@ -116,7 +134,11 @@ public class SimilarPostSearchService {
 
         double score = cosineSimilarity(queryEmbedding, storedEmbedding);
         if (!queryTerms.isEmpty()) {
-            score = Math.min((score * 0.35) + lexicalRelevanceScore(post, queryTerms), 1.0);
+            double bm25Score = bm25Score(post, queryTerms, bm25CorpusStats);
+            score = Math.min(
+                    (score * VECTOR_WEIGHT_WITH_QUERY_TERMS)
+                            + (bm25Score * BM25_WEIGHT_WITH_QUERY_TERMS),
+                    1.0);
             if (score < MIN_RELEVANCE_SCORE) {
                 return Optional.empty();
             }
@@ -165,37 +187,47 @@ public class SimilarPostSearchService {
         return dotProduct / (Math.sqrt(leftMagnitude) * Math.sqrt(rightMagnitude));
     }
 
-    private static double lexicalRelevanceScore(Post post, List<String> queryTerms) {
-        String title = normalizeSearchText(post.getTitle());
-        String category = normalizeSearchText(post.getCategory());
-        String content = normalizeSearchText(post.getContent());
-        double score = 0.0;
-        int matchedTerms = 0;
-
-        for (String term : queryTerms) {
-            boolean matched = false;
-            if (title.contains(term)) {
-                score += 0.35;
-                matched = true;
-            }
-            if (content.contains(term)) {
-                score += 0.08;
-                matched = true;
-            }
-            if (category.contains(term)) {
-                score += 0.04;
-                matched = true;
-            }
-            if (matched) {
-                matchedTerms++;
-            }
+    private static double bm25Score(
+            Post post,
+            List<String> queryTerms,
+            Bm25CorpusStats corpusStats) {
+        if (queryTerms.isEmpty() || corpusStats.documentCount() == 0) {
+            return 0.0;
         }
 
-        if (matchedTerms > 0) {
-            score += Math.min(matchedTerms * 0.03, 0.12);
+        List<String> documentTerms = buildDocumentTerms(post);
+        int documentLength = documentTerms.size();
+        if (documentLength == 0) {
+            return 0.0;
         }
 
-        return Math.min(score, 0.65);
+        Map<String, Integer> termFrequencies = new HashMap<>();
+        for (String term : documentTerms) {
+            termFrequencies.merge(term, 1, Integer::sum);
+        }
+
+        double rawScore = 0.0;
+        for (String queryTerm : queryTerms) {
+            int termFrequency = termFrequencies.getOrDefault(queryTerm, 0);
+            int documentFrequency = corpusStats.documentFrequency(queryTerm);
+
+            if (termFrequency == 0 || documentFrequency == 0) {
+                continue;
+            }
+
+            double idf = Math.log(1.0
+                    + ((corpusStats.documentCount() - documentFrequency + 0.5)
+                            / (documentFrequency + 0.5)));
+            double lengthNormalization = 1.0 - BM25_B
+                    + (BM25_B * documentLength / corpusStats.averageDocumentLength());
+            double saturatedTermFrequency =
+                    (termFrequency * (BM25_K1 + 1.0))
+                            / (termFrequency + (BM25_K1 * lengthNormalization));
+
+            rawScore += idf * saturatedTermFrequency;
+        }
+
+        return 1.0 - Math.exp(-rawScore);
     }
 
     private boolean matchesMetadata(Post post, SearchMetadata metadata) {
@@ -222,17 +254,29 @@ public class SimilarPostSearchService {
 
     private static List<String> buildQueryTerms(String title, String content, List<String> tags) {
         String joinedTags = tags == null ? "" : String.join(" ", tags);
-        String queryText = normalizeSearchText("%s %s %s".formatted(title, content, joinedTags));
-        Set<String> terms = new LinkedHashSet<>();
-
-        for (String token : queryText.split("[^\\p{L}\\p{N}]+")) {
-            if (isMeaningfulTerm(token)) {
-                terms.add(token);
-            }
-        }
+        Set<String> terms = new LinkedHashSet<>(tokenizeSearchText("%s %s %s".formatted(
+                title,
+                content,
+                joinedTags)));
 
         return terms.stream()
                 .limit(12)
+                .toList();
+    }
+
+    private static List<String> buildDocumentTerms(Post post) {
+        return tokenizeSearchText("%s %s %s %s".formatted(
+                post.getTitle(),
+                post.getTitle(),
+                post.getCategory(),
+                post.getContent()));
+    }
+
+    private static List<String> tokenizeSearchText(String text) {
+        String normalizedText = normalizeSearchText(text);
+
+        return java.util.Arrays.stream(normalizedText.split("[^\\p{L}\\p{N}]+"))
+                .filter(SimilarPostSearchService::isMeaningfulTerm)
                 .toList();
     }
 
@@ -314,6 +358,46 @@ public class SimilarPostSearchService {
 
         boolean hasFilters() {
             return !category.isBlank() || !tags.isEmpty();
+        }
+    }
+
+    private record Bm25CorpusStats(
+            int documentCount,
+            double averageDocumentLength,
+            Map<String, Integer> documentFrequencies) {
+
+        static Bm25CorpusStats from(List<Post> posts, List<String> queryTerms) {
+            if (posts.isEmpty() || queryTerms.isEmpty()) {
+                return new Bm25CorpusStats(posts.size(), 1.0, Map.of());
+            }
+
+            Map<String, Integer> documentFrequencies = new HashMap<>();
+            int totalDocumentLength = 0;
+
+            for (Post post : posts) {
+                List<String> documentTerms = buildDocumentTerms(post);
+                totalDocumentLength += documentTerms.size();
+
+                Set<String> uniqueDocumentTerms = new HashSet<>(documentTerms);
+                for (String queryTerm : queryTerms) {
+                    if (uniqueDocumentTerms.contains(queryTerm)) {
+                        documentFrequencies.merge(queryTerm, 1, Integer::sum);
+                    }
+                }
+            }
+
+            double averageDocumentLength = Math.max(
+                    totalDocumentLength / (double) posts.size(),
+                    1.0);
+
+            return new Bm25CorpusStats(
+                    posts.size(),
+                    averageDocumentLength,
+                    documentFrequencies);
+        }
+
+        int documentFrequency(String term) {
+            return documentFrequencies.getOrDefault(term, 0);
         }
     }
 

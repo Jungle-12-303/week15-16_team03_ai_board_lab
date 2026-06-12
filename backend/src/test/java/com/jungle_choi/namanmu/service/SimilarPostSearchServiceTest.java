@@ -91,6 +91,37 @@ class SimilarPostSearchServiceTest {
     }
 
     @Test
+    void searchSimilarPostsRanksHigherBm25MatchFirstWhenVectorScoresAreSame() {
+        when(postEmbeddingRepository.findAllByEmbeddingModel(EMBEDDING_MODEL))
+                .thenReturn(List.of(
+                        embedding(
+                                1L,
+                                "개발 회고",
+                                "긴 글 안에서 github가 한 번 언급되지만 주제는 회고와 일정 관리에 가깝다. "
+                                        + "회의 기록과 진행 방식, 팀 문화, 문서화 습관을 정리한다.",
+                                "[1.0,0.0]"),
+                        embedding(
+                                2L,
+                                "GitHub Actions 배포 실패",
+                                "github actions workflow 배포 실패 원인과 secrets 설정을 정리한다.",
+                                "[1.0,0.0]")));
+
+        List<SimilarPostSearchService.SimilarPostResult> results =
+                similarPostSearchService.searchSimilarPosts(
+                        List.of(1.0, 0.0),
+                        null,
+                        2,
+                        "All",
+                        "github actions 배포 실패",
+                        "github actions workflow 배포 실패를 정리한다.",
+                        List.of());
+
+        assertThat(results)
+                .extracting(SimilarPostSearchService.SimilarPostResult::postId)
+                .containsExactly(2L, 1L);
+    }
+
+    @Test
     void searchSimilarPostsFiltersByCategory() {
         when(postEmbeddingRepository.findAllByEmbeddingModel(EMBEDDING_MODEL))
                 .thenReturn(List.of(
