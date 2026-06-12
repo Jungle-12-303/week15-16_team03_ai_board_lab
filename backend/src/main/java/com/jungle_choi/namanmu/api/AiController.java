@@ -55,7 +55,10 @@ public class AiController {
         List<SimilarPostResponse> posts = similarPostSearchService.searchSimilarPosts(
                         embeddingResult.embedding(),
                         request.excludedPostId(),
-                        request.limit())
+                        request.limit(),
+                        request.title(),
+                        request.content(),
+                        request.tags())
                 .stream()
                 .map(SimilarPostResponse::from)
                 .toList();

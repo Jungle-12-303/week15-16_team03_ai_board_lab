@@ -50,7 +50,10 @@ public class RagDraftService {
                 similarPostSearchService.searchSimilarPosts(
                         embeddingResult.embedding(),
                         excludedPostId,
-                        normalizeLimit(limit));
+                        normalizeLimit(limit),
+                        title,
+                        content,
+                        tags);
 
         if (similarPosts.isEmpty()) {
             return new RagDraftResult(

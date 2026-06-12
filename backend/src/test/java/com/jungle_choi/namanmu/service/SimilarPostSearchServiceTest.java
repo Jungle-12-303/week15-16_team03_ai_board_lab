@@ -63,6 +63,27 @@ class SimilarPostSearchServiceTest {
     }
 
     @Test
+    void searchSimilarPostsBoostsDirectKeywordMatches() {
+        when(postEmbeddingRepository.findAllByEmbeddingModel(EMBEDDING_MODEL))
+                .thenReturn(List.of(
+                        embedding(1L, "쿠키런 런칭 회고", "서비스 회고 내용", "[1.0,0.0]"),
+                        embedding(2L, "GitHub Actions 자동화", "GitHub 워크플로와 CI 정리", "[0.0,1.0]")));
+
+        List<SimilarPostSearchService.SimilarPostResult> results =
+                similarPostSearchService.searchSimilarPosts(
+                        List.of(1.0, 0.0),
+                        null,
+                        2,
+                        "깃허브",
+                        "깃허브 사용법을 정리하고 싶다.",
+                        List.of());
+
+        assertThat(results)
+                .extracting(SimilarPostSearchService.SimilarPostResult::postId)
+                .containsExactly(2L, 1L);
+    }
+
+    @Test
     void cosineSimilarityReturnsZeroForZeroVector() {
         double score = SimilarPostSearchService.cosineSimilarity(
                 List.of(0.0, 0.0),
@@ -72,8 +93,12 @@ class SimilarPostSearchServiceTest {
     }
 
     private static PostEmbedding embedding(Long postId, String title, String embeddingJson) {
+        return embedding(postId, title, "content", embeddingJson);
+    }
+
+    private static PostEmbedding embedding(Long postId, String title, String content, String embeddingJson) {
         User author = User.createLocalUser("cedis");
-        Post post = Post.create(author, "Learning", title, "content");
+        Post post = Post.create(author, "Learning", title, content);
         ReflectionTestUtils.setField(post, "id", postId);
 
         return PostEmbedding.create(
