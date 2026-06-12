@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import './App.css';
-import { createDraftFromSources, findSimilarPosts } from './api/ragApi';
 import Topbar from './components/Topbar';
 import { postsPerPage } from './constants/board';
 import useAuth from './hooks/useAuth';
+import usePostComposer from './hooks/usePostComposer';
 import usePosts from './hooks/usePosts';
+import useRagDraft from './hooks/useRagDraft';
 import BoardPage from './pages/BoardPage';
 import LoginPage from './pages/LoginPage';
 import PostDetailPage from './pages/PostDetailPage';
@@ -13,24 +14,13 @@ import SignupPage from './pages/SignupPage';
 
 export default function App() {
   const location = useLocation();
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [tagInput, setTagInput] = useState('');
-  const [category, setCategory] = useState('Learning');
-  const [editingPostId, setEditingPostId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedTag, setSelectedTag] = useState('');
-  const [isComposerOpen, setIsComposerOpen] = useState(false);
-  const [similarPosts, setSimilarPosts] = useState([]);
-  const [similarPostsError, setSimilarPostsError] = useState('');
-  const [isLoadingSimilarPosts, setIsLoadingSimilarPosts] = useState(false);
-  const [hasSearchedSimilarPosts, setHasSearchedSimilarPosts] = useState(false);
-  const [draftError, setDraftError] = useState('');
-  const [draftMessage, setDraftMessage] = useState('');
-  const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
   const { currentUser, login, signUp, logout } = useAuth();
+  const composer = usePostComposer();
+  const ragDraft = useRagDraft(currentUser);
   const {
     posts,
     postPageInfo,
@@ -50,7 +40,7 @@ export default function App() {
   });
 
   const isLoggedIn = currentUser !== null;
-  const canSubmit = isLoggedIn && title.trim().length > 0 && content.trim().length > 0;
+  const canSubmit = isLoggedIn && composer.canSubmit;
   const totalPages = postPageInfo.totalPages;
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const paginatedPosts = posts;
@@ -63,13 +53,13 @@ export default function App() {
       return;
     }
 
-    const nextTags = parseTagInput(tagInput);
+    const nextTags = composer.getTags();
 
-    if (editingPostId !== null) {
-      const updatedPost = await updatePost(editingPostId, {
-        title: title,
-        content: content,
-        category: category,
+    if (composer.editingPostId !== null) {
+      const updatedPost = await updatePost(composer.editingPostId, {
+        title: composer.title,
+        content: composer.content,
+        category: composer.category,
         tags: nextTags,
       });
 
@@ -77,18 +67,14 @@ export default function App() {
         return;
       }
 
-      setEditingPostId(null);
-      setTitle('');
-      setContent('');
-      setTagInput('');
-      setIsComposerOpen(false);
+      composer.clearAfterSave();
       return;
     }
 
     const createdPost = await createPost({
-      title: title,
-      content: content,
-      category: category,
+      title: composer.title,
+      content: composer.content,
+      category: composer.category,
       tags: nextTags,
     });
 
@@ -97,11 +83,8 @@ export default function App() {
     }
 
     setCurrentPage(1);
-    setTitle('');
-    setContent('');
-    setTagInput('');
-    setIsComposerOpen(false);
-    resetSimilarPosts();
+    composer.clearAfterSave();
+    ragDraft.resetRagDraft();
   }
 
   async function handleFindSimilarPosts() {
@@ -109,29 +92,7 @@ export default function App() {
       return;
     }
 
-    try {
-      setIsLoadingSimilarPosts(true);
-      setSimilarPostsError('');
-
-      const nextSimilarPosts = await findSimilarPosts({
-        category: category,
-        title: title,
-        content: content,
-        tags: parseTagInput(tagInput),
-        excludedPostId: editingPostId,
-        limit: 5,
-        token: currentUser.token,
-      });
-
-      setSimilarPosts(nextSimilarPosts);
-      setHasSearchedSimilarPosts(true);
-    } catch {
-      setSimilarPosts([]);
-      setSimilarPostsError('Similar posts could not be loaded.');
-      setHasSearchedSimilarPosts(true);
-    } finally {
-      setIsLoadingSimilarPosts(false);
-    }
+    await ragDraft.loadSimilarPosts(getRagInput());
   }
 
   async function handleCreateDraftFromSources() {
@@ -139,34 +100,10 @@ export default function App() {
       return;
     }
 
-    try {
-      setIsGeneratingDraft(true);
-      setDraftError('');
-      setDraftMessage('');
-      setSimilarPostsError('');
+    const draftResult = await ragDraft.generateDraft(getRagInput());
 
-      const draftResult = await createDraftFromSources({
-        category: category,
-        title: title,
-        content: content,
-        tags: parseTagInput(tagInput),
-        excludedPostId: editingPostId,
-        limit: 5,
-        token: currentUser.token,
-      });
-
-      if (draftResult.draft.trim().length > 0) {
-        setContent(draftResult.draft);
-      }
-
-      setSimilarPosts(draftResult.sources);
-      setDraftMessage(draftResult.message);
-      setHasSearchedSimilarPosts(true);
-    } catch {
-      setDraftMessage('');
-      setDraftError('Draft could not be generated from related posts.');
-    } finally {
-      setIsGeneratingDraft(false);
+    if (draftResult !== null && draftResult.draft.trim().length > 0) {
+      composer.setContent(draftResult.draft);
     }
   }
 
@@ -198,13 +135,8 @@ export default function App() {
   }
 
   function cancelEditPost() {
-    setEditingPostId(null);
-    setTitle('');
-    setContent('');
-    setTagInput('');
-    setCategory('Learning');
-    setIsComposerOpen(false);
-    resetSimilarPosts();
+    composer.resetComposer();
+    ragDraft.resetRagDraft();
   }
 
   function startEditPost(postOrId) {
@@ -215,30 +147,19 @@ export default function App() {
       return;
     }
 
-    setEditingPostId(postToEdit.id);
-    setTitle(postToEdit.title);
-    setContent(postToEdit.content);
-    setCategory(postToEdit.category);
-    setTagInput(postToEdit.tags.join(', '));
-    setIsComposerOpen(true);
-    resetSimilarPosts();
+    composer.startEditPost(postToEdit);
+    ragDraft.resetRagDraft();
   }
 
-  function resetSimilarPosts() {
-    setSimilarPosts([]);
-    setSimilarPostsError('');
-    setIsLoadingSimilarPosts(false);
-    setHasSearchedSimilarPosts(false);
-    setDraftError('');
-    setDraftMessage('');
-    setIsGeneratingDraft(false);
-  }
-
-  function parseTagInput(input) {
-    return input
-      .split(',')
-      .map((tag) => tag.trim())
-      .filter((tag) => tag.length > 0);
+  function getRagInput() {
+    return {
+      category: composer.category,
+      title: composer.title,
+      content: composer.content,
+      tags: composer.getTags(),
+      excludedPostId: composer.editingPostId,
+      limit: 5,
+    };
   }
 
   if (currentUser === null) {
@@ -305,31 +226,31 @@ export default function App() {
       searchTerm={searchTerm}
       selectedCategory={selectedCategory}
       selectedTag={selectedTag}
-      isComposerOpen={isComposerOpen}
-      category={category}
-      title={title}
-      content={content}
-      tagInput={tagInput}
-      similarPosts={similarPosts}
-      similarPostsError={similarPostsError}
-      isLoadingSimilarPosts={isLoadingSimilarPosts}
-      hasSearchedSimilarPosts={hasSearchedSimilarPosts}
-      draftError={draftError}
-      draftMessage={draftMessage}
-      isGeneratingDraft={isGeneratingDraft}
+      isComposerOpen={composer.isComposerOpen}
+      category={composer.category}
+      title={composer.title}
+      content={composer.content}
+      tagInput={composer.tagInput}
+      similarPosts={ragDraft.similarPosts}
+      similarPostsError={ragDraft.similarPostsError}
+      isLoadingSimilarPosts={ragDraft.isLoadingSimilarPosts}
+      hasSearchedSimilarPosts={ragDraft.hasSearchedSimilarPosts}
+      draftError={ragDraft.draftError}
+      draftMessage={ragDraft.draftMessage}
+      isGeneratingDraft={ragDraft.isGeneratingDraft}
       canSubmit={canSubmit}
-      isEditing={editingPostId !== null}
+      isEditing={composer.editingPostId !== null}
       onLogout={handleLogout}
       onSearchChange={changeSearchTerm}
       onSelectCategory={selectCategory}
       onTagChange={changeSelectedTag}
       onResetFilters={resetFilters}
-      onOpenComposer={() => setIsComposerOpen(true)}
+      onOpenComposer={composer.openComposer}
       onPageChange={setCurrentPage}
-      onCategoryChange={setCategory}
-      onTitleChange={setTitle}
-      onContentChange={setContent}
-      onTagInputChange={setTagInput}
+      onCategoryChange={composer.setCategory}
+      onTitleChange={composer.setTitle}
+      onContentChange={composer.setContent}
+      onTagInputChange={composer.setTagInput}
       onFindSimilarPosts={handleFindSimilarPosts}
       onCreateDraftFromSources={handleCreateDraftFromSources}
       onSubmit={handleSubmit}

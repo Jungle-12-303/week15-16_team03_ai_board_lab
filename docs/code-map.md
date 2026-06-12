@@ -20,13 +20,15 @@ flowchart LR
 
 | 경로 | 역할 | 먼저 볼 때 |
 | --- | --- | --- |
-| `frontend/project-alpha/src/App.jsx` | 로그인 여부에 따라 라우팅하고, 게시판 작성/RAG 상태를 묶어 하위 페이지에 전달 | 화면 전체 흐름 |
+| `frontend/project-alpha/src/App.jsx` | 로그인 여부에 따라 라우팅하고, 페이지와 hook을 연결 | 화면 전체 흐름 |
 | `frontend/project-alpha/src/pages/BoardPage.jsx` | 게시글 목록 화면을 조립 | 메인 화면 구조 |
 | `frontend/project-alpha/src/pages/PostDetailPage.jsx` | 게시글 상세, 댓글, MCP 팩트체크 화면 | 상세 화면 구조 |
 | `frontend/project-alpha/src/pages/LoginPage.jsx` | 로그인 폼 | 인증 화면 |
 | `frontend/project-alpha/src/pages/SignupPage.jsx` | 회원가입 폼 | 인증 화면 |
 | `frontend/project-alpha/src/hooks/useAuth.js` | 로그인, 회원가입, 로그아웃 상태 관리 | JWT가 프론트에 저장되는 위치 |
 | `frontend/project-alpha/src/hooks/usePosts.js` | 게시글/댓글 API 호출 결과를 React 상태로 관리 | CRUD가 화면에 반영되는 방식 |
+| `frontend/project-alpha/src/hooks/usePostComposer.js` | 글 작성/수정 폼 상태 관리 | 제목, 본문, 태그, 수정 모드 상태 |
+| `frontend/project-alpha/src/hooks/useRagDraft.js` | 유사 게시글 검색과 RAG 초안 생성 상태 관리 | RAG 버튼의 loading/error/result 상태 |
 | `frontend/project-alpha/src/api/postApi.js` | 게시글/댓글 HTTP 요청 함수 | 백엔드 게시판 API 주소 |
 | `frontend/project-alpha/src/api/authApi.js` | 로그인/회원가입 HTTP 요청 함수 | 백엔드 인증 API 주소 |
 | `frontend/project-alpha/src/api/ragApi.js` | 유사 게시글 검색과 RAG 초안 생성 요청 | RAG 프론트 진입점 |
@@ -64,22 +66,24 @@ flowchart LR
 ### 게시글 생성
 
 1. `PostForm.jsx`
-2. `App.jsx`의 `handleSubmit`
-3. `usePosts.js`의 `createPost`
-4. `postApi.js`의 `createPost`
-5. `PostController.createPost`
-6. `Post.create`
-7. `EmbeddingJobService.enqueuePostEmbedding`
+2. `usePostComposer.js`
+3. `App.jsx`의 `handleSubmit`
+4. `usePosts.js`의 `createPost`
+5. `postApi.js`의 `createPost`
+6. `PostController.createPost`
+7. `Post.create`
+8. `EmbeddingJobService.enqueuePostEmbedding`
 
 ### RAG 초안 생성
 
 1. `PostForm.jsx`
-2. `App.jsx`의 `handleCreateDraftFromSources`
-3. `ragApi.js`의 `createDraftFromSources`
-4. `AiController.createDraft`
-5. `RagDraftService.createDraft`
-6. `SimilarPostSearchService.searchSimilarPosts`
-7. `OpenAiTextClient.generateText`
+2. `useRagDraft.js`
+3. `App.jsx`의 `handleCreateDraftFromSources`
+4. `ragApi.js`의 `createDraftFromSources`
+5. `AiController.createDraft`
+6. `RagDraftService.createDraft`
+7. `SimilarPostSearchService.searchSimilarPosts`
+8. `OpenAiTextClient.generateText`
 
 ### MCP 날씨 팩트체크
 
@@ -100,6 +104,5 @@ flowchart LR
 
 ## 현재 정리 필요 지점
 
-- `App.jsx`는 라우팅과 작성/RAG 상태를 함께 들고 있어 점점 길어질 수 있다.
 - `PostController.java`는 게시글, 댓글, 태그, 응답 변환 책임이 모여 있어 이후 `PostService`, `CommentController`, Mapper로 나누는 것이 좋다.
 - `frontend/project-alpha/src/storage/postStorage.js`는 초기 로컬 저장 학습 단계의 흔적이다. 서버 DB 기준으로 완전히 전환하면 제거하거나 fallback 용도라고 명확히 표시한다.
