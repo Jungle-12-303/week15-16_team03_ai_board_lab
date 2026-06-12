@@ -97,15 +97,16 @@ API key와 DB 비밀번호는 Git에 커밋하지 않습니다.
 처음 보는 사람이 흐름을 따라가기 쉬운 순서입니다.
 
 1. [Frontend entry](frontend/project-alpha/src/App.jsx)
-2. [Board page](frontend/project-alpha/src/pages/BoardPage.jsx)
-3. [Post API client](frontend/project-alpha/src/api/postApi.js)
-4. [Post controller](backend/src/main/java/com/jungle_choi/namanmu/api/PostController.java)
-5. [Post entity](backend/src/main/java/com/jungle_choi/namanmu/domain/post/Post.java)
-6. [Auth controller](backend/src/main/java/com/jungle_choi/namanmu/api/AuthController.java)
-7. [RAG API client](frontend/project-alpha/src/api/ragApi.js)
-8. [AI controller](backend/src/main/java/com/jungle_choi/namanmu/api/AiController.java)
-9. [RAG draft service](backend/src/main/java/com/jungle_choi/namanmu/service/RagDraftService.java)
-10. [MCP fact check service](backend/src/main/java/com/jungle_choi/namanmu/service/WeatherFactCheckService.java)
+2. [Post composer hook](frontend/project-alpha/src/hooks/usePostComposer.js)
+3. [RAG draft hook](frontend/project-alpha/src/hooks/useRagDraft.js)
+4. [Board page](frontend/project-alpha/src/pages/BoardPage.jsx)
+5. [Post API client](frontend/project-alpha/src/api/postApi.js)
+6. [Post controller](backend/src/main/java/com/jungle_choi/namanmu/api/PostController.java)
+7. [Post service](backend/src/main/java/com/jungle_choi/namanmu/service/PostService.java)
+8. [Post entity](backend/src/main/java/com/jungle_choi/namanmu/domain/post/Post.java)
+9. [AI controller](backend/src/main/java/com/jungle_choi/namanmu/api/AiController.java)
+10. [RAG draft service](backend/src/main/java/com/jungle_choi/namanmu/service/RagDraftService.java)
+11. [MCP fact check service](backend/src/main/java/com/jungle_choi/namanmu/service/WeatherFactCheckService.java)
 
 더 자세한 파일별 역할은 [Code Map](docs/code-map.md)을 참고합니다.
 

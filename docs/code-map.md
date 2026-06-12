@@ -42,16 +42,22 @@ flowchart LR
 | 경로 | 역할 | 먼저 볼 때 |
 | --- | --- | --- |
 | `backend/src/main/java/com/jungle_choi/namanmu/api/AuthController.java` | 회원가입/로그인 API | JWT 발급 흐름 |
-| `backend/src/main/java/com/jungle_choi/namanmu/api/PostController.java` | 게시글/댓글 CRUD API | 게시판 API 진입점 |
+| `backend/src/main/java/com/jungle_choi/namanmu/api/PostController.java` | 게시글 목록/상세/생성/수정/삭제 API | 게시글 API 진입점 |
+| `backend/src/main/java/com/jungle_choi/namanmu/api/CommentController.java` | 댓글 생성/삭제 API | 댓글 API 진입점 |
 | `backend/src/main/java/com/jungle_choi/namanmu/api/AiController.java` | 유사 게시글 검색, RAG 초안, 임베딩 작업 API | RAG API 진입점 |
 | `backend/src/main/java/com/jungle_choi/namanmu/api/McpController.java` | JSON-RPC MCP endpoint | MCP 프로토콜 진입점 |
 | `backend/src/main/java/com/jungle_choi/namanmu/api/PostFactCheckController.java` | 게시글 상세에서 사용하는 MCP 팩트체크 API | 외부 정보 검증 기능 |
+| `backend/src/main/java/com/jungle_choi/namanmu/api/dto` | 프론트로 내려가는 응답 record | JSON 응답 모양 |
+| `backend/src/main/java/com/jungle_choi/namanmu/api/mapper/PostResponseMapper.java` | Entity를 응답 DTO로 변환 | API 응답 조립 |
 | `backend/src/main/java/com/jungle_choi/namanmu/domain/post/Post.java` | 게시글 Entity | `posts` 테이블 구조 |
 | `backend/src/main/java/com/jungle_choi/namanmu/domain/comment/Comment.java` | 댓글 Entity | `comments` 테이블 구조 |
 | `backend/src/main/java/com/jungle_choi/namanmu/domain/tag/Tag.java` | 태그 Entity | `tags` 테이블 구조 |
 | `backend/src/main/java/com/jungle_choi/namanmu/domain/embedding/PostEmbedding.java` | 게시글 임베딩 Entity | `post_embeddings` 테이블 구조 |
 | `backend/src/main/java/com/jungle_choi/namanmu/domain/embedding/EmbeddingJob.java` | 임베딩 작업 Entity | `embedding_jobs` 테이블 구조 |
 | `backend/src/main/java/com/jungle_choi/namanmu/domain/read/PostRead.java` | 읽음 기록 Entity | Agent 추천용 상태 데이터 |
+| `backend/src/main/java/com/jungle_choi/namanmu/service/PostService.java` | 게시글 검색, 상세, 생성, 수정, 삭제 규칙 | 게시글 비즈니스 로직 |
+| `backend/src/main/java/com/jungle_choi/namanmu/service/CommentService.java` | 댓글 생성, 삭제와 작성자 검증 | 댓글 비즈니스 로직 |
+| `backend/src/main/java/com/jungle_choi/namanmu/service/PostTagService.java` | 게시글 태그 정규화와 저장 | 태그 저장 규칙 |
 | `backend/src/main/java/com/jungle_choi/namanmu/service/EmbeddingJobService.java` | 게시글 임베딩 작업 예약 | 게시글 저장 후 RAG 준비 |
 | `backend/src/main/java/com/jungle_choi/namanmu/service/EmbeddingJobProcessor.java` | 임베딩 작업 처리 | OpenAI Embedding 호출 위치 |
 | `backend/src/main/java/com/jungle_choi/namanmu/service/SimilarPostSearchService.java` | 코사인 유사도로 비슷한 게시글 검색 | Retrieval 구현 |
@@ -71,8 +77,9 @@ flowchart LR
 4. `usePosts.js`의 `createPost`
 5. `postApi.js`의 `createPost`
 6. `PostController.createPost`
-7. `Post.create`
-8. `EmbeddingJobService.enqueuePostEmbedding`
+7. `PostService.createPost`
+8. `PostTagService.updatePostTags`
+9. `EmbeddingJobService.enqueuePostEmbedding`
 
 ### RAG 초안 생성
 
@@ -99,10 +106,10 @@ flowchart LR
 1. `PostDetailPage.jsx`
 2. `postApi.js`의 `fetchPost`
 3. `PostController.getPost`
-4. `PostReadService.markRead`
-5. `PostReadRepository.findByUserIdAndPostId`
+4. `PostService.getPublishedPost`
+5. `PostReadService.markRead`
+6. `PostReadRepository.findByUserIdAndPostId`
 
 ## 현재 정리 필요 지점
 
-- `PostController.java`는 게시글, 댓글, 태그, 응답 변환 책임이 모여 있어 이후 `PostService`, `CommentController`, Mapper로 나누는 것이 좋다.
 - `frontend/project-alpha/src/storage/postStorage.js`는 초기 로컬 저장 학습 단계의 흔적이다. 서버 DB 기준으로 완전히 전환하면 제거하거나 fallback 용도라고 명확히 표시한다.
