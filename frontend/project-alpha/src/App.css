@@ -230,6 +230,34 @@
   margin: 0;
 }
 
+.post-content {
+  display: -webkit-box;
+  overflow: hidden;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+}
+
+.post-content.expanded {
+  display: block;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+}
+
+.content-toggle {
+  justify-self: start;
+  min-height: 24px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #0969da;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .tag-list {
   display: flex;
   flex-wrap: wrap;

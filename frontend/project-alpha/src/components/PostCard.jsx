@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 export default function PostCard({
@@ -10,7 +11,32 @@ export default function PostCard({
   category,
   comments,
 }) {
+  const [isContentExpanded, setIsContentExpanded] = useState(false);
+  const [canExpandContent, setCanExpandContent] = useState(false);
+  const contentRef = useRef(null);
   const commentLabel = comments.length === 1 ? '1 comment' : `${comments.length} comments`;
+
+  useEffect(() => {
+    const contentElement = contentRef.current;
+
+    if (!contentElement) {
+      return undefined;
+    }
+
+    setIsContentExpanded(false);
+
+    function updateCanExpandContent() {
+      setCanExpandContent(contentElement.scrollHeight > contentElement.clientHeight + 1);
+    }
+
+    const frameId = requestAnimationFrame(updateCanExpandContent);
+    window.addEventListener('resize', updateCanExpandContent);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      window.removeEventListener('resize', updateCanExpandContent);
+    };
+  }, [content]);
 
   return (
     <article className="box post">
@@ -23,7 +49,21 @@ export default function PostCard({
       </div>
 
       <h2>{title}</h2>
-      <p>{content}</p>
+      <p
+        className={`post-content${isContentExpanded ? ' expanded' : ''}`}
+        ref={contentRef}
+      >
+        {content}
+      </p>
+      {canExpandContent && (
+        <button
+          className="content-toggle"
+          type="button"
+          onClick={() => setIsContentExpanded((currentValue) => !currentValue)}
+        >
+          {isContentExpanded ? '접기' : '펼쳐보기'}
+        </button>
+      )}
 
       <div className="tag-list">
         {tags.map((tag) => (
