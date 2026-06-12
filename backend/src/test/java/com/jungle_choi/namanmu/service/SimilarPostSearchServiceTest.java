@@ -205,6 +205,41 @@ class SimilarPostSearchServiceTest {
     }
 
     @Test
+    void searchSimilarPostsStillUsesPostEmbeddingsWhenOnlySomePostsHaveChunks() {
+        when(postEmbeddingChunkRepository.findAllByEmbeddingModel(EMBEDDING_MODEL))
+                .thenReturn(List.of(
+                        chunk(10L, 1L, "다른 글", "Learning", "쿠키런 런칭 회고", "[0.0,1.0]")));
+        when(postEmbeddingRepository.findAllByEmbeddingModel(EMBEDDING_MODEL))
+                .thenReturn(List.of(
+                        embedding(
+                                1L,
+                                "다른 글 전체 임베딩",
+                                "Learning",
+                                "이미 청크가 있으므로 전체 게시글 후보에서는 제외되어야 한다.",
+                                "[1.0,0.0]"),
+                        embedding(
+                                2L,
+                                "GitHub Actions 배포 자동화",
+                                "Learning",
+                                "github actions workflow와 secrets 기반 배포 자동화를 정리한다.",
+                                "[1.0,0.0]")));
+
+        List<SimilarPostSearchService.SimilarPostResult> results =
+                similarPostSearchService.searchSimilarPosts(
+                        List.of(1.0, 0.0),
+                        null,
+                        5,
+                        "All",
+                        "github actions",
+                        "github actions workflow 설정을 찾는다.",
+                        List.of());
+
+        assertThat(results)
+                .extracting(SimilarPostSearchService.SimilarPostResult::postId)
+                .contains(2L);
+    }
+
+    @Test
     void cosineSimilarityReturnsZeroForZeroVector() {
         double score = SimilarPostSearchService.cosineSimilarity(
                 List.of(0.0, 0.0),

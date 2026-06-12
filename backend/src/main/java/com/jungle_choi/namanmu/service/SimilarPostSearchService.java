@@ -11,6 +11,7 @@ import com.jungle_choi.namanmu.domain.embedding.PostEmbeddingRepository;
 import com.jungle_choi.namanmu.domain.post.Post;
 import com.jungle_choi.namanmu.domain.post.PostStatus;
 import com.jungle_choi.namanmu.domain.post.PostTagRepository;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -90,62 +91,57 @@ public class SimilarPostSearchService {
         List<String> queryTerms = buildQueryTerms(title, content, tags);
         SearchMetadata metadata = SearchMetadata.from(category, tags);
         List<PostEmbeddingChunk> chunkCandidates = findChunkCandidates(metadata, excludedPostId);
-        if (!chunkCandidates.isEmpty()) {
-            return searchSimilarPostsByChunks(
-                    queryEmbedding,
-                    normalizedLimit,
-                    queryTerms,
-                    chunkCandidates);
-        }
+        Set<Long> chunkedPostIds = chunkCandidates.stream()
+                .map(PostEmbeddingChunk::getPost)
+                .map(Post::getId)
+                .collect(java.util.stream.Collectors.toSet());
+        List<PostEmbedding> candidates = findPostCandidates(metadata, excludedPostId, chunkedPostIds);
 
-        List<PostEmbedding> candidates = postEmbeddingRepository.findAllByEmbeddingModel(openAiProperties.embeddingModel())
-                .stream()
-                .filter((postEmbedding) -> isSearchCandidate(postEmbedding, metadata, excludedPostId))
-                .toList();
-        Bm25CorpusStats bm25CorpusStats = Bm25CorpusStats.from(
-                candidates.stream()
-                        .map(PostEmbedding::getPost)
-                        .map(SimilarPostSearchService::buildDocumentTerms)
-                        .toList(),
-                queryTerms);
-
-        List<ScoredCandidate> scoredCandidates = candidates.stream()
-                .map((postEmbedding) -> toScoredCandidate(
-                        postEmbedding,
-                        queryEmbedding,
-                        queryTerms,
-                        bm25CorpusStats))
-                .flatMap(Optional::stream)
-                .toList();
-
-        return rankCandidates(scoredCandidates, !queryTerms.isEmpty()).stream()
-                .sorted(Comparator.comparingDouble(SimilarPostResult::score).reversed()
-                        .thenComparing(SimilarPostResult::postId))
-                .limit(normalizedLimit)
-                .toList();
+        return searchSimilarPostsByCandidates(
+                queryEmbedding,
+                normalizedLimit,
+                queryTerms,
+                chunkCandidates,
+                candidates);
     }
 
-    private List<SimilarPostResult> searchSimilarPostsByChunks(
+    private List<SimilarPostResult> searchSimilarPostsByCandidates(
             List<Double> queryEmbedding,
             int normalizedLimit,
             List<String> queryTerms,
-            List<PostEmbeddingChunk> chunkCandidates) {
+            List<PostEmbeddingChunk> chunkCandidates,
+            List<PostEmbedding> candidates) {
+        List<List<String>> bm25Documents = new ArrayList<>();
+        chunkCandidates.stream()
+                .map(SimilarPostSearchService::buildChunkDocumentTerms)
+                .forEach(bm25Documents::add);
+        candidates.stream()
+                .map(PostEmbedding::getPost)
+                .map(SimilarPostSearchService::buildDocumentTerms)
+                .forEach(bm25Documents::add);
         Bm25CorpusStats bm25CorpusStats = Bm25CorpusStats.from(
-                chunkCandidates.stream()
-                        .map(SimilarPostSearchService::buildChunkDocumentTerms)
-                        .toList(),
+                bm25Documents,
                 queryTerms);
 
-        List<ScoredCandidate> scoredCandidates = chunkCandidates.stream()
+        List<ScoredCandidate> scoredCandidates = new ArrayList<>();
+        chunkCandidates.stream()
                 .map((chunk) -> toScoredChunkCandidate(
                         chunk,
                         queryEmbedding,
                         queryTerms,
                         bm25CorpusStats))
                 .flatMap(Optional::stream)
-                .toList();
+                .forEach(scoredCandidates::add);
+        candidates.stream()
+                .map((postEmbedding) -> toScoredCandidate(
+                        postEmbedding,
+                        queryEmbedding,
+                        queryTerms,
+                        bm25CorpusStats))
+                .flatMap(Optional::stream)
+                .forEach(scoredCandidates::add);
 
-        return aggregateBestChunkPerPost(rankCandidates(scoredCandidates, !queryTerms.isEmpty()))
+        return aggregateBestCandidatePerPost(rankCandidates(scoredCandidates, !queryTerms.isEmpty()))
                 .stream()
                 .sorted(Comparator.comparingDouble(SimilarPostResult::score).reversed()
                         .thenComparing(SimilarPostResult::postId))
@@ -163,6 +159,23 @@ public class SimilarPostSearchService {
 
         return chunks.stream()
                 .filter((chunk) -> isSearchCandidate(chunk, metadata, excludedPostId))
+                .toList();
+    }
+
+    private List<PostEmbedding> findPostCandidates(
+            SearchMetadata metadata,
+            Long excludedPostId,
+            Set<Long> postIdsHandledByChunks) {
+        List<PostEmbedding> embeddings =
+                postEmbeddingRepository.findAllByEmbeddingModel(openAiProperties.embeddingModel());
+
+        if (embeddings == null || embeddings.isEmpty()) {
+            return List.of();
+        }
+
+        return embeddings.stream()
+                .filter((postEmbedding) -> isSearchCandidate(postEmbedding, metadata, excludedPostId))
+                .filter((postEmbedding) -> !postIdsHandledByChunks.contains(postEmbedding.getPost().getId()))
                 .toList();
     }
 
@@ -220,7 +233,7 @@ public class SimilarPostSearchService {
             }
         }
 
-        return Optional.of(new ScoredCandidate(post.getId(), post, vectorScore, bm25Score));
+        return Optional.of(new ScoredCandidate("post:%d".formatted(post.getId()), post, vectorScore, bm25Score));
     }
 
     private Optional<ScoredCandidate> toScoredChunkCandidate(
@@ -252,7 +265,7 @@ public class SimilarPostSearchService {
         }
 
         return Optional.of(new ScoredCandidate(
-                postEmbeddingChunk.getId(),
+                "chunk:%d".formatted(postEmbeddingChunk.getId()),
                 post,
                 vectorScore,
                 bm25Score));
@@ -346,7 +359,7 @@ public class SimilarPostSearchService {
         return 1.0 - Math.exp(-rawScore);
     }
 
-    private static List<SimilarPostResult> aggregateBestChunkPerPost(List<SimilarPostResult> chunkResults) {
+    private static List<SimilarPostResult> aggregateBestCandidatePerPost(List<SimilarPostResult> chunkResults) {
         Map<Long, SimilarPostResult> bestResultsByPostId = new HashMap<>();
 
         for (SimilarPostResult chunkResult : chunkResults) {
@@ -368,11 +381,11 @@ public class SimilarPostSearchService {
                     .toList();
         }
 
-        Map<Long, Integer> vectorRanks = rankBy(
+        Map<String, Integer> vectorRanks = rankBy(
                 candidates,
                 ScoredCandidate::vectorScore,
                 (candidate) -> candidate.vectorScore() > 0.0);
-        Map<Long, Integer> bm25Ranks = rankBy(
+        Map<String, Integer> bm25Ranks = rankBy(
                 candidates,
                 ScoredCandidate::bm25Score,
                 (candidate) -> candidate.bm25Score() > 0.0);
@@ -382,7 +395,7 @@ public class SimilarPostSearchService {
                 .toList();
     }
 
-    private static Map<Long, Integer> rankBy(
+    private static Map<String, Integer> rankBy(
             List<ScoredCandidate> candidates,
             ToDoubleFunction<ScoredCandidate> scoreExtractor,
             Predicate<ScoredCandidate> filter) {
@@ -399,7 +412,7 @@ public class SimilarPostSearchService {
                     return Long.compare(left.post().getId(), right.post().getId());
                 })
                 .toList();
-        Map<Long, Integer> ranks = new HashMap<>();
+        Map<String, Integer> ranks = new HashMap<>();
 
         for (int index = 0; index < rankedCandidates.size(); index++) {
             ranks.put(rankedCandidates.get(index).rankId(), index + 1);
@@ -410,9 +423,9 @@ public class SimilarPostSearchService {
 
     private static double rrfScore(
             ScoredCandidate candidate,
-            Map<Long, Integer> vectorRanks,
-            Map<Long, Integer> bm25Ranks) {
-        Long rankId = candidate.rankId();
+            Map<String, Integer> vectorRanks,
+            Map<String, Integer> bm25Ranks) {
+        String rankId = candidate.rankId();
         double rawScore = reciprocalRankScore(vectorRanks.get(rankId))
                 + reciprocalRankScore(bm25Ranks.get(rankId));
         double maxPossibleScore = 2.0 / (RRF_RANK_CONSTANT + 1.0);
@@ -609,7 +622,7 @@ public class SimilarPostSearchService {
     }
 
     private record ScoredCandidate(
-            Long rankId,
+            String rankId,
             Post post,
             double vectorScore,
             double bm25Score) {
