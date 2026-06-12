@@ -240,6 +240,35 @@ class SimilarPostSearchServiceTest {
     }
 
     @Test
+    void searchSimilarPostsCombinesChunkAndPostEmbeddingsWithoutDuplicatePosts() {
+        when(postEmbeddingChunkRepository.findAllByEmbeddingModel(EMBEDDING_MODEL))
+                .thenReturn(List.of(
+                        chunk(10L, 1L, "GitHub Actions 일부", "Learning", "github actions workflow", "[1.0,0.0]")));
+        when(postEmbeddingRepository.findAllByEmbeddingModel(EMBEDDING_MODEL))
+                .thenReturn(List.of(
+                        embedding(
+                                1L,
+                                "GitHub Actions 전체",
+                                "Learning",
+                                "github actions 배포 자동화 전체 글",
+                                "[0.9,0.1]")));
+
+        List<SimilarPostSearchService.SimilarPostResult> results =
+                similarPostSearchService.searchSimilarPosts(
+                        List.of(1.0, 0.0),
+                        null,
+                        5,
+                        "All",
+                        "github actions",
+                        "github actions workflow 설정을 찾는다.",
+                        List.of());
+
+        assertThat(results)
+                .extracting(SimilarPostSearchService.SimilarPostResult::postId)
+                .containsExactly(1L);
+    }
+
+    @Test
     void cosineSimilarityReturnsZeroForZeroVector() {
         double score = SimilarPostSearchService.cosineSimilarity(
                 List.of(0.0, 0.0),

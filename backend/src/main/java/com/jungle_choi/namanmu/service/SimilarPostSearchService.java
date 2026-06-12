@@ -91,11 +91,7 @@ public class SimilarPostSearchService {
         List<String> queryTerms = buildQueryTerms(title, content, tags);
         SearchMetadata metadata = SearchMetadata.from(category, tags);
         List<PostEmbeddingChunk> chunkCandidates = findChunkCandidates(metadata, excludedPostId);
-        Set<Long> chunkedPostIds = chunkCandidates.stream()
-                .map(PostEmbeddingChunk::getPost)
-                .map(Post::getId)
-                .collect(java.util.stream.Collectors.toSet());
-        List<PostEmbedding> candidates = findPostCandidates(metadata, excludedPostId, chunkedPostIds);
+        List<PostEmbedding> candidates = findPostCandidates(metadata, excludedPostId);
 
         return searchSimilarPostsByCandidates(
                 queryEmbedding,
@@ -164,8 +160,7 @@ public class SimilarPostSearchService {
 
     private List<PostEmbedding> findPostCandidates(
             SearchMetadata metadata,
-            Long excludedPostId,
-            Set<Long> postIdsHandledByChunks) {
+            Long excludedPostId) {
         List<PostEmbedding> embeddings =
                 postEmbeddingRepository.findAllByEmbeddingModel(openAiProperties.embeddingModel());
 
@@ -175,7 +170,6 @@ public class SimilarPostSearchService {
 
         return embeddings.stream()
                 .filter((postEmbedding) -> isSearchCandidate(postEmbedding, metadata, excludedPostId))
-                .filter((postEmbedding) -> !postIdsHandledByChunks.contains(postEmbedding.getPost().getId()))
                 .toList();
     }
 
