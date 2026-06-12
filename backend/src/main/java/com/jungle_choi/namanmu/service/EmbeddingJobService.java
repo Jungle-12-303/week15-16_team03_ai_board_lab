@@ -17,6 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class EmbeddingJobService {
 
     private static final int MAX_ENQUEUE_LIMIT = 100;
+    private static final List<EmbeddingJobStatus> OPEN_JOB_STATUSES =
+            List.of(EmbeddingJobStatus.PENDING, EmbeddingJobStatus.PROCESSING);
 
     private final EmbeddingJobRepository embeddingJobRepository;
     private final PostRepository postRepository;
@@ -42,6 +44,7 @@ public class EmbeddingJobService {
         List<Post> posts = postRepository.findPostsMissingEmbeddingChunks(
                 PostStatus.PUBLISHED,
                 openAiProperties.embeddingModel(),
+                OPEN_JOB_STATUSES,
                 PageRequest.of(0, limit));
         List<Long> enqueuedPostIds = new ArrayList<>();
 
@@ -58,11 +61,11 @@ public class EmbeddingJobService {
     }
 
     private boolean enqueuePostEmbeddingIfNeeded(Post post) {
-        boolean hasPendingJob = embeddingJobRepository.existsByPost_IdAndStatus(
+        boolean hasOpenJob = embeddingJobRepository.existsByPost_IdAndStatusIn(
                 post.getId(),
-                EmbeddingJobStatus.PENDING);
+                OPEN_JOB_STATUSES);
 
-        if (hasPendingJob) {
+        if (hasOpenJob) {
             return false;
         }
 

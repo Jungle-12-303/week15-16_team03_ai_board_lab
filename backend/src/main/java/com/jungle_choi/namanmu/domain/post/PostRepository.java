@@ -1,5 +1,6 @@
 package com.jungle_choi.namanmu.domain.post;
 
+import com.jungle_choi.namanmu.domain.embedding.EmbeddingJobStatus;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -89,11 +90,18 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                 where chunk.post = post
                   and chunk.embeddingModel = :embeddingModel
               )
+              and not exists (
+                select job.id
+                from EmbeddingJob job
+                where job.post = post
+                  and job.status in :openJobStatuses
+              )
             order by post.id asc
             """)
     List<Post> findPostsMissingEmbeddingChunks(
             @Param("status") PostStatus status,
             @Param("embeddingModel") String embeddingModel,
+            @Param("openJobStatuses") List<EmbeddingJobStatus> openJobStatuses,
             Pageable pageable);
 
     interface CategoryCount {

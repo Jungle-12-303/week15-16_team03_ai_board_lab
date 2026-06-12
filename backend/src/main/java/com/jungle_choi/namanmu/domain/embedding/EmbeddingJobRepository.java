@@ -10,6 +10,8 @@ public interface EmbeddingJobRepository extends JpaRepository<EmbeddingJob, Long
 
     boolean existsByPost_IdAndStatus(Long postId, EmbeddingJobStatus status);
 
+    boolean existsByPost_IdAndStatusIn(Long postId, List<EmbeddingJobStatus> statuses);
+
     long countByStatus(EmbeddingJobStatus status);
 
     List<EmbeddingJob> findAllByPost_IdOrderByCreatedAtDesc(Long postId);
