@@ -34,6 +34,11 @@ export default function WeatherFactCheckPanel({
 
             {isChecked && (
               <>
+                <div className="fact-check-block">
+                  <h3>Post comparison</h3>
+                  <p>{result.judgement}</p>
+                </div>
+
                 <dl className="fact-check-meta">
                   <div>
                     <dt>Tool</dt>
@@ -54,13 +59,8 @@ export default function WeatherFactCheckPanel({
                 </dl>
 
                 <div className="fact-check-block">
-                  <h3>External fact</h3>
+                  <h3>Fetched weather data</h3>
                   <pre>{result.externalFact}</pre>
-                </div>
-
-                <div className="fact-check-block">
-                  <h3>Judgement</h3>
-                  <p>{result.judgement}</p>
                 </div>
               </>
             )}
