@@ -74,6 +74,26 @@ class SimilarPostSearchServiceTest {
     }
 
     @Test
+    void searchSimilarPostsDropsLowVectorSimilarityWhenQueryHasNoTerms() {
+        when(postEmbeddingRepository.findAllByEmbeddingModel(EMBEDDING_MODEL))
+                .thenReturn(List.of(
+                        embedding(1L, "weak direction", "[0.2,0.98]"),
+                        embedding(2L, "opposite direction", "[0.0,1.0]")));
+
+        List<SimilarPostSearchService.SimilarPostResult> results =
+                similarPostSearchService.searchSimilarPosts(
+                        List.of(1.0, 0.0),
+                        null,
+                        5,
+                        "All",
+                        "",
+                        "",
+                        List.of());
+
+        assertThat(results).isEmpty();
+    }
+
+    @Test
     void searchSimilarPostsBoostsDirectKeywordMatches() {
         when(postEmbeddingRepository.findAllByEmbeddingModel(EMBEDDING_MODEL))
                 .thenReturn(List.of(

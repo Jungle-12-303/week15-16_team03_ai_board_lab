@@ -31,7 +31,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class SimilarPostSearchService {
 
     private static final int MAX_LIMIT = 10;
-    private static final double MIN_RELEVANCE_SCORE = 0.38;
+    private static final double MIN_VECTOR_RELEVANCE_SCORE = 0.45;
+    private static final double MIN_HYBRID_RELEVANCE_SCORE = 0.38;
     private static final double BM25_K1 = 1.2;
     private static final double BM25_B = 0.75;
     private static final double VECTOR_WEIGHT_WITH_QUERY_TERMS = 0.35;
@@ -110,8 +111,8 @@ public class SimilarPostSearchService {
             List<PostEmbedding> candidates) {
         Bm25CorpusStats postBm25CorpusStats = Bm25CorpusStats.from(
                 candidates.stream()
-                .map(PostEmbedding::getPost)
-                .map(SimilarPostSearchService::buildDocumentTerms)
+                        .map(PostEmbedding::getPost)
+                        .map(SimilarPostSearchService::buildDocumentTerms)
                         .toList(),
                 queryTerms);
 
@@ -259,13 +260,10 @@ public class SimilarPostSearchService {
         double bm25Score = 0.0;
         if (!queryTerms.isEmpty()) {
             bm25Score = bm25Score(post, queryTerms, bm25CorpusStats);
-            double hybridRelevanceScore = Math.min(
-                    (vectorScore * VECTOR_WEIGHT_WITH_QUERY_TERMS)
-                            + (bm25Score * BM25_WEIGHT_WITH_QUERY_TERMS),
-                    1.0);
-            if (hybridRelevanceScore < MIN_RELEVANCE_SCORE) {
-                return Optional.empty();
-            }
+        }
+
+        if (!passesRelevanceThreshold(vectorScore, bm25Score, queryTerms)) {
+            return Optional.empty();
         }
 
         return Optional.of(new ScoredCandidate("post:%d".formatted(post.getId()), post, vectorScore, bm25Score));
@@ -290,13 +288,10 @@ public class SimilarPostSearchService {
                     buildChunkDocumentTerms(postEmbeddingChunk),
                     queryTerms,
                     bm25CorpusStats);
-            double hybridRelevanceScore = Math.min(
-                    (vectorScore * VECTOR_WEIGHT_WITH_QUERY_TERMS)
-                            + (bm25Score * BM25_WEIGHT_WITH_QUERY_TERMS),
-                    1.0);
-            if (hybridRelevanceScore < MIN_RELEVANCE_SCORE) {
-                return Optional.empty();
-            }
+        }
+
+        if (!passesRelevanceThreshold(vectorScore, bm25Score, queryTerms)) {
+            return Optional.empty();
         }
 
         return Optional.of(new ScoredCandidate(
@@ -304,6 +299,22 @@ public class SimilarPostSearchService {
                 post,
                 vectorScore,
                 bm25Score));
+    }
+
+    private static boolean passesRelevanceThreshold(
+            double vectorScore,
+            double bm25Score,
+            List<String> queryTerms) {
+        if (queryTerms.isEmpty()) {
+            return vectorScore >= MIN_VECTOR_RELEVANCE_SCORE;
+        }
+
+        double hybridRelevanceScore = Math.min(
+                (vectorScore * VECTOR_WEIGHT_WITH_QUERY_TERMS)
+                        + (bm25Score * BM25_WEIGHT_WITH_QUERY_TERMS),
+                1.0);
+
+        return hybridRelevanceScore >= MIN_HYBRID_RELEVANCE_SCORE;
     }
 
     private List<Double> parseEmbedding(PostEmbedding postEmbedding) {
