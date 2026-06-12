@@ -80,7 +80,7 @@ class SimilarPostSearchServiceTest {
 
         assertThat(results)
                 .extracting(SimilarPostSearchService.SimilarPostResult::postId)
-                .containsExactly(2L, 1L);
+                .containsExactly(2L);
     }
 
     @Test

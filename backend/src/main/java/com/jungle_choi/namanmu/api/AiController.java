@@ -44,7 +44,7 @@ public class AiController {
     @PostMapping("/similar-posts")
     public SimilarPostsResponse findSimilarPosts(
             @Valid @RequestBody SimilarPostsRequest request) {
-        String sourceText = postEmbeddingTextBuilder.build(
+        String sourceText = postEmbeddingTextBuilder.buildQuery(
                 request.category(),
                 request.title(),
                 request.content(),

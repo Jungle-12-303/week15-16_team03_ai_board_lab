@@ -13,10 +13,13 @@ public class RagDraftService {
             project notes, reviews, briefings, and daily logs.
 
             Write only the post body in Korean.
-            Use the retrieved posts as reference material, but do not copy their sentences.
-            Keep the user's original intent and category.
-            If the sources do not support a claim, do not invent specific facts.
-            Make the draft coherent, practical, and ready to edit.
+            The user's draft is the primary source of intent. Preserve the user's topic, scope,
+            point of view, and level of specificity.
+            Retrieved posts are optional reference material. Use them only when they directly help
+            the user's draft. Ignore unrelated sources even if they were retrieved.
+            Do not introduce unrelated companies, products, incidents, numbers, or technologies.
+            If the retrieved posts do not support a claim, do not invent specific facts.
+            Keep the draft coherent, practical, and ready to edit.
             """;
 
     private final PostEmbeddingTextBuilder postEmbeddingTextBuilder;
@@ -42,7 +45,7 @@ public class RagDraftService {
             List<String> tags,
             Long excludedPostId,
             int limit) {
-        String queryText = postEmbeddingTextBuilder.build(category, title, content, tags);
+        String queryText = postEmbeddingTextBuilder.buildQuery(category, title, content, tags);
         OpenAiEmbeddingClient.EmbeddingResult embeddingResult =
                 openAiEmbeddingClient.createEmbedding(queryText);
 
@@ -93,6 +96,8 @@ public class RagDraftService {
 
                 Task:
                 Rewrite the current content into a stronger first draft for this board post.
+                Keep the user's original topic first. Use retrieved posts only as light reference.
+                Do not change the subject just because a retrieved post discusses another topic.
                 The output must be only the body text, without a title.
                 """.formatted(
                 normalize(category),

@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class SimilarPostSearchService {
 
     private static final int MAX_LIMIT = 10;
+    private static final double MIN_RELEVANCE_SCORE = 0.38;
     private static final TypeReference<List<Double>> EMBEDDING_VECTOR_TYPE = new TypeReference<>() {
     };
 
@@ -103,6 +104,9 @@ public class SimilarPostSearchService {
         double score = cosineSimilarity(queryEmbedding, storedEmbedding);
         if (!queryTerms.isEmpty()) {
             score = Math.min((score * 0.35) + lexicalRelevanceScore(post, queryTerms), 1.0);
+            if (score < MIN_RELEVANCE_SCORE) {
+                return Optional.empty();
+            }
         }
 
         return Optional.of(new SimilarPostResult(
@@ -162,7 +166,7 @@ public class SimilarPostSearchService {
                 matched = true;
             }
             if (content.contains(term)) {
-                score += 0.12;
+                score += 0.08;
                 matched = true;
             }
             if (category.contains(term)) {
@@ -212,6 +216,7 @@ public class SimilarPostSearchService {
                 "with",
                 "from",
                 "about",
+                "daily",
                 "하고",
                 "싶다",
                 "정리",
@@ -219,7 +224,20 @@ public class SimilarPostSearchService {
                 "내용",
                 "관련",
                 "게시글",
-                "작성")
+                "작성",
+                "오늘",
+                "그냥",
+                "기분",
+                "피곤",
+                "피곤해서",
+                "일상",
+                "생각",
+                "느낌",
+                "이번",
+                "정도",
+                "부분",
+                "때문",
+                "통해")
                 .contains(token);
     }
 

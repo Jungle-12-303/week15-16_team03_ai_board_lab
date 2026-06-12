@@ -60,6 +60,22 @@ public class PostEmbeddingTextBuilder {
                 formatTags(tags));
     }
 
+    public String buildQuery(String category, String title, String content, List<String> tags) {
+        return """
+                Search Query:
+                Category: %s
+                Title: %s
+                User draft or intent:
+                %s
+
+                Tags: %s
+                """.formatted(
+                normalize(category),
+                normalize(title),
+                normalize(content),
+                formatTags(tags));
+    }
+
     private static String formatTags(List<String> tags) {
         if (tags == null || tags.isEmpty()) {
             return "None";
