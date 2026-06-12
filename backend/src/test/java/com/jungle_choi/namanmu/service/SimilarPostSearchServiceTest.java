@@ -116,19 +116,19 @@ class SimilarPostSearchServiceTest {
     }
 
     @Test
-    void searchSimilarPostsDropsRankedResultsBelowStrictDisplayScore() {
+    void searchSimilarPostsRequiresSpecificTitleTermWhenAvailable() {
         when(postEmbeddingRepository.findAllByEmbeddingModel(EMBEDDING_MODEL))
                 .thenReturn(List.of(
                         embedding(
                                 1L,
-                                "GitHub Actions 배포 자동화",
-                                "github actions workflow 배포 자동화를 정리한다.",
+                                "용인 오늘 날씨",
+                                "용인 날씨와 기온 변화를 정리한다.",
                                 "[1.0,0.0]"),
                         embedding(
                                 2L,
-                                "GitHub Actions 배포 자동화",
-                                "github actions workflow 배포 자동화를 정리한다.",
-                                "[0.5,0.5]")));
+                                "대구 오늘 날씨",
+                                "대구 날씨와 기온 변화를 정리한다.",
+                                "[0.99,0.01]")));
 
         List<SimilarPostSearchService.SimilarPostResult> results =
                 similarPostSearchService.searchSimilarPosts(
@@ -136,8 +136,8 @@ class SimilarPostSearchServiceTest {
                         null,
                         5,
                         "All",
-                        "github actions",
-                        "github actions workflow 설정을 찾는다.",
+                        "용인 날씨",
+                        "어제 용인시 날씨는 더웠습니다.",
                         List.of());
 
         assertThat(results)

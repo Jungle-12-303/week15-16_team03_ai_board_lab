@@ -33,7 +33,7 @@ public class SimilarPostSearchService {
     private static final int MAX_LIMIT = 10;
     private static final double MIN_VECTOR_RELEVANCE_SCORE = 0.45;
     private static final double MIN_HYBRID_RELEVANCE_SCORE = 0.38;
-    private static final double MIN_RANKED_RESULT_SCORE = 0.99;
+    private static final double MIN_RANKED_RESULT_SCORE = 0.90;
     private static final double BM25_K1 = 1.2;
     private static final double BM25_B = 0.75;
     private static final double VECTOR_WEIGHT_WITH_QUERY_TERMS = 0.35;
@@ -92,6 +92,7 @@ public class SimilarPostSearchService {
 
         int normalizedLimit = normalizeLimit(limit);
         List<String> queryTerms = buildQueryTerms(title, content, tags);
+        List<String> guardTerms = buildGuardTerms(title, content, tags);
         SearchMetadata metadata = SearchMetadata.from(category, tags);
         List<PostEmbeddingChunk> chunkCandidates = findChunkCandidates(metadata, excludedPostId);
         List<PostEmbedding> candidates = findPostCandidates(metadata, excludedPostId);
@@ -100,6 +101,7 @@ public class SimilarPostSearchService {
                 queryEmbedding,
                 normalizedLimit,
                 queryTerms,
+                guardTerms,
                 chunkCandidates,
                 candidates);
     }
@@ -108,6 +110,7 @@ public class SimilarPostSearchService {
             List<Double> queryEmbedding,
             int normalizedLimit,
             List<String> queryTerms,
+            List<String> guardTerms,
             List<PostEmbeddingChunk> chunkCandidates,
             List<PostEmbedding> candidates) {
         Bm25CorpusStats postBm25CorpusStats = Bm25CorpusStats.from(
@@ -123,6 +126,7 @@ public class SimilarPostSearchService {
                         postEmbedding,
                         queryEmbedding,
                         queryTerms,
+                        guardTerms,
                         postBm25CorpusStats))
                 .flatMap(Optional::stream)
                 .forEach(postScoredCandidates::add);
@@ -132,7 +136,8 @@ public class SimilarPostSearchService {
         Map<Long, Double> chunkScoresByPostId = scoreChunksByPostId(
                 chunkCandidates,
                 queryEmbedding,
-                queryTerms);
+                queryTerms,
+                guardTerms);
 
         return postResults.stream()
                 .map((result) -> applyChunkEvidenceBoost(result, chunkScoresByPostId))
@@ -146,7 +151,8 @@ public class SimilarPostSearchService {
     private Map<Long, Double> scoreChunksByPostId(
             List<PostEmbeddingChunk> chunkCandidates,
             List<Double> queryEmbedding,
-            List<String> queryTerms) {
+            List<String> queryTerms,
+            List<String> guardTerms) {
         if (chunkCandidates.isEmpty()) {
             return Map.of();
         }
@@ -162,6 +168,7 @@ public class SimilarPostSearchService {
                         chunk,
                         queryEmbedding,
                         queryTerms,
+                        guardTerms,
                         chunkBm25CorpusStats))
                 .flatMap(Optional::stream)
                 .toList();
@@ -264,8 +271,14 @@ public class SimilarPostSearchService {
             PostEmbedding postEmbedding,
             List<Double> queryEmbedding,
             List<String> queryTerms,
+            List<String> guardTerms,
             Bm25CorpusStats bm25CorpusStats) {
         Post post = postEmbedding.getPost();
+        List<String> documentTerms = buildDocumentTerms(post);
+
+        if (!passesKeywordGuard(documentTerms, guardTerms)) {
+            return Optional.empty();
+        }
 
         List<Double> storedEmbedding = parseEmbedding(postEmbedding);
         if (storedEmbedding.size() != queryEmbedding.size()) {
@@ -275,7 +288,7 @@ public class SimilarPostSearchService {
         double vectorScore = cosineSimilarity(queryEmbedding, storedEmbedding);
         double bm25Score = 0.0;
         if (!queryTerms.isEmpty()) {
-            bm25Score = bm25Score(post, queryTerms, bm25CorpusStats);
+            bm25Score = bm25Score(documentTerms, queryTerms, bm25CorpusStats);
         }
 
         if (!passesRelevanceThreshold(vectorScore, bm25Score, queryTerms)) {
@@ -289,8 +302,14 @@ public class SimilarPostSearchService {
             PostEmbeddingChunk postEmbeddingChunk,
             List<Double> queryEmbedding,
             List<String> queryTerms,
+            List<String> guardTerms,
             Bm25CorpusStats bm25CorpusStats) {
         Post post = postEmbeddingChunk.getPost();
+        List<String> documentTerms = buildChunkDocumentTerms(postEmbeddingChunk);
+
+        if (!passesKeywordGuard(documentTerms, guardTerms)) {
+            return Optional.empty();
+        }
 
         List<Double> storedEmbedding = parseEmbedding(postEmbeddingChunk.getEmbeddingJson());
         if (storedEmbedding.size() != queryEmbedding.size()) {
@@ -301,7 +320,7 @@ public class SimilarPostSearchService {
         double bm25Score = 0.0;
         if (!queryTerms.isEmpty()) {
             bm25Score = bm25Score(
-                    buildChunkDocumentTerms(postEmbeddingChunk),
+                    documentTerms,
                     queryTerms,
                     bm25CorpusStats);
         }
@@ -331,6 +350,18 @@ public class SimilarPostSearchService {
                 1.0);
 
         return hybridRelevanceScore >= MIN_HYBRID_RELEVANCE_SCORE;
+    }
+
+    private static boolean passesKeywordGuard(
+            List<String> documentTerms,
+            List<String> guardTerms) {
+        if (guardTerms.isEmpty()) {
+            return true;
+        }
+
+        Set<String> documentTermSet = new HashSet<>(documentTerms);
+
+        return guardTerms.stream().anyMatch(documentTermSet::contains);
     }
 
     private List<Double> parseEmbedding(PostEmbedding postEmbedding) {
@@ -537,6 +568,27 @@ public class SimilarPostSearchService {
                 .toList();
     }
 
+    private static List<String> buildGuardTerms(String title, String content, List<String> tags) {
+        String joinedTags = tags == null ? "" : String.join(" ", tags);
+        Set<String> titleTerms = new LinkedHashSet<>(tokenizeSearchText("%s %s".formatted(
+                title,
+                joinedTags)));
+        List<String> guardTerms = toGuardTerms(titleTerms);
+
+        if (!guardTerms.isEmpty()) {
+            return guardTerms;
+        }
+
+        return toGuardTerms(new LinkedHashSet<>(tokenizeSearchText(content)));
+    }
+
+    private static List<String> toGuardTerms(Set<String> terms) {
+        return terms.stream()
+                .filter((term) -> !isGenericGuardTerm(term))
+                .limit(5)
+                .toList();
+    }
+
     private static List<String> buildDocumentTerms(Post post) {
         return tokenizeSearchText("%s %s %s %s".formatted(
                 post.getTitle(),
@@ -600,6 +652,23 @@ public class SimilarPostSearchService {
                 "부분",
                 "때문",
                 "통해")
+                .contains(token);
+    }
+
+    private static boolean isGenericGuardTerm(String token) {
+        return Set.of(
+                "날씨",
+                "오늘",
+                "어제",
+                "내일",
+                "정보",
+                "상황",
+                "실시간",
+                "방법",
+                "기반",
+                "자동",
+                "좋은",
+                "나쁜")
                 .contains(token);
     }
 
