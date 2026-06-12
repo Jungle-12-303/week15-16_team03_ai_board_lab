@@ -19,6 +19,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
+import java.util.function.ToDoubleFunction;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +33,7 @@ public class SimilarPostSearchService {
     private static final double BM25_B = 0.75;
     private static final double VECTOR_WEIGHT_WITH_QUERY_TERMS = 0.35;
     private static final double BM25_WEIGHT_WITH_QUERY_TERMS = 0.65;
+    private static final double RRF_RANK_CONSTANT = 60.0;
     private static final TypeReference<List<Double>> EMBEDDING_VECTOR_TYPE = new TypeReference<>() {
     };
 
@@ -91,14 +94,18 @@ public class SimilarPostSearchService {
                         .toList(),
                 queryTerms);
 
-        return candidates.stream()
-                .map((postEmbedding) -> toSimilarPostResult(
+        List<ScoredCandidate> scoredCandidates = candidates.stream()
+                .map((postEmbedding) -> toScoredCandidate(
                         postEmbedding,
                         queryEmbedding,
                         queryTerms,
                         bm25CorpusStats))
                 .flatMap(Optional::stream)
-                .sorted(Comparator.comparingDouble(SimilarPostResult::score).reversed())
+                .toList();
+
+        return rankCandidates(scoredCandidates, !queryTerms.isEmpty()).stream()
+                .sorted(Comparator.comparingDouble(SimilarPostResult::score).reversed()
+                        .thenComparing(SimilarPostResult::postId))
                 .limit(normalizedLimit)
                 .toList();
     }
@@ -120,7 +127,7 @@ public class SimilarPostSearchService {
         return matchesMetadata(post, metadata);
     }
 
-    private Optional<SimilarPostResult> toSimilarPostResult(
+    private Optional<ScoredCandidate> toScoredCandidate(
             PostEmbedding postEmbedding,
             List<Double> queryEmbedding,
             List<String> queryTerms,
@@ -132,24 +139,20 @@ public class SimilarPostSearchService {
             return Optional.empty();
         }
 
-        double score = cosineSimilarity(queryEmbedding, storedEmbedding);
+        double vectorScore = cosineSimilarity(queryEmbedding, storedEmbedding);
+        double bm25Score = 0.0;
         if (!queryTerms.isEmpty()) {
-            double bm25Score = bm25Score(post, queryTerms, bm25CorpusStats);
-            score = Math.min(
-                    (score * VECTOR_WEIGHT_WITH_QUERY_TERMS)
+            bm25Score = bm25Score(post, queryTerms, bm25CorpusStats);
+            double hybridRelevanceScore = Math.min(
+                    (vectorScore * VECTOR_WEIGHT_WITH_QUERY_TERMS)
                             + (bm25Score * BM25_WEIGHT_WITH_QUERY_TERMS),
                     1.0);
-            if (score < MIN_RELEVANCE_SCORE) {
+            if (hybridRelevanceScore < MIN_RELEVANCE_SCORE) {
                 return Optional.empty();
             }
         }
 
-        return Optional.of(new SimilarPostResult(
-                post.getId(),
-                post.getTitle(),
-                post.getCategory(),
-                post.getContent(),
-                score));
+        return Optional.of(new ScoredCandidate(post, vectorScore, bm25Score));
     }
 
     private List<Double> parseEmbedding(PostEmbedding postEmbedding) {
@@ -228,6 +231,75 @@ public class SimilarPostSearchService {
         }
 
         return 1.0 - Math.exp(-rawScore);
+    }
+
+    private static List<SimilarPostResult> rankCandidates(
+            List<ScoredCandidate> candidates,
+            boolean useHybridFusion) {
+        if (!useHybridFusion) {
+            return candidates.stream()
+                    .map((candidate) -> candidate.toResult(candidate.vectorScore()))
+                    .toList();
+        }
+
+        Map<Long, Integer> vectorRanks = rankBy(
+                candidates,
+                ScoredCandidate::vectorScore,
+                (candidate) -> candidate.vectorScore() > 0.0);
+        Map<Long, Integer> bm25Ranks = rankBy(
+                candidates,
+                ScoredCandidate::bm25Score,
+                (candidate) -> candidate.bm25Score() > 0.0);
+
+        return candidates.stream()
+                .map((candidate) -> candidate.toResult(rrfScore(candidate, vectorRanks, bm25Ranks)))
+                .toList();
+    }
+
+    private static Map<Long, Integer> rankBy(
+            List<ScoredCandidate> candidates,
+            ToDoubleFunction<ScoredCandidate> scoreExtractor,
+            Predicate<ScoredCandidate> filter) {
+        List<ScoredCandidate> rankedCandidates = candidates.stream()
+                .filter(filter)
+                .sorted((left, right) -> {
+                    int scoreComparison = Double.compare(
+                            scoreExtractor.applyAsDouble(right),
+                            scoreExtractor.applyAsDouble(left));
+                    if (scoreComparison != 0) {
+                        return scoreComparison;
+                    }
+
+                    return Long.compare(left.post().getId(), right.post().getId());
+                })
+                .toList();
+        Map<Long, Integer> ranks = new HashMap<>();
+
+        for (int index = 0; index < rankedCandidates.size(); index++) {
+            ranks.put(rankedCandidates.get(index).post().getId(), index + 1);
+        }
+
+        return ranks;
+    }
+
+    private static double rrfScore(
+            ScoredCandidate candidate,
+            Map<Long, Integer> vectorRanks,
+            Map<Long, Integer> bm25Ranks) {
+        Long postId = candidate.post().getId();
+        double rawScore = reciprocalRankScore(vectorRanks.get(postId))
+                + reciprocalRankScore(bm25Ranks.get(postId));
+        double maxPossibleScore = 2.0 / (RRF_RANK_CONSTANT + 1.0);
+
+        return Math.min(rawScore / maxPossibleScore, 1.0);
+    }
+
+    private static double reciprocalRankScore(Integer rank) {
+        if (rank == null) {
+            return 0.0;
+        }
+
+        return 1.0 / (RRF_RANK_CONSTANT + rank);
     }
 
     private boolean matchesMetadata(Post post, SearchMetadata metadata) {
@@ -398,6 +470,21 @@ public class SimilarPostSearchService {
 
         int documentFrequency(String term) {
             return documentFrequencies.getOrDefault(term, 0);
+        }
+    }
+
+    private record ScoredCandidate(
+            Post post,
+            double vectorScore,
+            double bm25Score) {
+
+        SimilarPostResult toResult(double score) {
+            return new SimilarPostResult(
+                    post.getId(),
+                    post.getTitle(),
+                    post.getCategory(),
+                    post.getContent(),
+                    score);
         }
     }
 
