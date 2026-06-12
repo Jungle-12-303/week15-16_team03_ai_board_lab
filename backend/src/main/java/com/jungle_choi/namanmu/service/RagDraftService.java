@@ -54,6 +54,7 @@ public class RagDraftService {
                         embeddingResult.embedding(),
                         excludedPostId,
                         normalizeLimit(limit),
+                        category,
                         title,
                         content,
                         tags);

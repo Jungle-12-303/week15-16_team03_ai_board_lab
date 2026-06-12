@@ -8,6 +8,7 @@ import com.jungle_choi.namanmu.domain.embedding.PostEmbedding;
 import com.jungle_choi.namanmu.domain.embedding.PostEmbeddingRepository;
 import com.jungle_choi.namanmu.domain.post.Post;
 import com.jungle_choi.namanmu.domain.post.PostStatus;
+import com.jungle_choi.namanmu.domain.post.PostTagRepository;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -27,14 +28,17 @@ public class SimilarPostSearchService {
     };
 
     private final PostEmbeddingRepository postEmbeddingRepository;
+    private final PostTagRepository postTagRepository;
     private final OpenAiProperties openAiProperties;
     private final ObjectMapper objectMapper;
 
     public SimilarPostSearchService(
             PostEmbeddingRepository postEmbeddingRepository,
+            PostTagRepository postTagRepository,
             OpenAiProperties openAiProperties,
             ObjectMapper objectMapper) {
         this.postEmbeddingRepository = postEmbeddingRepository;
+        this.postTagRepository = postTagRepository;
         this.openAiProperties = openAiProperties;
         this.objectMapper = objectMapper;
     }
@@ -50,6 +54,7 @@ public class SimilarPostSearchService {
                 limit,
                 "",
                 "",
+                "",
                 List.of());
     }
 
@@ -58,6 +63,7 @@ public class SimilarPostSearchService {
             List<Double> queryEmbedding,
             Long excludedPostId,
             int limit,
+            String category,
             String title,
             String content,
             List<String> tags) {
@@ -67,6 +73,7 @@ public class SimilarPostSearchService {
 
         int normalizedLimit = normalizeLimit(limit);
         List<String> queryTerms = buildQueryTerms(title, content, tags);
+        SearchMetadata metadata = SearchMetadata.from(category, tags);
 
         return postEmbeddingRepository.findAllByEmbeddingModel(openAiProperties.embeddingModel())
                 .stream()
@@ -74,6 +81,7 @@ public class SimilarPostSearchService {
                         postEmbedding,
                         queryEmbedding,
                         queryTerms,
+                        metadata,
                         excludedPostId))
                 .flatMap(Optional::stream)
                 .sorted(Comparator.comparingDouble(SimilarPostResult::score).reversed())
@@ -85,6 +93,7 @@ public class SimilarPostSearchService {
             PostEmbedding postEmbedding,
             List<Double> queryEmbedding,
             List<String> queryTerms,
+            SearchMetadata metadata,
             Long excludedPostId) {
         Post post = postEmbedding.getPost();
 
@@ -93,6 +102,10 @@ public class SimilarPostSearchService {
         }
 
         if (Objects.equals(post.getId(), excludedPostId)) {
+            return Optional.empty();
+        }
+
+        if (!matchesMetadata(post, metadata)) {
             return Optional.empty();
         }
 
@@ -185,6 +198,28 @@ public class SimilarPostSearchService {
         return Math.min(score, 0.65);
     }
 
+    private boolean matchesMetadata(Post post, SearchMetadata metadata) {
+        if (!metadata.hasFilters()) {
+            return true;
+        }
+
+        if (!metadata.category().isBlank()
+                && !normalizeSearchText(post.getCategory()).equals(metadata.category())) {
+            return false;
+        }
+
+        if (metadata.tags().isEmpty()) {
+            return true;
+        }
+
+        Set<String> postTags = postTagRepository.findAllByPostIdOrderByTagNameAsc(post.getId())
+                .stream()
+                .map((postTag) -> normalizeSearchText(postTag.getTag().getName()))
+                .collect(java.util.stream.Collectors.toSet());
+
+        return metadata.tags().stream().anyMatch(postTags::contains);
+    }
+
     private static List<String> buildQueryTerms(String title, String content, List<String> tags) {
         String joinedTags = tags == null ? "" : String.join(" ", tags);
         String queryText = normalizeSearchText("%s %s %s".formatted(title, content, joinedTags));
@@ -257,6 +292,29 @@ public class SimilarPostSearchService {
 
     private static int normalizeLimit(int limit) {
         return Math.min(Math.max(limit, 1), MAX_LIMIT);
+    }
+
+    private record SearchMetadata(String category, Set<String> tags) {
+
+        static SearchMetadata from(String category, List<String> tags) {
+            String normalizedCategory = normalizeSearchText(category);
+            if ("all".equals(normalizedCategory)) {
+                normalizedCategory = "";
+            }
+
+            Set<String> normalizedTags = tags == null
+                    ? Set.of()
+                    : tags.stream()
+                            .map(SimilarPostSearchService::normalizeSearchText)
+                            .filter((tag) -> !tag.isBlank())
+                            .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+
+            return new SearchMetadata(normalizedCategory, normalizedTags);
+        }
+
+        boolean hasFilters() {
+            return !category.isBlank() || !tags.isEmpty();
+        }
     }
 
     public record SimilarPostResult(

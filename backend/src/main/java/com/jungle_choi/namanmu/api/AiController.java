@@ -56,6 +56,7 @@ public class AiController {
                         embeddingResult.embedding(),
                         request.excludedPostId(),
                         request.limit(),
+                        request.category(),
                         request.title(),
                         request.content(),
                         request.tags())
