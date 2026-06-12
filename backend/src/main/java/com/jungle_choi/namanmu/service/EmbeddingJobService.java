@@ -4,28 +4,79 @@ import com.jungle_choi.namanmu.domain.embedding.EmbeddingJob;
 import com.jungle_choi.namanmu.domain.embedding.EmbeddingJobRepository;
 import com.jungle_choi.namanmu.domain.embedding.EmbeddingJobStatus;
 import com.jungle_choi.namanmu.domain.post.Post;
+import com.jungle_choi.namanmu.domain.post.PostRepository;
+import com.jungle_choi.namanmu.domain.post.PostStatus;
+import com.jungle_choi.namanmu.config.OpenAiProperties;
+import java.util.ArrayList;
+import java.util.List;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class EmbeddingJobService {
 
-    private final EmbeddingJobRepository embeddingJobRepository;
+    private static final int MAX_ENQUEUE_LIMIT = 100;
 
-    public EmbeddingJobService(EmbeddingJobRepository embeddingJobRepository) {
+    private final EmbeddingJobRepository embeddingJobRepository;
+    private final PostRepository postRepository;
+    private final OpenAiProperties openAiProperties;
+
+    public EmbeddingJobService(
+            EmbeddingJobRepository embeddingJobRepository,
+            PostRepository postRepository,
+            OpenAiProperties openAiProperties) {
         this.embeddingJobRepository = embeddingJobRepository;
+        this.postRepository = postRepository;
+        this.openAiProperties = openAiProperties;
     }
 
     @Transactional
     public void enqueuePostEmbedding(Post post) {
+        enqueuePostEmbeddingIfNeeded(post);
+    }
+
+    @Transactional
+    public EnqueueEmbeddingJobsResult enqueuePostsMissingEmbeddingChunks(int requestedLimit) {
+        int limit = normalizeLimit(requestedLimit);
+        List<Post> posts = postRepository.findPostsMissingEmbeddingChunks(
+                PostStatus.PUBLISHED,
+                openAiProperties.embeddingModel(),
+                PageRequest.of(0, limit));
+        List<Long> enqueuedPostIds = new ArrayList<>();
+
+        for (Post post : posts) {
+            if (enqueuePostEmbeddingIfNeeded(post)) {
+                enqueuedPostIds.add(post.getId());
+            }
+        }
+
+        return new EnqueueEmbeddingJobsResult(
+                limit,
+                enqueuedPostIds.size(),
+                enqueuedPostIds);
+    }
+
+    private boolean enqueuePostEmbeddingIfNeeded(Post post) {
         boolean hasPendingJob = embeddingJobRepository.existsByPost_IdAndStatus(
                 post.getId(),
                 EmbeddingJobStatus.PENDING);
 
         if (hasPendingJob) {
-            return;
+            return false;
         }
 
         embeddingJobRepository.save(EmbeddingJob.createPending(post));
+        return true;
+    }
+
+    private static int normalizeLimit(int requestedLimit) {
+        return Math.min(Math.max(requestedLimit, 1), MAX_ENQUEUE_LIMIT);
+    }
+
+    public record EnqueueEmbeddingJobsResult(
+            int requestedLimit,
+            int enqueuedCount,
+            List<Long> postIds) {
     }
 }

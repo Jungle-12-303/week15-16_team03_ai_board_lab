@@ -1,6 +1,7 @@
 package com.jungle_choi.namanmu.api;
 
 import com.jungle_choi.namanmu.service.EmbeddingJobProcessor;
+import com.jungle_choi.namanmu.service.EmbeddingJobService;
 import com.jungle_choi.namanmu.service.OpenAiEmbeddingClient;
 import com.jungle_choi.namanmu.service.PostEmbeddingTextBuilder;
 import com.jungle_choi.namanmu.service.RagDraftService;
@@ -26,6 +27,7 @@ public class AiController {
     private final OpenAiEmbeddingClient openAiEmbeddingClient;
     private final SimilarPostSearchService similarPostSearchService;
     private final EmbeddingJobProcessor embeddingJobProcessor;
+    private final EmbeddingJobService embeddingJobService;
     private final RagDraftService ragDraftService;
 
     public AiController(
@@ -33,11 +35,13 @@ public class AiController {
             OpenAiEmbeddingClient openAiEmbeddingClient,
             SimilarPostSearchService similarPostSearchService,
             EmbeddingJobProcessor embeddingJobProcessor,
+            EmbeddingJobService embeddingJobService,
             RagDraftService ragDraftService) {
         this.postEmbeddingTextBuilder = postEmbeddingTextBuilder;
         this.openAiEmbeddingClient = openAiEmbeddingClient;
         this.similarPostSearchService = similarPostSearchService;
         this.embeddingJobProcessor = embeddingJobProcessor;
+        this.embeddingJobService = embeddingJobService;
         this.ragDraftService = ragDraftService;
     }
 
@@ -88,6 +92,12 @@ public class AiController {
     public EmbeddingJobProcessor.ProcessEmbeddingJobsResult processEmbeddingJobs(
             @RequestParam(defaultValue = "5") int limit) {
         return embeddingJobProcessor.processPendingJobs(limit);
+    }
+
+    @PostMapping("/embedding-jobs/enqueue-missing-chunks")
+    public EmbeddingJobService.EnqueueEmbeddingJobsResult enqueueMissingChunkEmbeddingJobs(
+            @RequestParam(defaultValue = "20") int limit) {
+        return embeddingJobService.enqueuePostsMissingEmbeddingChunks(limit);
     }
 
     @GetMapping("/embedding-jobs/status")

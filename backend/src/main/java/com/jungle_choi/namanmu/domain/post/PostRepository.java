@@ -79,6 +79,23 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             @Param("keyword") String keyword,
             @Param("tag") String tag);
 
+    @Query("""
+            select post
+            from Post post
+            where post.status = :status
+              and not exists (
+                select chunk.id
+                from PostEmbeddingChunk chunk
+                where chunk.post = post
+                  and chunk.embeddingModel = :embeddingModel
+              )
+            order by post.id asc
+            """)
+    List<Post> findPostsMissingEmbeddingChunks(
+            @Param("status") PostStatus status,
+            @Param("embeddingModel") String embeddingModel,
+            Pageable pageable);
+
     interface CategoryCount {
         String getCategory();
 
