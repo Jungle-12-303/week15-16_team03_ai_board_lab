@@ -36,6 +36,7 @@ public class SimilarPostSearchService {
     private static final double BM25_B = 0.75;
     private static final double VECTOR_WEIGHT_WITH_QUERY_TERMS = 0.35;
     private static final double BM25_WEIGHT_WITH_QUERY_TERMS = 0.65;
+    private static final double CHUNK_EVIDENCE_WEIGHT = 0.05;
     private static final double RRF_RANK_CONSTANT = 60.0;
     private static final TypeReference<List<Double>> EMBEDDING_VECTOR_TYPE = new TypeReference<>() {
     };
@@ -107,42 +108,82 @@ public class SimilarPostSearchService {
             List<String> queryTerms,
             List<PostEmbeddingChunk> chunkCandidates,
             List<PostEmbedding> candidates) {
-        List<List<String>> bm25Documents = new ArrayList<>();
-        chunkCandidates.stream()
-                .map(SimilarPostSearchService::buildChunkDocumentTerms)
-                .forEach(bm25Documents::add);
-        candidates.stream()
+        Bm25CorpusStats postBm25CorpusStats = Bm25CorpusStats.from(
+                candidates.stream()
                 .map(PostEmbedding::getPost)
                 .map(SimilarPostSearchService::buildDocumentTerms)
-                .forEach(bm25Documents::add);
-        Bm25CorpusStats bm25CorpusStats = Bm25CorpusStats.from(
-                bm25Documents,
+                        .toList(),
                 queryTerms);
 
-        List<ScoredCandidate> scoredCandidates = new ArrayList<>();
-        chunkCandidates.stream()
-                .map((chunk) -> toScoredChunkCandidate(
-                        chunk,
-                        queryEmbedding,
-                        queryTerms,
-                        bm25CorpusStats))
-                .flatMap(Optional::stream)
-                .forEach(scoredCandidates::add);
+        List<ScoredCandidate> postScoredCandidates = new ArrayList<>();
         candidates.stream()
                 .map((postEmbedding) -> toScoredCandidate(
                         postEmbedding,
                         queryEmbedding,
                         queryTerms,
-                        bm25CorpusStats))
+                        postBm25CorpusStats))
                 .flatMap(Optional::stream)
-                .forEach(scoredCandidates::add);
+                .forEach(postScoredCandidates::add);
 
-        return aggregateBestCandidatePerPost(rankCandidates(scoredCandidates, !queryTerms.isEmpty()))
-                .stream()
+        List<SimilarPostResult> postResults =
+                rankCandidates(postScoredCandidates, !queryTerms.isEmpty());
+        Map<Long, Double> chunkScoresByPostId = scoreChunksByPostId(
+                chunkCandidates,
+                queryEmbedding,
+                queryTerms);
+
+        return postResults.stream()
+                .map((result) -> applyChunkEvidenceBoost(result, chunkScoresByPostId))
                 .sorted(Comparator.comparingDouble(SimilarPostResult::score).reversed()
                         .thenComparing(SimilarPostResult::postId))
                 .limit(normalizedLimit)
                 .toList();
+    }
+
+    private Map<Long, Double> scoreChunksByPostId(
+            List<PostEmbeddingChunk> chunkCandidates,
+            List<Double> queryEmbedding,
+            List<String> queryTerms) {
+        if (chunkCandidates.isEmpty()) {
+            return Map.of();
+        }
+
+        Bm25CorpusStats chunkBm25CorpusStats = Bm25CorpusStats.from(
+                chunkCandidates.stream()
+                        .map(SimilarPostSearchService::buildChunkDocumentTerms)
+                        .toList(),
+                queryTerms);
+
+        List<ScoredCandidate> chunkScoredCandidates = chunkCandidates.stream()
+                .map((chunk) -> toScoredChunkCandidate(
+                        chunk,
+                        queryEmbedding,
+                        queryTerms,
+                        chunkBm25CorpusStats))
+                .flatMap(Optional::stream)
+                .toList();
+
+        return aggregateBestCandidatePerPost(rankCandidates(chunkScoredCandidates, !queryTerms.isEmpty()))
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        SimilarPostResult::postId,
+                        SimilarPostResult::score,
+                        Math::max));
+    }
+
+    private static SimilarPostResult applyChunkEvidenceBoost(
+            SimilarPostResult postResult,
+            Map<Long, Double> chunkScoresByPostId) {
+        double chunkScore = chunkScoresByPostId.getOrDefault(postResult.postId(), 0.0);
+        double boostedScore = (postResult.score() * (1.0 - CHUNK_EVIDENCE_WEIGHT))
+                + (chunkScore * CHUNK_EVIDENCE_WEIGHT);
+
+        return new SimilarPostResult(
+                postResult.postId(),
+                postResult.title(),
+                postResult.category(),
+                postResult.content(),
+                boostedScore);
     }
 
     private List<PostEmbeddingChunk> findChunkCandidates(SearchMetadata metadata, Long excludedPostId) {

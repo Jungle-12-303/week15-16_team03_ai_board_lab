@@ -188,6 +188,20 @@ class SimilarPostSearchServiceTest {
                 .thenReturn(List.of(
                         chunk(10L, 1L, "긴 회고", "Learning", "github actions 배포와 workflow 설정", "[1.0,0.0]"),
                         chunk(11L, 2L, "다른 글", "Learning", "쿠키런 런칭 회고", "[0.0,1.0]")));
+        when(postEmbeddingRepository.findAllByEmbeddingModel(EMBEDDING_MODEL))
+                .thenReturn(List.of(
+                        embedding(
+                                1L,
+                                "GitHub Actions 자동화",
+                                "Learning",
+                                "github actions workflow 설정을 정리한다.",
+                                "[0.8,0.2]"),
+                        embedding(
+                                2L,
+                                "쿠키런 런칭 회고",
+                                "Learning",
+                                "쿠키런 런칭 회고를 정리한다.",
+                                "[0.0,1.0]")));
 
         List<SimilarPostSearchService.SimilarPostResult> results =
                 similarPostSearchService.searchSimilarPosts(
