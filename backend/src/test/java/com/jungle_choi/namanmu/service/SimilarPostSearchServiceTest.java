@@ -6,6 +6,8 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jungle_choi.namanmu.config.OpenAiProperties;
 import com.jungle_choi.namanmu.domain.embedding.PostEmbedding;
+import com.jungle_choi.namanmu.domain.embedding.PostEmbeddingChunk;
+import com.jungle_choi.namanmu.domain.embedding.PostEmbeddingChunkRepository;
 import com.jungle_choi.namanmu.domain.embedding.PostEmbeddingRepository;
 import com.jungle_choi.namanmu.domain.post.Post;
 import com.jungle_choi.namanmu.domain.post.PostTag;
@@ -23,11 +25,14 @@ class SimilarPostSearchServiceTest {
 
     private final PostEmbeddingRepository postEmbeddingRepository =
             Mockito.mock(PostEmbeddingRepository.class);
+    private final PostEmbeddingChunkRepository postEmbeddingChunkRepository =
+            Mockito.mock(PostEmbeddingChunkRepository.class);
     private final PostTagRepository postTagRepository =
             Mockito.mock(PostTagRepository.class);
     private final SimilarPostSearchService similarPostSearchService =
             new SimilarPostSearchService(
                     postEmbeddingRepository,
+                    postEmbeddingChunkRepository,
                     postTagRepository,
                     new OpenAiProperties(
                             "test-key",
@@ -178,6 +183,28 @@ class SimilarPostSearchServiceTest {
     }
 
     @Test
+    void searchSimilarPostsUsesChunkEmbeddingsBeforePostEmbeddings() {
+        when(postEmbeddingChunkRepository.findAllByEmbeddingModel(EMBEDDING_MODEL))
+                .thenReturn(List.of(
+                        chunk(10L, 1L, "긴 회고", "Learning", "github actions 배포와 workflow 설정", "[1.0,0.0]"),
+                        chunk(11L, 2L, "다른 글", "Learning", "쿠키런 런칭 회고", "[0.0,1.0]")));
+
+        List<SimilarPostSearchService.SimilarPostResult> results =
+                similarPostSearchService.searchSimilarPosts(
+                        List.of(1.0, 0.0),
+                        null,
+                        5,
+                        "All",
+                        "github actions",
+                        "github actions workflow 설정을 찾는다.",
+                        List.of());
+
+        assertThat(results)
+                .extracting(SimilarPostSearchService.SimilarPostResult::postId)
+                .containsExactly(1L);
+    }
+
+    @Test
     void cosineSimilarityReturnsZeroForZeroVector() {
         double score = SimilarPostSearchService.cosineSimilarity(
                 List.of(0.0, 0.0),
@@ -218,6 +245,29 @@ class SimilarPostSearchServiceTest {
                 2,
                 embeddingJson,
                 "hash-" + postId);
+    }
+
+    private static PostEmbeddingChunk chunk(
+            Long chunkId,
+            Long postId,
+            String title,
+            String category,
+            String chunkText,
+            String embeddingJson) {
+        User author = User.createLocalUser("cedis");
+        Post post = Post.create(author, category, title, "full content");
+        ReflectionTestUtils.setField(post, "id", postId);
+        PostEmbeddingChunk chunk = PostEmbeddingChunk.create(
+                post,
+                0,
+                chunkText,
+                EMBEDDING_MODEL,
+                2,
+                embeddingJson,
+                "chunk-hash-" + chunkId);
+        ReflectionTestUtils.setField(chunk, "id", chunkId);
+
+        return chunk;
     }
 
     private static PostTag postTag(Post post, String tagName) {
