@@ -5,6 +5,8 @@ import com.jungle_choi.namanmu.domain.embedding.EmbeddingJobRepository;
 import com.jungle_choi.namanmu.domain.embedding.EmbeddingJobStatus;
 import com.jungle_choi.namanmu.domain.embedding.PostEmbeddingRepository;
 import com.jungle_choi.namanmu.service.OpenAiEmbeddingClient.EmbeddingResult;
+import com.jungle_choi.namanmu.service.PostEmbeddingService.ChunkEmbeddingInput;
+import com.jungle_choi.namanmu.service.PostEmbeddingTextBuilder.ChunkSourceText;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -109,8 +111,15 @@ public class EmbeddingJobProcessor {
     private ProcessEmbeddingJobResult processClaimedJob(ClaimedEmbeddingJob claimedJob) {
         try {
             String sourceText = postEmbeddingTextBuilder.build(claimedJob.postId());
+            List<ChunkSourceText> chunkSources =
+                    postEmbeddingTextBuilder.buildChunkSources(claimedJob.postId());
+            boolean fullEmbeddingUpToDate = isAlreadyUpToDate(claimedJob.postId(), sourceText);
+            boolean chunksUpToDate = postEmbeddingService.chunksAreUpToDate(
+                    claimedJob.postId(),
+                    openAiEmbeddingClient.embeddingModel(),
+                    chunkSources);
 
-            if (isAlreadyUpToDate(claimedJob.postId(), sourceText)) {
+            if (fullEmbeddingUpToDate && chunksUpToDate) {
                 markCompleted(claimedJob.jobId());
                 return ProcessEmbeddingJobResult.completed(
                         claimedJob.jobId(),
@@ -118,14 +127,23 @@ public class EmbeddingJobProcessor {
                         "Embedding is already up to date.");
             }
 
-            EmbeddingResult embeddingResult = openAiEmbeddingClient.createEmbedding(sourceText);
-            postEmbeddingService.saveOrReplace(claimedJob.postId(), sourceText, embeddingResult);
+            if (!fullEmbeddingUpToDate) {
+                EmbeddingResult embeddingResult = openAiEmbeddingClient.createEmbedding(sourceText);
+                postEmbeddingService.saveOrReplace(claimedJob.postId(), sourceText, embeddingResult);
+            }
+
+            if (!chunksUpToDate) {
+                postEmbeddingService.saveOrReplaceChunks(
+                        claimedJob.postId(),
+                        createChunkEmbeddings(chunkSources));
+            }
+
             markCompleted(claimedJob.jobId());
 
             return ProcessEmbeddingJobResult.completed(
                     claimedJob.jobId(),
                     claimedJob.postId(),
-                    "Embedding was created.");
+                    "Embedding was created. chunkCount=%d".formatted(chunkSources.size()));
         } catch (Exception exception) {
             markFailed(claimedJob.jobId(), exception);
 
@@ -140,6 +158,20 @@ public class EmbeddingJobProcessor {
         return postEmbeddingRepository.existsByPost_IdAndSourceHash(
                 postId,
                 postEmbeddingService.sourceHash(sourceText));
+    }
+
+    private List<ChunkEmbeddingInput> createChunkEmbeddings(List<ChunkSourceText> chunkSources) {
+        List<ChunkEmbeddingInput> chunkEmbeddings = new ArrayList<>();
+
+        for (ChunkSourceText chunkSource : chunkSources) {
+            chunkEmbeddings.add(new ChunkEmbeddingInput(
+                    chunkSource.chunkIndex(),
+                    chunkSource.chunkText(),
+                    chunkSource.sourceText(),
+                    openAiEmbeddingClient.createEmbedding(chunkSource.sourceText())));
+        }
+
+        return chunkEmbeddings;
     }
 
     private void markCompleted(Long jobId) {

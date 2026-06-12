@@ -17,12 +17,15 @@ public class PostEmbeddingTextBuilder {
 
     private final PostRepository postRepository;
     private final PostTagRepository postTagRepository;
+    private final PostChunkTextSplitter postChunkTextSplitter;
 
     public PostEmbeddingTextBuilder(
             PostRepository postRepository,
-            PostTagRepository postTagRepository) {
+            PostTagRepository postTagRepository,
+            PostChunkTextSplitter postChunkTextSplitter) {
         this.postRepository = postRepository;
         this.postTagRepository = postTagRepository;
+        this.postChunkTextSplitter = postChunkTextSplitter;
     }
 
     @Transactional(readOnly = true)
@@ -34,12 +37,29 @@ public class PostEmbeddingTextBuilder {
     }
 
     public String build(Post post) {
-        List<String> tags = postTagRepository.findAllByPostIdOrderByTagNameAsc(post.getId())
-                .stream()
-                .map((postTag) -> postTag.getTag().getName())
-                .toList();
+        List<String> tags = loadTags(post);
 
         return build(post.getCategory(), post.getTitle(), post.getContent(), tags);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ChunkSourceText> buildChunkSources(Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow();
+        List<String> tags = loadTags(post);
+
+        return postChunkTextSplitter.split(post.getContent())
+                .stream()
+                .map((chunk) -> new ChunkSourceText(
+                        chunk.chunkIndex(),
+                        chunk.text(),
+                        buildChunk(
+                                post.getCategory(),
+                                post.getTitle(),
+                                chunk.chunkIndex(),
+                                chunk.text(),
+                                tags)))
+                .toList();
     }
 
     public String build(String category, String title, String content, List<String> tags) {
@@ -76,6 +96,38 @@ public class PostEmbeddingTextBuilder {
                 formatTags(tags));
     }
 
+    private String buildChunk(
+            String category,
+            String title,
+            int chunkIndex,
+            String chunkText,
+            List<String> tags) {
+        return """
+                Document Context:
+                %s
+                Category: %s
+                Title: %s
+                Chunk Index: %d
+                Chunk Content:
+                %s
+
+                Tags: %s
+                """.formatted(
+                DOCUMENT_CONTEXT.trim(),
+                normalize(category),
+                normalize(title),
+                chunkIndex,
+                normalize(chunkText),
+                formatTags(tags));
+    }
+
+    private List<String> loadTags(Post post) {
+        return postTagRepository.findAllByPostIdOrderByTagNameAsc(post.getId())
+                .stream()
+                .map((postTag) -> postTag.getTag().getName())
+                .toList();
+    }
+
     private static String formatTags(List<String> tags) {
         if (tags == null || tags.isEmpty()) {
             return "None";
@@ -99,5 +151,8 @@ public class PostEmbeddingTextBuilder {
         }
 
         return text.trim();
+    }
+
+    public record ChunkSourceText(int chunkIndex, String chunkText, String sourceText) {
     }
 }

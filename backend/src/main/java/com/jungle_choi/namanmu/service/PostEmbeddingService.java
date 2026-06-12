@@ -3,13 +3,17 @@ package com.jungle_choi.namanmu.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jungle_choi.namanmu.domain.embedding.PostEmbedding;
+import com.jungle_choi.namanmu.domain.embedding.PostEmbeddingChunk;
+import com.jungle_choi.namanmu.domain.embedding.PostEmbeddingChunkRepository;
 import com.jungle_choi.namanmu.domain.embedding.PostEmbeddingRepository;
 import com.jungle_choi.namanmu.domain.post.Post;
 import com.jungle_choi.namanmu.domain.post.PostRepository;
 import com.jungle_choi.namanmu.service.OpenAiEmbeddingClient.EmbeddingResult;
+import com.jungle_choi.namanmu.service.PostEmbeddingTextBuilder.ChunkSourceText;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,14 +23,17 @@ public class PostEmbeddingService {
     private static final String HASH_ALGORITHM = "SHA-256";
 
     private final PostEmbeddingRepository postEmbeddingRepository;
+    private final PostEmbeddingChunkRepository postEmbeddingChunkRepository;
     private final PostRepository postRepository;
     private final ObjectMapper objectMapper;
 
     public PostEmbeddingService(
             PostEmbeddingRepository postEmbeddingRepository,
+            PostEmbeddingChunkRepository postEmbeddingChunkRepository,
             PostRepository postRepository,
             ObjectMapper objectMapper) {
         this.postEmbeddingRepository = postEmbeddingRepository;
+        this.postEmbeddingChunkRepository = postEmbeddingChunkRepository;
         this.postRepository = postRepository;
         this.objectMapper = objectMapper;
     }
@@ -50,6 +57,46 @@ public class PostEmbeddingService {
                                 embeddingResult.dimensions(),
                                 embeddingJson,
                                 sourceHash)));
+    }
+
+    @Transactional
+    public void saveOrReplaceChunks(Long postId, List<ChunkEmbeddingInput> chunkEmbeddings) {
+        Post post = postRepository.getReferenceById(postId);
+        postEmbeddingChunkRepository.deleteAllByPost_Id(postId);
+
+        List<PostEmbeddingChunk> chunks = chunkEmbeddings.stream()
+                .map((chunkEmbedding) -> PostEmbeddingChunk.create(
+                        post,
+                        chunkEmbedding.chunkIndex(),
+                        chunkEmbedding.chunkText(),
+                        chunkEmbedding.embeddingResult().model(),
+                        chunkEmbedding.embeddingResult().dimensions(),
+                        toJson(chunkEmbedding.embeddingResult()),
+                        hash(chunkEmbedding.sourceText())))
+                .toList();
+
+        postEmbeddingChunkRepository.saveAll(chunks);
+    }
+
+    public boolean chunksAreUpToDate(
+            Long postId,
+            String embeddingModel,
+            List<ChunkSourceText> chunkSources) {
+        long savedChunkCount = postEmbeddingChunkRepository.countByPost_IdAndEmbeddingModel(
+                postId,
+                embeddingModel);
+
+        if (savedChunkCount != chunkSources.size()) {
+            return false;
+        }
+
+        return chunkSources.stream()
+                .allMatch((chunkSource) ->
+                        postEmbeddingChunkRepository.existsByPost_IdAndChunkIndexAndEmbeddingModelAndSourceHash(
+                                postId,
+                                chunkSource.chunkIndex(),
+                                embeddingModel,
+                                sourceHash(chunkSource.sourceText())));
     }
 
     public String sourceHash(String sourceText) {
@@ -91,5 +138,12 @@ public class PostEmbeddingService {
         }
 
         return hex.toString();
+    }
+
+    public record ChunkEmbeddingInput(
+            int chunkIndex,
+            String chunkText,
+            String sourceText,
+            EmbeddingResult embeddingResult) {
     }
 }

@@ -7,5 +7,13 @@ public interface PostEmbeddingChunkRepository extends JpaRepository<PostEmbeddin
 
     void deleteAllByPost_Id(Long postId);
 
+    long countByPost_IdAndEmbeddingModel(Long postId, String embeddingModel);
+
+    boolean existsByPost_IdAndChunkIndexAndEmbeddingModelAndSourceHash(
+            Long postId,
+            int chunkIndex,
+            String embeddingModel,
+            String sourceHash);
+
     List<PostEmbeddingChunk> findAllByEmbeddingModel(String embeddingModel);
 }
