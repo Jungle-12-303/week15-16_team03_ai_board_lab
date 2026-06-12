@@ -232,17 +232,26 @@ Agent의 놓친 글 추천 기능을 위한 읽음 기록 테이블이다.
 
 | API | 현재 상태 |
 | --- | --- |
-| `GET /api/posts` | `PostRepository`를 통해 `posts` 테이블 조회 |
-| `POST /api/posts` | 아직 미구현. 다음 단계에서 게시글 저장 API로 추가 예정 |
-| 댓글 API | 아직 미구현 |
-| 태그 API | 아직 미구현 |
-| 회원가입/로그인 API | 아직 미구현 |
+| `POST /api/auth/signup` | `users` 테이블에 사용자 저장, 비밀번호는 해시로 저장 |
+| `POST /api/auth/login` | `users` 조회 후 JWT 발급 |
+| `GET /api/posts` | `posts`, `post_tags`, `comments`를 조회해 목록 응답 생성 |
+| `GET /api/posts/{postId}` | 게시글 상세 조회 후 `post_reads`에 읽음 기록 저장 |
+| `POST /api/posts` | `posts` 저장, `post_tags` 갱신, `embedding_jobs` 예약 |
+| `PATCH /api/posts/{postId}` | 작성자 검증 후 게시글 수정, 태그 갱신, 임베딩 재생성 예약 |
+| `DELETE /api/posts/{postId}` | 작성자 검증 후 게시글을 `DELETED` 상태로 변경 |
+| `POST /api/posts/{postId}/comments` | `comments` 테이블에 댓글 저장 |
+| `DELETE /api/posts/{postId}/comments/{commentId}` | 댓글 작성자 검증 후 댓글 삭제 |
+| `POST /api/ai/similar-posts` | 작성 중인 글을 임베딩하고 `post_embeddings`에서 유사 게시글 검색 |
+| `POST /api/ai/draft` | 유사 게시글을 근거로 RAG 초안 생성 |
+| `POST /api/ai/embedding-jobs/process` | `embedding_jobs`의 대기 작업을 처리해 `post_embeddings` 갱신 |
+| `POST /api/posts/{postId}/fact-check/weather` | MCP 날씨 도구로 외부 정보를 조회하고 게시글 팩트체크 |
 
-현재 `GET /api/posts` 응답은 게시글과 작성자 이름만 DB에서 가져온다. 태그와 댓글은 응답 구조만 유지하고 빈 배열로 내려간다.
+게시글 생성/수정은 게시글 저장과 임베딩 생성을 한 요청에서 모두 처리하지 않는다.
+게시글 트랜잭션에서는 `embedding_jobs`에 작업만 예약하고, 실제 OpenAI Embedding API 호출은 별도 처리 API가 담당한다.
 
-## 확장 후보
+## 남은 확장 후보
 
-AI 기능과 개인화 기능은 아직 테이블로 만들지 않았다. 구현 시점에 아래 후보를 추가 검토한다.
+AI 기능과 개인화 기능 중 일부는 아직 테이블로 만들지 않았다. 구현 시점에 아래 후보를 추가 검토한다.
 
 | 기능 | 후보 테이블 | 목적 |
 | --- | --- | --- |
