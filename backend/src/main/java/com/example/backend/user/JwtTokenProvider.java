@@ -2,6 +2,8 @@ package com.example.backend.user;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -11,13 +13,16 @@ import java.util.Date;
 @Component
 public class JwtTokenProvider {
 
-    private static final String SECRET_KEY = "my-secret-key-for-ai-board-project-2026";
+    @Value("${jwt.secret}")
+    private String secretKey;
+
     private static final long EXPIRATION_TIME = 1000L * 60 * 60;
 
-    private final SecretKey key;
+    private SecretKey key;
 
-    public JwtTokenProvider() {
-        this.key = Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8));
+    @PostConstruct
+    public void init() {
+        this.key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
     }
 
     public String createToken(String loginId) {

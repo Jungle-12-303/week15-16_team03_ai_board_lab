@@ -23,6 +23,9 @@ type Tag = {
   name:string
 }
 
+const API_BASE_URL = 'http://localhost:8080'
+// const API_BASE_URL = 'https://your-backend.onrender.com'
+
 function App() {
   const [posts, setPosts] = useState<Post[]>([])
   const [selectedPostId, setSelectedPostId] = useState<number | null>(null)
@@ -47,7 +50,7 @@ function App() {
   const [currentLoginId, setCurrentLoginId] = useState('')
 
   useEffect(() => {
-    fetch(`http://localhost:8080/api/posts?keyword=${searchKeyword}&page=${page}&size=10`)
+    fetch(`${API_BASE_URL}/api/posts?keyword=${searchKeyword}&page=${page}&size=10`)
       .then((response) => response.json())
       .then((data) => {
         setPosts(data.content)
@@ -60,7 +63,7 @@ function App() {
       return
     }
 
-    fetch(`http://localhost:8080/api/posts/${selectedPostId}`)
+    fetch(`${API_BASE_URL}/api/posts/${selectedPostId}`)
       .then((response) => response.json())
       .then((data) => setSelectedPost(data))
   }, [selectedPostId])
@@ -70,7 +73,7 @@ function App() {
       return
     } 
 
-   fetch(`http://localhost:8080/api/posts/${selectedPostId}/comments`)
+   fetch(`${API_BASE_URL}/api/posts/${selectedPostId}/comments`)
     .then((response) => response.json())
     .then((data)=>setComments(data))
   },[selectedPostId])
@@ -81,7 +84,7 @@ function App() {
       return
     }
 
-    fetch('http://localhost:8080/api/posts',{
+    fetch(`${API_BASE_URL}/api/posts`,{
       method:'POST',
       headers:{
         'Content-Type':'application/json',
@@ -109,7 +112,7 @@ function App() {
       return
     }
 
-    fetch(`http://localhost:8080/api/posts/${id}`, {
+    fetch(`${API_BASE_URL}/api/posts/${id}`, {
       method: 'DELETE',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -136,7 +139,7 @@ function App() {
       return
     }
 
-    fetch(`http://localhost:8080/api/posts/${editingPostId}`, {
+    fetch(`${API_BASE_URL}/api/posts/${editingPostId}`, {
       method:'PUT',
       headers:{
         'Content-Type': 'application/json',
@@ -167,7 +170,7 @@ function App() {
       return
     }
 
-    fetch(`http://localhost:8080/api/posts/${selectedPostId}/comments`, {
+    fetch(`${API_BASE_URL}/api/posts/${selectedPostId}/comments`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -190,7 +193,7 @@ function App() {
       return
     }
 
-    fetch(`http://localhost:8080/api/comments/${commentId}`, {
+    fetch(`${API_BASE_URL}/api/comments/${commentId}`, {
       method: 'DELETE',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -211,7 +214,7 @@ function App() {
       return
     }
 
-    fetch(`http://localhost:8080/api/comments/${editingCommentId}`, {
+    fetch(`${API_BASE_URL}/api/comments/${editingCommentId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -262,7 +265,7 @@ function App() {
   }
 
   const handleSignUp = () => {
-    fetch('http://localhost:8080/api/users/signup', {
+    fetch(`${API_BASE_URL}/api/users/signup`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -282,7 +285,7 @@ function App() {
   }
 
   const handleLogin = () => {
-    fetch('http://localhost:8080/api/users/login', {
+    fetch(`${API_BASE_URL}/api/users/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
