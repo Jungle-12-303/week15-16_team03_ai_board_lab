@@ -116,7 +116,7 @@ class SimilarPostSearchServiceTest {
     }
 
     @Test
-    void searchSimilarPostsKeepsSharedMainTopicAndRanksSpecificTermFirst() {
+    void searchSimilarPostsUsesMainTopicAsSoftRankingSignal() {
         when(postEmbeddingRepository.findAllByEmbeddingModel(EMBEDDING_MODEL))
                 .thenReturn(List.of(
                         embedding(
@@ -132,7 +132,7 @@ class SimilarPostSearchServiceTest {
                         embedding(
                                 3L,
                                 "실시간 배달 상황",
-                                "날씨라는 단어가 한 번 나오지만 글의 주제는 배달 인프라 운영이다.",
+                                "용인 날씨와 어제 더웠던 기온을 다른 맥락에서 함께 언급한다.",
                                 "[0.98,0.02]")));
 
         List<SimilarPostSearchService.SimilarPostResult> results =
@@ -147,7 +147,8 @@ class SimilarPostSearchServiceTest {
 
         assertThat(results)
                 .extracting(SimilarPostSearchService.SimilarPostResult::postId)
-                .containsExactly(1L, 2L);
+                .startsWith(1L, 2L)
+                .contains(3L);
     }
 
     @Test

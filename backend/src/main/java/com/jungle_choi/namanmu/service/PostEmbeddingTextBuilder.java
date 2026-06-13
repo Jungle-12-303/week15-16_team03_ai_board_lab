@@ -90,10 +90,10 @@ public class PostEmbeddingTextBuilder {
 
                 Tags: %s
                 """.formatted(
-                normalize(category),
-                normalize(title),
-                normalize(content),
-                formatTags(tags));
+                normalizeQuery(category),
+                normalizeQuery(title),
+                normalizeQuery(content),
+                formatQueryTags(tags));
     }
 
     private String buildChunk(
@@ -145,12 +145,43 @@ public class PostEmbeddingTextBuilder {
         return joinedTags;
     }
 
+    private static String formatQueryTags(List<String> tags) {
+        if (tags == null || tags.isEmpty()) {
+            return "None";
+        }
+
+        String joinedTags = String.join(", ", tags.stream()
+                .map(PostEmbeddingTextBuilder::normalizeQuery)
+                .filter((tag) -> !tag.isBlank())
+                .toList());
+
+        if (joinedTags.isBlank()) {
+            return "None";
+        }
+
+        return joinedTags;
+    }
+
     private static String normalize(String text) {
         if (text == null) {
             return "";
         }
 
         return text.trim();
+    }
+
+    private static String normalizeQuery(String text) {
+        return normalize(text)
+                .replace("깃허브", "GitHub")
+                .replace("깃헙", "GitHub")
+                .replace("깃랩", "GitLab")
+                .replace("깃 액션", "GitHub Actions")
+                .replace("스프링부트", "Spring Boot")
+                .replace("스프링 부트", "Spring Boot")
+                .replace("레디스", "Redis")
+                .replace("리액트", "React")
+                .replace("쿠버네티스", "Kubernetes")
+                .replace("도커", "Docker");
     }
 
     public record ChunkSourceText(int chunkIndex, String chunkText, String sourceText) {

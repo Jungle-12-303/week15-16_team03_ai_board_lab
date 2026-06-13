@@ -33,11 +33,12 @@ public class SimilarPostSearchService {
     private static final int MAX_LIMIT = 10;
     private static final double MIN_VECTOR_RELEVANCE_SCORE = 0.45;
     private static final double MIN_HYBRID_RELEVANCE_SCORE = 0.38;
-    private static final double MIN_RANKED_RESULT_SCORE = 0.90;
+    private static final double MIN_RANKED_RESULT_SCORE = 0.60;
     private static final double BM25_K1 = 1.2;
     private static final double BM25_B = 0.75;
     private static final double VECTOR_WEIGHT_WITH_QUERY_TERMS = 0.35;
     private static final double BM25_WEIGHT_WITH_QUERY_TERMS = 0.65;
+    private static final double KEYWORD_ALIGNMENT_WEIGHT = 0.25;
     private static final double CHUNK_EVIDENCE_WEIGHT = 0.01;
     private static final double RRF_RANK_CONSTANT = 60.0;
     private static final TypeReference<List<Double>> EMBEDDING_VECTOR_TYPE = new TypeReference<>() {
@@ -275,10 +276,7 @@ public class SimilarPostSearchService {
             Bm25CorpusStats bm25CorpusStats) {
         Post post = postEmbedding.getPost();
         List<String> documentTerms = buildDocumentTerms(post);
-
-        if (!passesKeywordGuard(buildCandidateGuardTerms(post), guardTerms)) {
-            return Optional.empty();
-        }
+        double keywordAlignmentScore = keywordAlignmentScore(buildCandidateGuardTerms(post), guardTerms);
 
         List<Double> storedEmbedding = parseEmbedding(postEmbedding);
         if (storedEmbedding.size() != queryEmbedding.size()) {
@@ -295,7 +293,13 @@ public class SimilarPostSearchService {
             return Optional.empty();
         }
 
-        return Optional.of(new ScoredCandidate("post:%d".formatted(post.getId()), post, vectorScore, bm25Score));
+        return Optional.of(new ScoredCandidate(
+                "post:%d".formatted(post.getId()),
+                post,
+                vectorScore,
+                bm25Score,
+                keywordAlignmentScore,
+                !guardTerms.isEmpty()));
     }
 
     private Optional<ScoredCandidate> toScoredChunkCandidate(
@@ -306,10 +310,7 @@ public class SimilarPostSearchService {
             Bm25CorpusStats bm25CorpusStats) {
         Post post = postEmbeddingChunk.getPost();
         List<String> documentTerms = buildChunkDocumentTerms(postEmbeddingChunk);
-
-        if (!passesKeywordGuard(buildCandidateGuardTerms(post), guardTerms)) {
-            return Optional.empty();
-        }
+        double keywordAlignmentScore = keywordAlignmentScore(buildCandidateGuardTerms(post), guardTerms);
 
         List<Double> storedEmbedding = parseEmbedding(postEmbeddingChunk.getEmbeddingJson());
         if (storedEmbedding.size() != queryEmbedding.size()) {
@@ -333,7 +334,9 @@ public class SimilarPostSearchService {
                 "chunk:%d".formatted(postEmbeddingChunk.getId()),
                 post,
                 vectorScore,
-                bm25Score));
+                bm25Score,
+                keywordAlignmentScore,
+                !guardTerms.isEmpty()));
     }
 
     private static boolean passesRelevanceThreshold(
@@ -352,16 +355,19 @@ public class SimilarPostSearchService {
         return hybridRelevanceScore >= MIN_HYBRID_RELEVANCE_SCORE;
     }
 
-    private static boolean passesKeywordGuard(
-            List<String> documentTerms,
+    private static double keywordAlignmentScore(
+            List<String> candidateTerms,
             List<String> guardTerms) {
-        if (guardTerms.isEmpty()) {
-            return true;
+        if (guardTerms.isEmpty() || candidateTerms.isEmpty()) {
+            return 0.0;
         }
 
-        Set<String> documentTermSet = new HashSet<>(documentTerms);
+        Set<String> candidateTermSet = new HashSet<>(candidateTerms);
+        long matchedTermCount = guardTerms.stream()
+                .filter(candidateTermSet::contains)
+                .count();
 
-        return guardTerms.stream().anyMatch(documentTermSet::contains);
+        return matchedTermCount / (double) guardTerms.size();
     }
 
     private List<Double> parseEmbedding(PostEmbedding postEmbedding) {
@@ -470,7 +476,10 @@ public class SimilarPostSearchService {
             boolean useHybridFusion) {
         if (!useHybridFusion) {
             return candidates.stream()
-                    .map((candidate) -> candidate.toResult(candidate.vectorScore()))
+                    .map((candidate) -> candidate.toResult(applyKeywordAlignmentScore(
+                            candidate.vectorScore(),
+                            candidate.keywordAlignmentScore(),
+                            candidate.keywordAlignmentEnabled())))
                     .toList();
         }
 
@@ -484,8 +493,25 @@ public class SimilarPostSearchService {
                 (candidate) -> candidate.bm25Score() > 0.0);
 
         return candidates.stream()
-                .map((candidate) -> candidate.toResult(rrfScore(candidate, vectorRanks, bm25Ranks)))
+                .map((candidate) -> candidate.toResult(applyKeywordAlignmentScore(
+                        rrfScore(candidate, vectorRanks, bm25Ranks),
+                        candidate.keywordAlignmentScore(),
+                        candidate.keywordAlignmentEnabled())))
                 .toList();
+    }
+
+    private static double applyKeywordAlignmentScore(
+            double baseScore,
+            double keywordAlignmentScore,
+            boolean keywordAlignmentEnabled) {
+        if (!keywordAlignmentEnabled) {
+            return baseScore;
+        }
+
+        return Math.min(
+                (baseScore * (1.0 - KEYWORD_ALIGNMENT_WEIGHT))
+                        + (keywordAlignmentScore * KEYWORD_ALIGNMENT_WEIGHT),
+                1.0);
     }
 
     private static Map<String, Integer> rankBy(
@@ -661,11 +687,14 @@ public class SimilarPostSearchService {
                 "하고",
                 "싶다",
                 "정리",
+                "정리하고",
                 "사용",
+                "사용법",
                 "내용",
                 "관련",
                 "게시글",
                 "작성",
+                "찾고",
                 "오늘",
                 "그냥",
                 "기분",
@@ -782,7 +811,9 @@ public class SimilarPostSearchService {
             String rankId,
             Post post,
             double vectorScore,
-            double bm25Score) {
+            double bm25Score,
+            double keywordAlignmentScore,
+            boolean keywordAlignmentEnabled) {
 
         SimilarPostResult toResult(double score) {
             return new SimilarPostResult(
