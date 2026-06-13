@@ -50,8 +50,10 @@ class JwtTokenServiceTest {
     void readEmailRejectsTokenWithTamperedSignature() {
         User user = User.createRegisteredUser("cedis", "hashed-password");
         String token = jwtTokenService.createToken(user);
-        String tamperedToken = token.substring(0, token.length() - 1)
-                + (token.endsWith("A") ? "B" : "A");
+        String[] tokenParts = token.split("\\.");
+        String tamperedSignature = (tokenParts[2].startsWith("A") ? "B" : "A")
+                + tokenParts[2].substring(1);
+        String tamperedToken = tokenParts[0] + "." + tokenParts[1] + "." + tamperedSignature;
 
         assertThatThrownBy(() -> jwtTokenService.readEmailFromAuthorizationHeader("Bearer " + tamperedToken))
                 .isInstanceOf(ResponseStatusException.class);
