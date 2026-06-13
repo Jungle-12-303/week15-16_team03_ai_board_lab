@@ -29,6 +29,9 @@ public class AgentRecommendationService {
     private static final int CANDIDATE_LIMIT = 80;
     private static final int DEFAULT_RECOMMENDATION_LIMIT = 5;
     private static final int MAX_RECOMMENDATION_LIMIT = 5;
+    private static final double CATEGORY_SCORE_WEIGHT = 0.45;
+    private static final double TAG_SCORE_WEIGHT = 0.35;
+    private static final double RECENCY_SCORE_WEIGHT = 0.20;
     private static final String SUMMARY_INSTRUCTIONS = """
             You are the Project Alpha missed-posts agent.
             Use only the provided recommendation tool results.
@@ -200,9 +203,27 @@ public class AgentRecommendationService {
                 .sum();
         double normalizedTagScore = Math.min(tagScore, 1.0);
         double recencyScore = recencyScore(post, candidates);
-        double score = preference.hasHistory()
-                ? (categoryScore * 0.45) + (normalizedTagScore * 0.35) + (recencyScore * 0.20)
+        double categoryContribution = preference.hasHistory()
+                ? categoryScore * CATEGORY_SCORE_WEIGHT
+                : 0.0;
+        double tagContribution = preference.hasHistory()
+                ? normalizedTagScore * TAG_SCORE_WEIGHT
+                : 0.0;
+        double recencyContribution = preference.hasHistory()
+                ? recencyScore * RECENCY_SCORE_WEIGHT
                 : recencyScore;
+        double score = preference.hasHistory()
+                ? categoryContribution + tagContribution + recencyContribution
+                : recencyScore;
+        List<String> matchedTags = matchedPreferenceTags(tags, preference);
+        RecommendationScoreBreakdown scoreBreakdown = new RecommendationScoreBreakdown(
+                roundScore(categoryScore),
+                roundScore(normalizedTagScore),
+                roundScore(recencyScore),
+                roundScore(categoryContribution),
+                roundScore(tagContribution),
+                roundScore(recencyContribution),
+                matchedTags);
 
         return new RecommendedPost(
                 post.getId(),
@@ -211,7 +232,8 @@ public class AgentRecommendationService {
                 excerpt(post.getContent()),
                 tags,
                 roundScore(score),
-                reason(post, tags, preference, categoryScore, normalizedTagScore));
+                reason(post, matchedTags, preference, categoryScore, normalizedTagScore),
+                scoreBreakdown);
     }
 
     private double recencyScore(Post post, List<Post> candidates) {
@@ -226,17 +248,13 @@ public class AgentRecommendationService {
 
     private String reason(
             Post post,
-            List<String> tags,
+            List<String> matchedTags,
             UserPreference preference,
             double categoryScore,
             double tagScore) {
         if (!preference.hasHistory()) {
             return "아직 읽은 글이 적어서, 최근 올라온 안 읽은 글부터 추천했습니다.";
         }
-
-        List<String> matchedTags = tags.stream()
-                .filter((tag) -> preference.weightForTag(normalizeKey(tag)) > 0.0)
-                .toList();
 
         if (!matchedTags.isEmpty()) {
             return "최근 읽은 글의 태그와 겹칩니다: %s".formatted(String.join(", ", matchedTags));
@@ -251,6 +269,14 @@ public class AgentRecommendationService {
         }
 
         return "최근 올라온 안 읽은 글 중 읽어볼 만한 후보입니다.";
+    }
+
+    private static List<String> matchedPreferenceTags(
+            List<String> tags,
+            UserPreference preference) {
+        return tags.stream()
+                .filter((tag) -> preference.weightForTag(normalizeKey(tag)) > 0.0)
+                .toList();
     }
 
     private String generateSummaryOrFallback(AgentState state) {
@@ -270,12 +296,18 @@ public class AgentRecommendationService {
                         - title: %s
                           category: %s
                           tags: %s
+                          score: %.4f
+                          scoreBreakdown: category=%.4f, tag=%.4f, recency=%.4f
                           reason: %s
                           excerpt: %s
                         """.formatted(
                         post.title(),
                         post.category(),
                         post.tags().isEmpty() ? "None" : String.join(", ", post.tags()),
+                        post.score(),
+                        post.scoreBreakdown().categoryContribution(),
+                        post.scoreBreakdown().tagContribution(),
+                        post.scoreBreakdown().recencyContribution(),
                         post.reason(),
                         post.excerpt()))
                 .collect(Collectors.joining("\n"));
@@ -453,7 +485,18 @@ public class AgentRecommendationService {
             String excerpt,
             List<String> tags,
             double score,
-            String reason) {
+            String reason,
+            RecommendationScoreBreakdown scoreBreakdown) {
+    }
+
+    public record RecommendationScoreBreakdown(
+            double categoryScore,
+            double tagScore,
+            double recencyScore,
+            double categoryContribution,
+            double tagContribution,
+            double recencyContribution,
+            List<String> matchedTags) {
     }
 
     public record AgentStep(

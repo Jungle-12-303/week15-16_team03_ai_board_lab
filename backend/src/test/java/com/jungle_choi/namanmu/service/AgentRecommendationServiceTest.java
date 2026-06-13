@@ -68,6 +68,13 @@ class AgentRecommendationServiceTest {
         assertThat(result.recommendations())
                 .extracting(AgentRecommendationService.RecommendedPost::postId)
                 .startsWith(matchingUnreadPost.getId());
+        AgentRecommendationService.RecommendedPost firstRecommendation =
+                result.recommendations().get(0);
+        assertThat(firstRecommendation.score()).isEqualTo(0.9);
+        assertThat(firstRecommendation.scoreBreakdown().categoryContribution()).isEqualTo(0.45);
+        assertThat(firstRecommendation.scoreBreakdown().tagContribution()).isEqualTo(0.35);
+        assertThat(firstRecommendation.scoreBreakdown().recencyContribution()).isEqualTo(0.1);
+        assertThat(firstRecommendation.scoreBreakdown().matchedTags()).containsExactly("React");
         assertThat(result.summary()).isEqualTo("React 글을 먼저 확인하면 좋습니다.");
         assertThat(result.steps())
                 .extracting(AgentRecommendationService.AgentStep::tool)

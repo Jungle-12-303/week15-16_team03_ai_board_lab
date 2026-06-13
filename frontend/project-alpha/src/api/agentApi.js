@@ -53,6 +53,25 @@ function normalizeRecommendation(recommendation) {
     tags: Array.isArray(recommendation.tags) ? recommendation.tags.map(String) : [],
     score: Number(recommendation.score ?? 0),
     reason: String(recommendation.reason ?? ''),
+    scoreBreakdown: normalizeScoreBreakdown(recommendation.scoreBreakdown),
+  };
+}
+
+function normalizeScoreBreakdown(scoreBreakdown) {
+  if (scoreBreakdown === null || typeof scoreBreakdown !== 'object') {
+    return null;
+  }
+
+  return {
+    categoryScore: Number(scoreBreakdown.categoryScore ?? 0),
+    tagScore: Number(scoreBreakdown.tagScore ?? 0),
+    recencyScore: Number(scoreBreakdown.recencyScore ?? 0),
+    categoryContribution: Number(scoreBreakdown.categoryContribution ?? 0),
+    tagContribution: Number(scoreBreakdown.tagContribution ?? 0),
+    recencyContribution: Number(scoreBreakdown.recencyContribution ?? 0),
+    matchedTags: Array.isArray(scoreBreakdown.matchedTags)
+      ? scoreBreakdown.matchedTags.map(String)
+      : [],
   };
 }
 

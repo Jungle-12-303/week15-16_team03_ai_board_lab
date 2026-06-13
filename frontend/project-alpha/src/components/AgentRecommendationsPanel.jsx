@@ -35,8 +35,28 @@ export default function AgentRecommendationsPanel({
             {recommendations.map((recommendation) => (
               <li key={recommendation.postId}>
                 <Link to={`/posts/${recommendation.postId}`}>{recommendation.title}</Link>
-                <span>{recommendation.category}</span>
+                <span>
+                  {recommendation.category} · score {formatScore(recommendation.score)}
+                </span>
                 <p>{recommendation.reason}</p>
+                {recommendation.scoreBreakdown && (
+                  <div className="agent-score-breakdown">
+                    <span>
+                      Category {formatScore(recommendation.scoreBreakdown.categoryContribution)}
+                    </span>
+                    <span>
+                      Tag {formatScore(recommendation.scoreBreakdown.tagContribution)}
+                    </span>
+                    <span>
+                      Recency {formatScore(recommendation.scoreBreakdown.recencyContribution)}
+                    </span>
+                    {recommendation.scoreBreakdown.matchedTags.length > 0 && (
+                      <span>
+                        Matched {recommendation.scoreBreakdown.matchedTags.join(', ')}
+                      </span>
+                    )}
+                  </div>
+                )}
               </li>
             ))}
           </ol>
@@ -58,4 +78,8 @@ export default function AgentRecommendationsPanel({
       </div>
     </section>
   );
+}
+
+function formatScore(score) {
+  return Number(score).toFixed(3);
 }
