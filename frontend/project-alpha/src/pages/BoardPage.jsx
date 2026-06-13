@@ -16,6 +16,7 @@ export default function BoardPage({
   currentPage,
   totalPages,
   filteredPostCount,
+  agentRecommendations,
   searchTerm,
   selectedCategory,
   selectedTag,
@@ -63,6 +64,7 @@ export default function BoardPage({
           posts={posts}
           categoryCounts={categoryCounts}
           selectedCategory={selectedCategory}
+          agentRecommendations={agentRecommendations}
           onSelectCategory={onSelectCategory}
         />
 

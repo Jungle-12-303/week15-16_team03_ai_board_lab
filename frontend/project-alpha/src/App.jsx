@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import './App.css';
 import Topbar from './components/Topbar';
 import { postsPerPage } from './constants/board';
+import useAgentRecommendations from './hooks/useAgentRecommendations';
 import useAuth from './hooks/useAuth';
 import usePostComposer from './hooks/usePostComposer';
 import usePosts from './hooks/usePosts';
@@ -21,6 +22,7 @@ export default function App() {
   const { currentUser, login, signUp, logout } = useAuth();
   const composer = usePostComposer();
   const ragDraft = useRagDraft(currentUser);
+  const agentRecommendations = useAgentRecommendations(currentUser);
   const {
     posts,
     postPageInfo,
@@ -132,6 +134,7 @@ export default function App() {
   function handleLogout() {
     logout();
     cancelEditPost();
+    agentRecommendations.resetAgentRecommendations();
   }
 
   function cancelEditPost() {
@@ -223,6 +226,7 @@ export default function App() {
       currentPage={safeCurrentPage}
       totalPages={totalPages}
       filteredPostCount={filteredPostCount}
+      agentRecommendations={agentRecommendations}
       searchTerm={searchTerm}
       selectedCategory={selectedCategory}
       selectedTag={selectedTag}

@@ -1,9 +1,11 @@
+import AgentRecommendationsPanel from './AgentRecommendationsPanel';
 import { categories } from '../constants/board';
 
 export default function BoardSidebar({
   posts,
   categoryCounts,
   selectedCategory,
+  agentRecommendations,
   onSelectCategory,
 }) {
   const hasServerCounts = Object.keys(categoryCounts).length > 0;
@@ -45,6 +47,16 @@ export default function BoardSidebar({
           ))}
         </ul>
       </section>
+
+      <AgentRecommendationsPanel
+        recommendations={agentRecommendations.recommendations}
+        summary={agentRecommendations.summary}
+        steps={agentRecommendations.steps}
+        isLoading={agentRecommendations.isLoadingAgentRecommendations}
+        error={agentRecommendations.agentRecommendationsError}
+        hasLoaded={agentRecommendations.hasLoadedAgentRecommendations}
+        onLoad={agentRecommendations.loadMissedPostRecommendations}
+      />
     </aside>
   );
 }
