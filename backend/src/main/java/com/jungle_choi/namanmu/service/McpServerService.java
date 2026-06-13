@@ -11,14 +11,18 @@ public class McpServerService {
 
     private static final String JSON_RPC_VERSION = "2.0";
     private static final String WEATHER_TOOL_NAME = "weather.current_forecast";
+    private static final String GITHUB_REPOSITORY_TOOL_NAME = "github.repository_summary";
 
     private final WeatherApiClient weatherApiClient;
+    private final GitHubApiClient gitHubApiClient;
     private final ObjectMapper objectMapper;
 
     public McpServerService(
             WeatherApiClient weatherApiClient,
+            GitHubApiClient gitHubApiClient,
             ObjectMapper objectMapper) {
         this.weatherApiClient = weatherApiClient;
+        this.gitHubApiClient = gitHubApiClient;
         this.objectMapper = objectMapper;
     }
 
@@ -41,33 +45,67 @@ public class McpServerService {
         }
 
         String toolName = params.path("name").asText("");
-        if (!WEATHER_TOOL_NAME.equals(toolName)) {
-            return error(request.id(), -32602, "Unsupported MCP tool.");
-        }
+        return switch (toolName) {
+            case WEATHER_TOOL_NAME -> callWeatherTool(request.id(), params.path("arguments"));
+            case GITHUB_REPOSITORY_TOOL_NAME -> callGitHubRepositoryTool(request.id(), params.path("arguments"));
+            default -> error(request.id(), -32602, "Unsupported MCP tool.");
+        };
+    }
 
-        String location = params.path("arguments").path("location").asText("서울");
-        WeatherApiClient.WeatherReport weatherReport =
-                weatherApiClient.getCurrentForecast(location);
+    private McpJsonRpcResponse callWeatherTool(JsonNode id, JsonNode arguments) {
+        String location = arguments.path("location").asText("서울");
+        WeatherApiClient.WeatherReport weatherReport = weatherApiClient.getCurrentForecast(location);
 
-        return ok(request.id(), new McpToolCallResult(
+        return ok(id, new McpToolCallResult(
                 false,
                 List.of(new McpContent("text", weatherReport.toBriefingText())),
                 weatherReport));
     }
 
+    private McpJsonRpcResponse callGitHubRepositoryTool(JsonNode id, JsonNode arguments) {
+        String owner = arguments.path("owner").asText("");
+        String repo = arguments.path("repo").asText("");
+
+        if (owner.isBlank() || repo.isBlank()) {
+            return error(id, -32602, "owner and repo are required.");
+        }
+
+        GitHubApiClient.GitHubRepositoryReport repositoryReport =
+                gitHubApiClient.getRepository(owner, repo);
+
+        return ok(id, new McpToolCallResult(
+                false,
+                List.of(new McpContent("text", repositoryReport.toFactText())),
+                repositoryReport));
+    }
+
     private Object listTools() {
         return Map.of(
                 "tools",
-                List.of(Map.of(
-                        "name", WEATHER_TOOL_NAME,
-                        "description", "작성 중인 글에 필요한 지역의 현재 날씨와 오늘 예보를 조회합니다.",
-                        "inputSchema", Map.of(
-                                "type", "object",
-                                "properties", Map.of(
-                                        "location", Map.of(
-                                                "type", "string",
-                                                "description", "날씨를 조회할 지역명. 예: 서울, 부산, 제주")),
-                                "required", List.of("location")))));
+                List.of(
+                        Map.of(
+                                "name", WEATHER_TOOL_NAME,
+                                "description", "작성 중인 글에 필요한 지역의 현재 날씨와 오늘 예보를 조회합니다.",
+                                "inputSchema", Map.of(
+                                        "type", "object",
+                                        "properties", Map.of(
+                                                "location", Map.of(
+                                                        "type", "string",
+                                                        "description", "날씨를 조회할 지역명. 예: 서울, 부산, 제주")),
+                                        "required", List.of("location"))),
+                        Map.of(
+                                "name", GITHUB_REPOSITORY_TOOL_NAME,
+                                "description", "GitHub 공개 저장소의 star, fork, issue, 언어, 라이선스 등 메타데이터를 조회합니다.",
+                                "inputSchema", Map.of(
+                                        "type", "object",
+                                        "properties", Map.of(
+                                                "owner", Map.of(
+                                                        "type", "string",
+                                                        "description", "GitHub 저장소 소유자. 예: facebook"),
+                                                "repo", Map.of(
+                                                        "type", "string",
+                                                        "description", "GitHub 저장소 이름. 예: react")),
+                                        "required", List.of("owner", "repo")))));
     }
 
     public McpToolCallResult callWeatherTool(String location) {
@@ -79,6 +117,25 @@ public class McpServerService {
                 "tools/call",
                 params,
                 objectMapper.valueToTree("weather-fact-check")));
+
+        if (response.error() != null) {
+            throw new IllegalStateException(response.error().message());
+        }
+
+        return objectMapper.convertValue(response.result(), McpToolCallResult.class);
+    }
+
+    public McpToolCallResult callGitHubRepositoryTool(String owner, String repo) {
+        JsonNode params = objectMapper.valueToTree(Map.of(
+                "name", GITHUB_REPOSITORY_TOOL_NAME,
+                "arguments", Map.of(
+                        "owner", owner,
+                        "repo", repo)));
+        McpJsonRpcResponse response = handle(new McpJsonRpcRequest(
+                JSON_RPC_VERSION,
+                "tools/call",
+                params,
+                objectMapper.valueToTree("github-fact-check")));
 
         if (response.error() != null) {
             throw new IllegalStateException(response.error().message());

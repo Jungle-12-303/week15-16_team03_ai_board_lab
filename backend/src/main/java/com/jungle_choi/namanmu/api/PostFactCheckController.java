@@ -4,6 +4,7 @@ import com.jungle_choi.namanmu.domain.post.Post;
 import com.jungle_choi.namanmu.domain.post.PostRepository;
 import com.jungle_choi.namanmu.domain.post.PostStatus;
 import com.jungle_choi.namanmu.domain.post.PostTagRepository;
+import com.jungle_choi.namanmu.service.GitHubFactCheckService;
 import com.jungle_choi.namanmu.service.WeatherFactCheckService;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -22,31 +23,55 @@ public class PostFactCheckController {
     private final PostRepository postRepository;
     private final PostTagRepository postTagRepository;
     private final WeatherFactCheckService weatherFactCheckService;
+    private final GitHubFactCheckService gitHubFactCheckService;
 
     public PostFactCheckController(
             PostRepository postRepository,
             PostTagRepository postTagRepository,
-            WeatherFactCheckService weatherFactCheckService) {
+            WeatherFactCheckService weatherFactCheckService,
+            GitHubFactCheckService gitHubFactCheckService) {
         this.postRepository = postRepository;
         this.postTagRepository = postTagRepository;
         this.weatherFactCheckService = weatherFactCheckService;
+        this.gitHubFactCheckService = gitHubFactCheckService;
     }
 
     @PostMapping("/{postId}/fact-check/weather")
     public WeatherFactCheckService.WeatherFactCheckResult checkWeatherFact(
             @PathVariable Long postId) {
-        Post post = postRepository.findById(postId)
-                .filter((foundPost) -> foundPost.getStatus() == PostStatus.PUBLISHED)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        List<String> tags = postTagRepository.findAllByPostIdOrderByTagNameAsc(post.getId())
-                .stream()
-                .map((postTag) -> postTag.getTag().getName())
-                .toList();
+        Post post = findPublishedPost(postId);
+        List<String> tags = tagsForPost(post);
 
         return weatherFactCheckService.check(
                 post.getCategory(),
                 post.getTitle(),
                 post.getContent(),
                 tags);
+    }
+
+    @PostMapping("/{postId}/fact-check/github")
+    public GitHubFactCheckService.GitHubFactCheckResult checkGitHubFact(
+            @PathVariable Long postId) {
+        Post post = findPublishedPost(postId);
+        List<String> tags = tagsForPost(post);
+
+        return gitHubFactCheckService.check(
+                post.getCategory(),
+                post.getTitle(),
+                post.getContent(),
+                tags);
+    }
+
+    private Post findPublishedPost(Long postId) {
+        return postRepository.findById(postId)
+                .filter((foundPost) -> foundPost.getStatus() == PostStatus.PUBLISHED)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    }
+
+    private List<String> tagsForPost(Post post) {
+        return postTagRepository.findAllByPostIdOrderByTagNameAsc(post.getId())
+                .stream()
+                .map((postTag) -> postTag.getTag().getName())
+                .toList();
     }
 }
