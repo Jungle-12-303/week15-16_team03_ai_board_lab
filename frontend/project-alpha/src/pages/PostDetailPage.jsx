@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { checkWeatherFact } from '../api/mcpApi';
+import { checkGitHubFact, checkWeatherFact } from '../api/mcpApi';
 import { fetchPost } from '../api/postApi';
-import WeatherFactCheckPanel from '../components/WeatherFactCheckPanel';
+import FactCheckPanel from '../components/FactCheckPanel';
 
 export default function PostDetailPage({
   currentUser,
@@ -19,12 +19,17 @@ export default function PostDetailPage({
   const [weatherFactCheck, setWeatherFactCheck] = useState(null);
   const [weatherFactCheckError, setWeatherFactCheckError] = useState('');
   const [isCheckingWeatherFact, setIsCheckingWeatherFact] = useState(false);
+  const [gitHubFactCheck, setGitHubFactCheck] = useState(null);
+  const [gitHubFactCheckError, setGitHubFactCheckError] = useState('');
+  const [isCheckingGitHubFact, setIsCheckingGitHubFact] = useState(false);
   const [commentInput, setCommentInput] = useState('');
 
   useEffect(() => {
     let ignore = false;
     setWeatherFactCheck(null);
     setWeatherFactCheckError('');
+    setGitHubFactCheck(null);
+    setGitHubFactCheckError('');
 
     async function loadPost() {
       try {
@@ -81,6 +86,25 @@ export default function PostDetailPage({
       setWeatherFactCheckError('Weather fact check could not be completed.');
     } finally {
       setIsCheckingWeatherFact(false);
+    }
+  }
+
+  async function handleCheckGitHubFact() {
+    if (post === null) {
+      return;
+    }
+
+    try {
+      setIsCheckingGitHubFact(true);
+      setGitHubFactCheckError('');
+
+      const result = await checkGitHubFact(post.id, currentUser.token);
+      setGitHubFactCheck(result);
+    } catch {
+      setGitHubFactCheck(null);
+      setGitHubFactCheckError('GitHub fact check could not be completed.');
+    } finally {
+      setIsCheckingGitHubFact(false);
     }
   }
 
@@ -150,6 +174,19 @@ export default function PostDetailPage({
   }
 
   const canManagePost = post.author === currentUser.name;
+  const weatherMetaItems = [
+    { label: 'Tool', value: weatherFactCheck?.toolName ?? '' },
+    { label: 'Location', value: weatherFactCheck?.location ?? '' },
+    { label: 'Source', value: weatherFactCheck?.source ?? '' },
+    { label: 'Observed', value: weatherFactCheck?.observedAt ?? '' },
+  ];
+  const gitHubMetaItems = [
+    { label: 'Tool', value: gitHubFactCheck?.toolName ?? '' },
+    { label: 'Repository', value: gitHubFactCheck?.repository ?? '' },
+    { label: 'URL', value: gitHubFactCheck?.repositoryUrl ?? '' },
+    { label: 'Source', value: gitHubFactCheck?.source ?? '' },
+    { label: 'Updated', value: gitHubFactCheck?.observedAt ?? '' },
+  ];
 
   return (
     <section className="detail-stack">
@@ -188,11 +225,24 @@ export default function PostDetailPage({
         )}
       </article>
 
-      <WeatherFactCheckPanel
+      <FactCheckPanel
+        title="MCP Weather fact check"
         result={weatherFactCheck}
         error={weatherFactCheckError}
         isLoading={isCheckingWeatherFact}
         onCheck={handleCheckWeatherFact}
+        metaItems={weatherMetaItems}
+        externalFactTitle="Fetched weather data"
+      />
+
+      <FactCheckPanel
+        title="MCP GitHub fact check"
+        result={gitHubFactCheck}
+        error={gitHubFactCheckError}
+        isLoading={isCheckingGitHubFact}
+        onCheck={handleCheckGitHubFact}
+        metaItems={gitHubMetaItems}
+        externalFactTitle="Fetched GitHub data"
       />
 
       <section className="box comments-panel">

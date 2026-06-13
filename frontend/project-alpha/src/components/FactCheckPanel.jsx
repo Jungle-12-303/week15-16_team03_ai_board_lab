@@ -1,17 +1,21 @@
-export default function WeatherFactCheckPanel({
+export default function FactCheckPanel({
+  title,
   result,
   error,
   isLoading,
   onCheck,
+  metaItems,
+  externalFactTitle,
 }) {
   const hasResult = result !== null;
   const isChecked = result?.status === 'CHECKED';
   const verdictLabel = formatVerdict(result?.verdict ?? '');
+  const visibleMetaItems = metaItems.filter((item) => item.value.length > 0);
 
   return (
     <section className="box fact-check-panel">
       <div className="box-header">
-        <span>MCP Weather fact check</span>
+        <span>{title}</span>
         <button
           type="button"
           className="plain-button"
@@ -57,27 +61,19 @@ export default function WeatherFactCheckPanel({
                   <p>{result.suggestion || 'No safer wording was suggested.'}</p>
                 </div>
 
-                <dl className="fact-check-meta">
-                  <div>
-                    <dt>Tool</dt>
-                    <dd>{result.toolName}</dd>
-                  </div>
-                  <div>
-                    <dt>Location</dt>
-                    <dd>{result.location}</dd>
-                  </div>
-                  <div>
-                    <dt>Source</dt>
-                    <dd>{result.source}</dd>
-                  </div>
-                  <div>
-                    <dt>Observed</dt>
-                    <dd>{result.observedAt}</dd>
-                  </div>
-                </dl>
+                {visibleMetaItems.length > 0 && (
+                  <dl className="fact-check-meta">
+                    {visibleMetaItems.map((item) => (
+                      <div key={item.label}>
+                        <dt>{item.label}</dt>
+                        <dd>{item.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
 
                 <div className="fact-check-block">
-                  <h3>Fetched weather data</h3>
+                  <h3>{externalFactTitle}</h3>
                   <pre>{result.externalFact}</pre>
                 </div>
               </>
