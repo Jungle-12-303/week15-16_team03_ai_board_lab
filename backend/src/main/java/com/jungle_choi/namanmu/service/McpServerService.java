@@ -27,8 +27,16 @@ public class McpServerService {
     }
 
     public McpJsonRpcResponse handle(McpJsonRpcRequest request) {
+        if (request == null) {
+            return error(null, -32600, "MCP request is required.");
+        }
+
         if (!JSON_RPC_VERSION.equals(request.jsonrpc())) {
             return error(request.id(), -32600, "jsonrpc must be 2.0.");
+        }
+
+        if (request.method() == null || request.method().isBlank()) {
+            return error(request.id(), -32600, "method is required.");
         }
 
         return switch (request.method()) {

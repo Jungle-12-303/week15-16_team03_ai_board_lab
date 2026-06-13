@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { checkGitHubFact, checkWeatherFact } from '../api/mcpApi';
 import { fetchPost } from '../api/postApi';
@@ -23,17 +23,22 @@ export default function PostDetailPage({
   const [gitHubFactCheckError, setGitHubFactCheckError] = useState('');
   const [isCheckingGitHubFact, setIsCheckingGitHubFact] = useState(false);
   const [commentInput, setCommentInput] = useState('');
+  const activePostIdRef = useRef(null);
 
   useEffect(() => {
     let ignore = false;
-    setWeatherFactCheck(null);
-    setWeatherFactCheckError('');
-    setGitHubFactCheck(null);
-    setGitHubFactCheckError('');
+    activePostIdRef.current = String(postId);
 
     async function loadPost() {
       try {
         setIsLoadingPost(true);
+        setCommentInput('');
+        setWeatherFactCheck(null);
+        setWeatherFactCheckError('');
+        setIsCheckingWeatherFact(false);
+        setGitHubFactCheck(null);
+        setGitHubFactCheckError('');
+        setIsCheckingGitHubFact(false);
 
         const nextPost = await fetchPost(postId, currentUser.token);
 
@@ -57,6 +62,9 @@ export default function PostDetailPage({
 
     return () => {
       ignore = true;
+      if (activePostIdRef.current === String(postId)) {
+        activePostIdRef.current = null;
+      }
     };
   }, [postId, currentUser.token]);
 
@@ -75,17 +83,25 @@ export default function PostDetailPage({
       return;
     }
 
+    const checkedPostId = String(post.id);
+
     try {
       setIsCheckingWeatherFact(true);
       setWeatherFactCheckError('');
 
       const result = await checkWeatherFact(post.id, currentUser.token);
-      setWeatherFactCheck(result);
+      if (activePostIdRef.current === checkedPostId) {
+        setWeatherFactCheck(result);
+      }
     } catch {
-      setWeatherFactCheck(null);
-      setWeatherFactCheckError('Weather fact check could not be completed.');
+      if (activePostIdRef.current === checkedPostId) {
+        setWeatherFactCheck(null);
+        setWeatherFactCheckError('Weather fact check could not be completed.');
+      }
     } finally {
-      setIsCheckingWeatherFact(false);
+      if (activePostIdRef.current === checkedPostId) {
+        setIsCheckingWeatherFact(false);
+      }
     }
   }
 
@@ -94,17 +110,25 @@ export default function PostDetailPage({
       return;
     }
 
+    const checkedPostId = String(post.id);
+
     try {
       setIsCheckingGitHubFact(true);
       setGitHubFactCheckError('');
 
       const result = await checkGitHubFact(post.id, currentUser.token);
-      setGitHubFactCheck(result);
+      if (activePostIdRef.current === checkedPostId) {
+        setGitHubFactCheck(result);
+      }
     } catch {
-      setGitHubFactCheck(null);
-      setGitHubFactCheckError('GitHub fact check could not be completed.');
+      if (activePostIdRef.current === checkedPostId) {
+        setGitHubFactCheck(null);
+        setGitHubFactCheckError('GitHub fact check could not be completed.');
+      }
     } finally {
-      setIsCheckingGitHubFact(false);
+      if (activePostIdRef.current === checkedPostId) {
+        setIsCheckingGitHubFact(false);
+      }
     }
   }
 

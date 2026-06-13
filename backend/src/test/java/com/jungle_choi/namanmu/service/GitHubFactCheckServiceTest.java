@@ -72,10 +72,32 @@ class GitHubFactCheckServiceTest {
     }
 
     @Test
+    void checkReturnsToolErrorWhenGitHubToolFails() {
+        when(mcpServerService.callGitHubRepositoryTool("missing", "repo"))
+                .thenThrow(new IllegalStateException("not found"));
+
+        GitHubFactCheckService.GitHubFactCheckResult result = gitHubFactCheckService.check(
+                "Learning",
+                "GitHub 저장소 확인",
+                "https://github.com/missing/repo 저장소 정보를 확인합니다.",
+                List.of("GitHub"));
+
+        assertThat(result.status()).isEqualTo("TOOL_ERROR");
+        assertThat(result.repository()).isEqualTo("missing/repo");
+        verify(openAiTextClient, never()).generateStructuredJson(anyString(), anyString(), any());
+    }
+
+    @Test
     void extractRepositoryReferenceRequiresGitHubIntentForOwnerSlashRepoText() {
         assertThat(GitHubFactCheckService.extractRepositoryReference("facebook/react를 봤다"))
                 .isEmpty();
         assertThat(GitHubFactCheckService.extractRepositoryReference("GitHub facebook/react를 봤다"))
+                .contains(new GitHubFactCheckService.RepositoryReference("facebook", "react"));
+    }
+
+    @Test
+    void extractRepositoryReferenceTrimsGitSuffixFromRepositoryUrl() {
+        assertThat(GitHubFactCheckService.extractRepositoryReference("https://github.com/facebook/react.git"))
                 .contains(new GitHubFactCheckService.RepositoryReference("facebook", "react"));
     }
 

@@ -80,6 +80,22 @@ class WeatherFactCheckServiceTest {
     }
 
     @Test
+    void checkReturnsToolErrorWhenWeatherToolFails() {
+        when(mcpServerService.callWeatherTool("서울"))
+                .thenThrow(new IllegalStateException("weather API failed"));
+
+        WeatherFactCheckService.WeatherFactCheckResult result = weatherFactCheckService.check(
+                "Daily",
+                "서울 오늘 날씨",
+                "서울은 오늘 비가 오는지 확인합니다.",
+                List.of("Weather"));
+
+        assertThat(result.status()).isEqualTo("TOOL_ERROR");
+        assertThat(result.location()).isEqualTo("서울");
+        verify(openAiTextClient, never()).generateStructuredJson(anyString(), anyString(), any());
+    }
+
+    @Test
     void checkParsesStructuredJudgementJson() {
         WeatherApiClient.WeatherReport weatherReport = new WeatherApiClient.WeatherReport(
                 "서울",

@@ -35,6 +35,29 @@ class McpServerServiceTest {
     }
 
     @Test
+    void handleRejectsMissingMethodAsJsonRpcError() {
+        McpServerService.McpJsonRpcResponse response = mcpServerService.handle(
+                new McpServerService.McpJsonRpcRequest(
+                        "2.0",
+                        null,
+                        null,
+                        objectMapper.valueToTree("missing-method")));
+
+        assertThat(response.error()).isNotNull();
+        assertThat(response.error().code()).isEqualTo(-32600);
+        assertThat(response.error().message()).contains("method");
+    }
+
+    @Test
+    void handleRejectsNullRequestAsJsonRpcError() {
+        McpServerService.McpJsonRpcResponse response = mcpServerService.handle(null);
+
+        assertThat(response.error()).isNotNull();
+        assertThat(response.error().code()).isEqualTo(-32600);
+        assertThat(response.error().message()).contains("request");
+    }
+
+    @Test
     void callGitHubRepositoryToolReturnsRepositoryMetadata() {
         GitHubApiClient.GitHubRepositoryReport repositoryReport = repositoryReport();
         when(gitHubApiClient.getRepository("facebook", "react"))

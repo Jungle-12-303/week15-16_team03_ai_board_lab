@@ -1,16 +1,16 @@
 export default function FactCheckPanel({
   title,
   result,
-  error,
+  error = '',
   isLoading,
   onCheck,
-  metaItems,
+  metaItems = [],
   externalFactTitle,
 }) {
   const hasResult = result !== null;
   const isChecked = result?.status === 'CHECKED';
   const verdictLabel = formatVerdict(result?.verdict ?? '');
-  const visibleMetaItems = metaItems.filter((item) => item.value.length > 0);
+  const visibleMetaItems = metaItems.filter((item) => String(item.value ?? '').length > 0);
 
   return (
     <section className="box fact-check-panel">
@@ -66,7 +66,7 @@ export default function FactCheckPanel({
                     {visibleMetaItems.map((item) => (
                       <div key={item.label}>
                         <dt>{item.label}</dt>
-                        <dd>{item.value}</dd>
+                        <dd>{String(item.value ?? '')}</dd>
                       </div>
                     ))}
                   </dl>

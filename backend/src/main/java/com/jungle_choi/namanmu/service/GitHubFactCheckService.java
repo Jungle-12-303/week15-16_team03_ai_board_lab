@@ -80,8 +80,13 @@ public class GitHubFactCheckService {
         }
 
         RepositoryReference reference = repositoryReference.get();
-        McpServerService.McpToolCallResult toolCallResult =
-                mcpServerService.callGitHubRepositoryTool(reference.owner(), reference.repo());
+        McpServerService.McpToolCallResult toolCallResult;
+        try {
+            toolCallResult = mcpServerService.callGitHubRepositoryTool(reference.owner(), reference.repo());
+        } catch (RuntimeException exception) {
+            return toolErrorResult(reference);
+        }
+
         GitHubApiClient.GitHubRepositoryReport repositoryReport = objectMapper.convertValue(
                 toolCallResult.structuredContent(),
                 GitHubApiClient.GitHubRepositoryReport.class);
@@ -106,6 +111,23 @@ public class GitHubFactCheckService {
                 judgement.comparison(),
                 judgement.suggestion(),
                 judgement.summary());
+    }
+
+    private GitHubFactCheckResult toolErrorResult(RepositoryReference reference) {
+        return new GitHubFactCheckResult(
+                "TOOL_ERROR",
+                "GitHub 저장소 정보를 가져오지 못했습니다. 저장소 이름이나 API 제한을 확인해 주세요.",
+                GITHUB_TOOL_NAME,
+                reference.owner() + "/" + reference.repo(),
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "");
     }
 
     private GitHubFactCheckResult emptyResult(String status, String message) {
@@ -225,7 +247,14 @@ public class GitHubFactCheckService {
         }
 
         String trimmedValue = value.trim();
-        return REPOSITORY_NAME_TRIM_PATTERN.matcher(trimmedValue).replaceAll("");
+        String withoutTrailingPunctuation = REPOSITORY_NAME_TRIM_PATTERN.matcher(trimmedValue).replaceAll("");
+        if (withoutTrailingPunctuation.toLowerCase(Locale.ROOT).endsWith(".git")) {
+            return withoutTrailingPunctuation.substring(
+                    0,
+                    withoutTrailingPunctuation.length() - ".git".length());
+        }
+
+        return withoutTrailingPunctuation;
     }
 
     private static String stripCodeFence(String text) {

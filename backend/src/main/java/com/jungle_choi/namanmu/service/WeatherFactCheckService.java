@@ -112,8 +112,25 @@ public class WeatherFactCheckService {
                     "");
         }
 
-        McpServerService.McpToolCallResult toolCallResult =
-                mcpServerService.callWeatherTool(location.get());
+        McpServerService.McpToolCallResult toolCallResult;
+        try {
+            toolCallResult = mcpServerService.callWeatherTool(location.get());
+        } catch (RuntimeException exception) {
+            return new WeatherFactCheckResult(
+                    "TOOL_ERROR",
+                    "날씨 정보를 가져오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+                    WEATHER_TOOL_NAME,
+                    location.get(),
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "");
+        }
+
         WeatherApiClient.WeatherReport weatherReport = objectMapper.convertValue(
                 toolCallResult.structuredContent(),
                 WeatherApiClient.WeatherReport.class);
