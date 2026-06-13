@@ -104,6 +104,24 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             @Param("openJobStatuses") List<EmbeddingJobStatus> openJobStatuses,
             Pageable pageable);
 
+    @EntityGraph(attributePaths = "author")
+    @Query("""
+            select post
+            from Post post
+            where post.status = :status
+              and not exists (
+                select postRead.id
+                from PostRead postRead
+                where postRead.user.id = :userId
+                  and postRead.post = post
+              )
+            order by post.createdAt desc
+            """)
+    List<Post> findUnreadPublishedPosts(
+            @Param("userId") Long userId,
+            @Param("status") PostStatus status,
+            Pageable pageable);
+
     interface CategoryCount {
         String getCategory();
 

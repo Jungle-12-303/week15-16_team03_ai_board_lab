@@ -31,6 +31,7 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/ai/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/ai/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/agent/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/mcp").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/posts/**").authenticated()
                         .requestMatchers(HttpMethod.PATCH, "/api/posts/**").authenticated()
