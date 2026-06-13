@@ -6,6 +6,7 @@ export default function WeatherFactCheckPanel({
 }) {
   const hasResult = result !== null;
   const isChecked = result?.status === 'CHECKED';
+  const verdictLabel = formatVerdict(result?.verdict ?? '');
 
   return (
     <section className="box fact-check-panel">
@@ -35,8 +36,25 @@ export default function WeatherFactCheckPanel({
             {isChecked && (
               <>
                 <div className="fact-check-block">
-                  <h3>Post comparison</h3>
-                  <p>{result.judgement}</p>
+                  <h3>Claim</h3>
+                  <p>{result.claim || 'No specific claim was extracted.'}</p>
+                </div>
+
+                <div className="fact-check-block">
+                  <h3>Verdict</h3>
+                  <span className={`fact-check-verdict ${result.verdict}`}>
+                    {verdictLabel}
+                  </span>
+                </div>
+
+                <div className="fact-check-block">
+                  <h3>Comparison</h3>
+                  <p>{result.comparison || result.judgement}</p>
+                </div>
+
+                <div className="fact-check-block">
+                  <h3>Suggestion</h3>
+                  <p>{result.suggestion || 'No safer wording was suggested.'}</p>
                 </div>
 
                 <dl className="fact-check-meta">
@@ -69,4 +87,15 @@ export default function WeatherFactCheckPanel({
       </div>
     </section>
   );
+}
+
+function formatVerdict(verdict) {
+  const labels = {
+    supported: 'Supported',
+    contradicted: 'Contradicted',
+    uncertain: 'Uncertain',
+    too_vague: 'Too vague',
+  };
+
+  return labels[verdict] ?? 'Uncertain';
 }

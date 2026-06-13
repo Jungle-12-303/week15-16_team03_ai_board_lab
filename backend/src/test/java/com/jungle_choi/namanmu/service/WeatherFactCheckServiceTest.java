@@ -76,4 +76,48 @@ class WeatherFactCheckServiceTest {
         assertThat(result.location()).isEqualTo("대구");
         verify(mcpServerService).callWeatherTool("대구");
     }
+
+    @Test
+    void checkParsesStructuredJudgementJson() {
+        WeatherApiClient.WeatherReport weatherReport = new WeatherApiClient.WeatherReport(
+                "서울",
+                "12:00 PM",
+                10.0,
+                45,
+                0.0,
+                4.0,
+                "맑음",
+                12.0,
+                6.0,
+                0.0,
+                "wttr.in");
+        when(mcpServerService.callWeatherTool("서울"))
+                .thenReturn(new McpServerService.McpToolCallResult(
+                        false,
+                        List.of(),
+                        weatherReport));
+        when(openAiTextClient.generateText(anyString(), anyString()))
+                .thenReturn(new OpenAiTextClient.TextGenerationResult("""
+                        {
+                          "claim": "서울은 오늘 비가 온다",
+                          "verdict": "contradicted",
+                          "comparison": "외부 정보는 맑음과 강수량 0.0mm를 보여준다.",
+                          "suggestion": "서울은 오늘 맑은 편이라고 쓰는 것이 안전합니다.",
+                          "summary": "게시글의 비 예보 표현은 현재 외부 날씨와 맞지 않습니다."
+                        }
+                        """));
+
+        WeatherFactCheckService.WeatherFactCheckResult result = weatherFactCheckService.check(
+                "Daily",
+                "서울 오늘 날씨",
+                "서울은 오늘 비가 온다.",
+                List.of("Weather"));
+
+        assertThat(result.status()).isEqualTo("CHECKED");
+        assertThat(result.claim()).isEqualTo("서울은 오늘 비가 온다");
+        assertThat(result.verdict()).isEqualTo("contradicted");
+        assertThat(result.comparison()).contains("강수량 0.0mm");
+        assertThat(result.suggestion()).contains("맑은 편");
+        assertThat(result.judgement()).contains("맞지 않습니다");
+    }
 }

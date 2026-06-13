@@ -1,5 +1,6 @@
 package com.jungle_choi.namanmu.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Locale;
@@ -62,6 +63,10 @@ public class WeatherFactCheckService {
                     "",
                     "",
                     "",
+                    "",
+                    "",
+                    "",
+                    "",
                     "");
         }
 
@@ -71,6 +76,10 @@ public class WeatherFactCheckService {
                     "LOCATION_REQUIRED",
                     "날씨 관련 표현은 있지만 조회할 지역 정보가 없어 MCP 날씨 도구를 호출하지 않았습니다.",
                     WEATHER_TOOL_NAME,
+                    "",
+                    "",
+                    "",
+                    "",
                     "",
                     "",
                     "",
@@ -86,6 +95,8 @@ public class WeatherFactCheckService {
         String promptInput = buildPromptInput(category, title, content, tags, weatherReport);
         OpenAiTextClient.TextGenerationResult textGenerationResult =
                 openAiTextClient.generateText(FACT_CHECK_INSTRUCTIONS, promptInput);
+        StructuredWeatherJudgement structuredJudgement =
+                parseStructuredJudgement(textGenerationResult.text());
 
         return new WeatherFactCheckResult(
                 "CHECKED",
@@ -95,7 +106,11 @@ public class WeatherFactCheckService {
                 weatherReport.source(),
                 weatherReport.observedAt(),
                 weatherReport.toBriefingText(),
-                textGenerationResult.text());
+                structuredJudgement.claim(),
+                structuredJudgement.verdict(),
+                structuredJudgement.comparison(),
+                structuredJudgement.suggestion(),
+                structuredJudgement.summary());
     }
 
     private static String buildPromptInput(
@@ -119,18 +134,71 @@ public class WeatherFactCheckService {
                 Compare the weather-related wording in the post with the weather facts.
                 Focus on whether the post's actual weather claim is supported, contradicted,
                 or too vague to judge from the fetched data.
-                Return this structure:
-                검증 대상: quote or summarize the exact weather-related claim from the post
-                판정: supported / contradicted / uncertain / too vague
-                비교: explain how the post claim differs from or matches the fetched weather facts
-                확인한 외부정보: only the key weather facts used for the comparison
-                수정 제안: safer wording if needed. If no change is needed, say 유지 가능
+                Return only valid JSON with this exact shape:
+                {
+                  "claim": "quote or summarize the exact weather-related claim from the post",
+                  "verdict": "supported | contradicted | uncertain | too_vague",
+                  "comparison": "explain how the post claim differs from or matches the fetched weather facts",
+                  "suggestion": "safer wording if needed. If no change is needed, say 유지 가능",
+                  "summary": "one short Korean sentence for the UI"
+                }
                 """.formatted(
                 normalize(category),
                 normalize(title),
                 formatTags(tags),
                 normalize(content),
                 weatherReport.toBriefingText());
+    }
+
+    private StructuredWeatherJudgement parseStructuredJudgement(String generatedText) {
+        String jsonText = stripCodeFence(generatedText);
+
+        try {
+            StructuredWeatherJudgement judgement =
+                    objectMapper.readValue(jsonText, StructuredWeatherJudgement.class);
+
+            return new StructuredWeatherJudgement(
+                    normalize(judgement.claim()),
+                    normalizeVerdict(judgement.verdict()),
+                    normalize(judgement.comparison()),
+                    normalize(judgement.suggestion()),
+                    normalize(judgement.summary()));
+        } catch (JsonProcessingException exception) {
+            String fallbackText = normalize(generatedText);
+
+            return new StructuredWeatherJudgement(
+                    "",
+                    "uncertain",
+                    fallbackText,
+                    "",
+                    fallbackText);
+        }
+    }
+
+    private static String stripCodeFence(String text) {
+        String normalizedText = normalize(text);
+        if (normalizedText.startsWith("```json")) {
+            normalizedText = normalizedText.substring("```json".length()).trim();
+        } else if (normalizedText.startsWith("```")) {
+            normalizedText = normalizedText.substring("```".length()).trim();
+        }
+
+        if (normalizedText.endsWith("```")) {
+            normalizedText = normalizedText.substring(0, normalizedText.length() - "```".length()).trim();
+        }
+
+        return normalizedText;
+    }
+
+    private static String normalizeVerdict(String verdict) {
+        String normalizedVerdict = normalize(verdict).toLowerCase(Locale.ROOT)
+                .replace(" ", "_");
+
+        if (List.of("supported", "contradicted", "uncertain", "too_vague").contains(normalizedVerdict)) {
+            return normalizedVerdict;
+        }
+
+        return "uncertain";
     }
 
     static boolean hasWeatherIntent(String text, List<String> tags) {
@@ -179,6 +247,18 @@ public class WeatherFactCheckService {
             String source,
             String observedAt,
             String externalFact,
+            String claim,
+            String verdict,
+            String comparison,
+            String suggestion,
             String judgement) {
+    }
+
+    private record StructuredWeatherJudgement(
+            String claim,
+            String verdict,
+            String comparison,
+            String suggestion,
+            String summary) {
     }
 }

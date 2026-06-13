@@ -32,6 +32,10 @@ function normalizeWeatherFactCheck(result) {
     source: String(result.source ?? ''),
     observedAt: String(result.observedAt ?? ''),
     externalFact: String(result.externalFact ?? ''),
+    claim: String(result.claim ?? ''),
+    verdict: String(result.verdict ?? ''),
+    comparison: String(result.comparison ?? ''),
+    suggestion: String(result.suggestion ?? ''),
     judgement: String(result.judgement ?? ''),
   };
 }
