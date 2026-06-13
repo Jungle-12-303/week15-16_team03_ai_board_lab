@@ -32,6 +32,7 @@ public class AgentRecommendationService {
     private static final double CATEGORY_SCORE_WEIGHT = 0.45;
     private static final double TAG_SCORE_WEIGHT = 0.35;
     private static final double RECENCY_SCORE_WEIGHT = 0.20;
+    private static final double RECENT_READ_DECAY = 0.85;
     private static final String SUMMARY_INSTRUCTIONS = """
             You are the Project Alpha missed-posts agent.
             Use only the provided recommendation tool results.
@@ -120,7 +121,7 @@ public class AgentRecommendationService {
         return new AgentStep(
                 AgentTool.ANALYZE_PROFILE.toolName,
                 "completed",
-                "Read history analyzed: %d posts, top categories=%s, top tags=%s".formatted(
+                "Recency-weighted read history analyzed: %d posts, top categories=%s, top tags=%s".formatted(
                         readPosts.size(),
                         state.preference.topCategoryNames(),
                         state.preference.topTagNames()));
@@ -175,19 +176,21 @@ public class AgentRecommendationService {
     }
 
     private UserPreference buildPreference(List<Post> readPosts) {
-        Map<String, Integer> categoryCounts = new HashMap<>();
-        Map<String, Integer> tagCounts = new HashMap<>();
+        Map<String, Double> categoryWeights = new HashMap<>();
+        Map<String, Double> tagWeights = new HashMap<>();
 
-        for (Post post : readPosts) {
-            categoryCounts.merge(post.getCategory(), 1, Integer::sum);
+        for (int index = 0; index < readPosts.size(); index++) {
+            Post post = readPosts.get(index);
+            double readWeight = Math.pow(RECENT_READ_DECAY, index);
+            categoryWeights.merge(post.getCategory(), readWeight, Double::sum);
             for (String tag : tagsForPost(post)) {
-                tagCounts.merge(normalizeKey(tag), 1, Integer::sum);
+                tagWeights.merge(normalizeKey(tag), readWeight, Double::sum);
             }
         }
 
         return new UserPreference(
-                normalizeWeights(categoryCounts),
-                normalizeWeights(tagCounts),
+                normalizeWeights(categoryWeights),
+                normalizeWeights(tagWeights),
                 readPosts.size());
     }
 
@@ -343,24 +346,24 @@ public class AgentRecommendationService {
                 .toList();
     }
 
-    private static Map<String, Double> normalizeWeights(Map<String, Integer> counts) {
-        if (counts.isEmpty()) {
+    private static Map<String, Double> normalizeWeights(Map<String, Double> weightsByKey) {
+        if (weightsByKey.isEmpty()) {
             return Map.of();
         }
 
-        int maxCount = counts.values()
+        double maxWeight = weightsByKey.values()
                 .stream()
-                .mapToInt(Integer::intValue)
+                .mapToDouble(Double::doubleValue)
                 .max()
-                .orElse(1);
+                .orElse(1.0);
         Map<String, Double> weights = new LinkedHashMap<>();
-        counts.entrySet()
+        weightsByKey.entrySet()
                 .stream()
-                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed()
+                .sorted(Map.Entry.<String, Double>comparingByValue().reversed()
                         .thenComparing(Map.Entry::getKey))
                 .forEach((entry) -> weights.put(
                         normalizeKey(entry.getKey()),
-                        entry.getValue() / (double) maxCount));
+                        entry.getValue() / maxWeight));
 
         return weights;
     }

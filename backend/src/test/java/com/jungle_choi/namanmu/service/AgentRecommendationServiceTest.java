@@ -85,6 +85,45 @@ class AgentRecommendationServiceTest {
                         "summarize_recommendations");
     }
 
+    @Test
+    void recommendMissedPostsWeightsRecentReadHistoryMoreThanOlderReads() {
+        User user = user(1L, "cedis");
+        Post recentReadPost = post(10L, "Learning", "React state notes");
+        Post olderReadPost = post(11L, "Daily", "Daily hardware memo");
+        Post dailyUnreadPost = post(20L, "Daily", "Daily hardware follow up");
+        Post reactUnreadPost = post(21L, "Learning", "React hooks guide");
+
+        when(postReadRepository.findRecentReadPosts(
+                eq(user.getId()),
+                eq(PostStatus.PUBLISHED),
+                any(Pageable.class)))
+                .thenReturn(List.of(recentReadPost, olderReadPost));
+        when(postRepository.findUnreadPublishedPosts(
+                eq(user.getId()),
+                eq(PostStatus.PUBLISHED),
+                any(Pageable.class)))
+                .thenReturn(List.of(dailyUnreadPost, reactUnreadPost));
+        when(postTagRepository.findAllByPostIdOrderByTagNameAsc(recentReadPost.getId()))
+                .thenReturn(List.of(postTag(recentReadPost, "React")));
+        when(postTagRepository.findAllByPostIdOrderByTagNameAsc(olderReadPost.getId()))
+                .thenReturn(List.of(postTag(olderReadPost, "Hardware")));
+        when(postTagRepository.findAllByPostIdOrderByTagNameAsc(dailyUnreadPost.getId()))
+                .thenReturn(List.of(postTag(dailyUnreadPost, "Hardware")));
+        when(postTagRepository.findAllByPostIdOrderByTagNameAsc(reactUnreadPost.getId()))
+                .thenReturn(List.of(postTag(reactUnreadPost, "React")));
+        when(openAiTextClient.generateText(any(String.class), any(String.class)))
+                .thenReturn(new OpenAiTextClient.TextGenerationResult("최근 React 관심사를 기준으로 추천했습니다."));
+
+        AgentRecommendationService.AgentRecommendationResult result =
+                agentRecommendationService.recommendMissedPosts(user, 5);
+
+        assertThat(result.recommendations())
+                .extracting(AgentRecommendationService.RecommendedPost::postId)
+                .startsWith(reactUnreadPost.getId());
+        assertThat(result.recommendations().get(0).scoreBreakdown().matchedTags())
+                .containsExactly("React");
+    }
+
     private static User user(Long userId, String name) {
         User user = User.createLocalUser(name);
         ReflectionTestUtils.setField(user, "id", userId);
