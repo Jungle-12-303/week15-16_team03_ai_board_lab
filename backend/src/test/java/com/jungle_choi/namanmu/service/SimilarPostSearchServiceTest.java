@@ -116,7 +116,7 @@ class SimilarPostSearchServiceTest {
     }
 
     @Test
-    void searchSimilarPostsRequiresSpecificTitleTermWhenAvailable() {
+    void searchSimilarPostsKeepsSharedMainTopicAndRanksSpecificTermFirst() {
         when(postEmbeddingRepository.findAllByEmbeddingModel(EMBEDDING_MODEL))
                 .thenReturn(List.of(
                         embedding(
@@ -126,9 +126,14 @@ class SimilarPostSearchServiceTest {
                                 "[1.0,0.0]"),
                         embedding(
                                 2L,
-                                "대구 오늘 날씨",
+                                "대구 오늘 날씨는",
                                 "대구 날씨와 기온 변화를 정리한다.",
-                                "[0.99,0.01]")));
+                                "[0.99,0.01]"),
+                        embedding(
+                                3L,
+                                "실시간 배달 상황",
+                                "날씨라는 단어가 한 번 나오지만 글의 주제는 배달 인프라 운영이다.",
+                                "[0.98,0.02]")));
 
         List<SimilarPostSearchService.SimilarPostResult> results =
                 similarPostSearchService.searchSimilarPosts(
@@ -142,7 +147,7 @@ class SimilarPostSearchServiceTest {
 
         assertThat(results)
                 .extracting(SimilarPostSearchService.SimilarPostResult::postId)
-                .containsExactly(1L);
+                .containsExactly(1L, 2L);
     }
 
     @Test

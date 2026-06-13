@@ -276,7 +276,7 @@ public class SimilarPostSearchService {
         Post post = postEmbedding.getPost();
         List<String> documentTerms = buildDocumentTerms(post);
 
-        if (!passesKeywordGuard(documentTerms, guardTerms)) {
+        if (!passesKeywordGuard(buildCandidateGuardTerms(post), guardTerms)) {
             return Optional.empty();
         }
 
@@ -307,7 +307,7 @@ public class SimilarPostSearchService {
         Post post = postEmbeddingChunk.getPost();
         List<String> documentTerms = buildChunkDocumentTerms(postEmbeddingChunk);
 
-        if (!passesKeywordGuard(documentTerms, guardTerms)) {
+        if (!passesKeywordGuard(buildCandidateGuardTerms(post), guardTerms)) {
             return Optional.empty();
         }
 
@@ -597,6 +597,12 @@ public class SimilarPostSearchService {
                 post.getContent()));
     }
 
+    private static List<String> buildCandidateGuardTerms(Post post) {
+        return tokenizeSearchText("%s %s".formatted(
+                post.getTitle(),
+                post.getCategory()));
+    }
+
     private static List<String> buildChunkDocumentTerms(PostEmbeddingChunk chunk) {
         Post post = chunk.getPost();
 
@@ -611,8 +617,29 @@ public class SimilarPostSearchService {
         String normalizedText = normalizeSearchText(text);
 
         return java.util.Arrays.stream(normalizedText.split("[^\\p{L}\\p{N}]+"))
+                .map(SimilarPostSearchService::stripKoreanParticle)
                 .filter(SimilarPostSearchService::isMeaningfulTerm)
                 .toList();
+    }
+
+    private static String stripKoreanParticle(String token) {
+        if (token == null) {
+            return "";
+        }
+
+        for (String suffix : List.of("으로", "에서", "에게", "부터", "까지", "처럼", "보다")) {
+            if (token.endsWith(suffix) && token.length() > suffix.length() + 1) {
+                return token.substring(0, token.length() - suffix.length());
+            }
+        }
+
+        for (String suffix : List.of("은", "는", "이", "가", "을", "를", "에", "와", "과", "로", "도", "만", "의")) {
+            if (token.endsWith(suffix) && token.length() > suffix.length() + 1) {
+                return token.substring(0, token.length() - suffix.length());
+            }
+        }
+
+        return token;
     }
 
     private static boolean isMeaningfulTerm(String token) {
@@ -657,7 +684,6 @@ public class SimilarPostSearchService {
 
     private static boolean isGenericGuardTerm(String token) {
         return Set.of(
-                "날씨",
                 "오늘",
                 "어제",
                 "내일",
