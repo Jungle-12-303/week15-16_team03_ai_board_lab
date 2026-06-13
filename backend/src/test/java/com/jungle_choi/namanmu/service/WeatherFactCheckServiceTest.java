@@ -1,6 +1,7 @@
 package com.jungle_choi.namanmu.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -9,6 +10,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 class WeatherFactCheckServiceTest {
@@ -63,7 +65,7 @@ class WeatherFactCheckServiceTest {
                         false,
                         List.of(),
                         weatherReport));
-        when(openAiTextClient.generateText(anyString(), anyString()))
+        when(openAiTextClient.generateStructuredJson(anyString(), anyString(), any()))
                 .thenReturn(new OpenAiTextClient.TextGenerationResult("판정: 확인됨"));
 
         WeatherFactCheckService.WeatherFactCheckResult result = weatherFactCheckService.check(
@@ -96,7 +98,7 @@ class WeatherFactCheckServiceTest {
                         false,
                         List.of(),
                         weatherReport));
-        when(openAiTextClient.generateText(anyString(), anyString()))
+        when(openAiTextClient.generateStructuredJson(anyString(), anyString(), any()))
                 .thenReturn(new OpenAiTextClient.TextGenerationResult("""
                         {
                           "claim": "서울은 오늘 비가 온다",
@@ -119,5 +121,10 @@ class WeatherFactCheckServiceTest {
         assertThat(result.comparison()).contains("강수량 0.0mm");
         assertThat(result.suggestion()).contains("맑은 편");
         assertThat(result.judgement()).contains("맞지 않습니다");
+        ArgumentCaptor<OpenAiTextClient.StructuredJsonSchema> schemaCaptor =
+                ArgumentCaptor.forClass(OpenAiTextClient.StructuredJsonSchema.class);
+        verify(openAiTextClient).generateStructuredJson(anyString(), anyString(), schemaCaptor.capture());
+        assertThat(schemaCaptor.getValue().name()).isEqualTo("weather_fact_check");
+        assertThat(schemaCaptor.getValue().schema()).containsEntry("additionalProperties", false);
     }
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import org.springframework.stereotype.Service;
@@ -33,6 +34,30 @@ public class WeatherFactCheckService {
             Keep the result concise and practical.
             Include a clear judgement and a safer wording suggestion when needed.
             """;
+    private static final OpenAiTextClient.StructuredJsonSchema WEATHER_FACT_CHECK_SCHEMA =
+            new OpenAiTextClient.StructuredJsonSchema(
+                    "weather_fact_check",
+                    "Structured comparison between a post's weather claim and fetched weather facts.",
+                    Map.of(
+                            "type", "object",
+                            "additionalProperties", false,
+                            "properties", Map.of(
+                                    "claim", Map.of(
+                                            "type", "string",
+                                            "description", "The exact weather-related claim from the post."),
+                                    "verdict", Map.of(
+                                            "type", "string",
+                                            "enum", List.of("supported", "contradicted", "uncertain", "too_vague")),
+                                    "comparison", Map.of(
+                                            "type", "string",
+                                            "description", "How the post claim matches or differs from the weather facts."),
+                                    "suggestion", Map.of(
+                                            "type", "string",
+                                            "description", "Safer wording if the post should be revised."),
+                                    "summary", Map.of(
+                                            "type", "string",
+                                            "description", "One short Korean sentence for the UI.")),
+                            "required", List.of("claim", "verdict", "comparison", "suggestion", "summary")));
 
     private final McpServerService mcpServerService;
     private final OpenAiTextClient openAiTextClient;
@@ -94,7 +119,10 @@ public class WeatherFactCheckService {
                 WeatherApiClient.WeatherReport.class);
         String promptInput = buildPromptInput(category, title, content, tags, weatherReport);
         OpenAiTextClient.TextGenerationResult textGenerationResult =
-                openAiTextClient.generateText(FACT_CHECK_INSTRUCTIONS, promptInput);
+                openAiTextClient.generateStructuredJson(
+                        FACT_CHECK_INSTRUCTIONS,
+                        promptInput,
+                        WEATHER_FACT_CHECK_SCHEMA);
         StructuredWeatherJudgement structuredJudgement =
                 parseStructuredJudgement(textGenerationResult.text());
 
@@ -134,14 +162,7 @@ public class WeatherFactCheckService {
                 Compare the weather-related wording in the post with the weather facts.
                 Focus on whether the post's actual weather claim is supported, contradicted,
                 or too vague to judge from the fetched data.
-                Return only valid JSON with this exact shape:
-                {
-                  "claim": "quote or summarize the exact weather-related claim from the post",
-                  "verdict": "supported | contradicted | uncertain | too_vague",
-                  "comparison": "explain how the post claim differs from or matches the fetched weather facts",
-                  "suggestion": "safer wording if needed. If no change is needed, say 유지 가능",
-                  "summary": "one short Korean sentence for the UI"
-                }
+                Return a JSON object that follows the supplied schema.
                 """.formatted(
                 normalize(category),
                 normalize(title),
