@@ -13,6 +13,10 @@ public interface PostReadRepository extends JpaRepository<PostRead, Long> {
 
     Optional<PostRead> findByUserIdAndPostId(Long userId, Long postId);
 
+    long countByUserId(Long userId);
+
+    List<PostRead> findByUserIdOrderByReadAtAsc(Long userId, Pageable pageable);
+
     @Query("""
             select post
             from PostRead postRead
