@@ -7,6 +7,7 @@ type Post = {
   authorName: string
   createdAt: string
   tags:Tag[]
+  ownerLoginId: string
 }
 
 type Comment = {
@@ -14,6 +15,7 @@ type Comment = {
   content:string
   authorName:string
   createdAt:string
+  ownerLoginId: string
 }
 
 type Tag = {
@@ -27,11 +29,9 @@ function App() {
   const [selectedPost, setSelectedPost] = useState<Post | null>(null)
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
-  const [authorName, setAuthorName] = useState("")
   const [editingPostId, setEditingPostId] = useState<number | null> (null)
   const [comments, setComments] = useState<Comment[]>([])
   const [commentContent, setCommentContent] = useState('')
-  const [commentAuthorName, setCommentAuthorName] = useState('')
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null)
   const [tagInput, setTagInput] = useState("")
   const [tagNames, setTagNames] = useState<string[]>([])
@@ -39,6 +39,12 @@ function App() {
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [searchKeyword, setSearchKeyword] = useState('')
+  const [loginId, setLoginId] = useState('')
+  const [password, setPassword] = useState('')
+  const [nickname, setNickname] = useState('')
+  const [token, setToken] = useState('')
+  const [currentNickname, setCurrentNickname] = useState('')
+  const [currentLoginId, setCurrentLoginId] = useState('')
 
   useEffect(() => {
     fetch(`http://localhost:8080/api/posts?keyword=${searchKeyword}&page=${page}&size=10`)
@@ -62,7 +68,7 @@ function App() {
   useEffect(()=>{
     if(selectedPostId === null){
       return
-    }
+    } 
 
    fetch(`http://localhost:8080/api/posts/${selectedPostId}/comments`)
     .then((response) => response.json())
@@ -71,15 +77,20 @@ function App() {
 
   
   const handleCreatePost = ()=> {
+    if(token === ''){
+      return
+    }
+
     fetch('http://localhost:8080/api/posts',{
       method:'POST',
       headers:{
         'Content-Type':'application/json',
+        Authorization:`Bearer ${token}`,
       },
-      body:JSON.stringify({
-        title:title,
-        content:content,
-        authorName:authorName,
+      body: JSON.stringify({
+        title: title,
+        content: content,
+        authorName: currentNickname,
         tagNames: tagNames,
       }),
     })
@@ -88,19 +99,25 @@ function App() {
       setPosts([...posts,data])
       setTitle('')
       setContent('')
-      setAuthorName('')
       setTagInput('')
       setTagNames([])
     })
   }
   
-  const handleDeletePost = (id:number)=>{
-    fetch(`http://localhost:8080/api/posts/${id}` ,{
-      method:'DELETE',
-    }).then(()=>{
+  const handleDeletePost = (id: number) => {
+    if (token === '') {
+      return
+    }
+
+    fetch(`http://localhost:8080/api/posts/${id}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }).then(() => {
       setPosts(posts.filter((post) => post.id !== id))
 
-      if(selectedPostId === id){
+      if (selectedPostId === id) {
         setSelectedPostId(null)
         setSelectedPost(null)
       }
@@ -111,12 +128,11 @@ function App() {
     setEditingPostId(post.id)
     setTitle(post.title)
     setContent(post.content)
-    setAuthorName(post.authorName)
     setTagNames(post.tags.map((tag) => tag.name))
   }
 
   const handleUpdatePost = ()=> {
-    if(editingPostId === null){
+    if(editingPostId === null || token ===''){
       return
     }
 
@@ -124,11 +140,12 @@ function App() {
       method:'PUT',
       headers:{
         'Content-Type': 'application/json',
+        Authorization:`Bearer ${token}`,
       },
       body:JSON.stringify({
         title:title,
         content:content,
-        authorName:authorName,
+        authorName: currentNickname,
         tagNames:tagNames,
       }),
     })
@@ -140,40 +157,48 @@ function App() {
         setEditingPostId(null)
         setTitle('')
         setContent('')
-        setAuthorName('')
         setTagInput('')
         setTagNames([])
       })
   }
 
-  const handleCreateComment = ()=>{
-    if(selectedPostId === null){
+  const handleCreateComment = () => {
+    if (selectedPostId === null || token === "") {
       return
     }
+
     fetch(`http://localhost:8080/api/posts/${selectedPostId}/comments`, {
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
       },
-      body:JSON.stringify({
-        content:commentContent,
-        authorName:commentAuthorName,
+      body: JSON.stringify({
+        content: commentContent,
+        authorName: currentNickname,
       }),
     })
-    .then((Response)=>Response.json())
-    .then((data)=>{
-      setComments([...comments,data])
-      setCommentContent('')
-      setCommentAuthorName('')
-    })
+      .then((response) => response.json())
+      .then((data) => {
+        setComments([...comments, data])
+        setCommentContent('')
+      })
   }
 
-  const handleDeleteComment = (commentId:number)=>{
-    fetch(`http://localhost:8080/api/comments/${commentId}`,{
-      method:'DELETE',
-    }).then(()=>{
-      setComments(comments.filter((comment)=>comment.id !== commentId))
+  const handleDeleteComment = (commentId: number) => {
+    if (token === '') {
+      return
+    }
+
+    fetch(`http://localhost:8080/api/comments/${commentId}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     })
+      .then(() => {
+        setComments(comments.filter((comment) => comment.id !== commentId))
+      })
   }
 
   const handleStartEditComment = (comment:Comment)=>{
@@ -181,30 +206,30 @@ function App() {
     setCommentContent(comment.content)
   }
 
-  const handleUpdateComment = ()=>{
-    if(editingCommentId === null){
+  const handleUpdateComment = () => {
+    if (editingCommentId === null || token === '') {
       return
     }
 
     fetch(`http://localhost:8080/api/comments/${editingCommentId}`, {
-      method:'PUT',
-      headers:{
+      method: 'PUT',
+      headers: {
         'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
       },
-      body:JSON.stringify({
-        content:commentContent,
-        authorName:commentAuthorName,
+      body: JSON.stringify({
+        content: commentContent,
+        authorName: currentNickname,
       }),
     })
-    .then((response)=>response.json())
-    .then((data)=>{
-      setComments(comments.map((comment) => (
-        comment.id === editingCommentId ? data : comment
-      )))
-      setEditingCommentId(null)
-      setCommentContent('')
-      setCommentAuthorName('')
-    })
+      .then((response) => response.json())
+      .then((data) => {
+        setComments(comments.map((comment) => (
+          comment.id === editingCommentId ? data : comment
+        )))
+        setCommentContent('')
+        setEditingCommentId(null)
+      })
   }
 
   const handleTagKeyDown = (e:React.KeyboardEvent<HTMLInputElement>)=>{
@@ -236,9 +261,106 @@ function App() {
     setSearchKeyword(keyword)
   }
 
+  const handleSignUp = () => {
+    fetch('http://localhost:8080/api/users/signup', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        loginId: loginId,
+        password: password,
+        nickname: nickname,
+      }),
+    })
+      .then((response) => response.json())
+      .then(() => {
+        setLoginId('')
+        setPassword('')
+        setNickname('')
+      })
+  }
+
+  const handleLogin = () => {
+    fetch('http://localhost:8080/api/users/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        loginId: loginId,
+        password: password,
+      }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        setToken(data.token)
+        setCurrentNickname(data.nickname)
+        setCurrentLoginId(data.loginId)
+        setPassword('')
+      })
+  }
+
   return (
     <div>
       <div>
+        <h2>회원가입</h2>
+
+        <input
+          type="text"
+          placeholder="아이디"
+          value={loginId}
+          onChange={(e) => setLoginId(e.target.value)}
+        />
+        <br />
+
+        <input
+          type="password"
+          placeholder="비밀번호"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <br />
+
+        <input
+          type="text"
+          placeholder="닉네임"
+          value={nickname}
+          onChange={(e) => setNickname(e.target.value)}
+        />
+        <br />
+
+        <button onClick={handleSignUp}>회원가입</button>
+
+        <div>
+          <h2>로그인</h2>
+
+          <input
+            type="text"
+            placeholder="아이디"
+            value={loginId}
+            onChange={(e) => setLoginId(e.target.value)}
+          />
+          <br />
+
+          <input
+            type="password"
+            placeholder="비밀번호"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <br />
+
+          <button onClick={handleLogin}>로그인</button>
+          <div>
+            <p>{token ? '로그인됨' : '로그인 안 됨'}</p>
+            {token && <p>현재 사용자: {currentNickname}</p>}
+            {token && <p>현재 loginId: {currentLoginId}</p>}
+            
+          </div>
+        </div>
+        <br></br>
+
         <input
           type="text"
           placeholder="검색어 입력"
@@ -264,14 +386,6 @@ function App() {
           placeholder='내용'
           value={content}
           onChange={(e)=>setContent(e.target.value)}
-        />
-        <br></br>
-
-        <input
-          type='text'
-          placeholder='작성자'
-          value={authorName}
-          onChange={(e)=>setAuthorName(e.target.value)}
         />
         <br></br>
 
@@ -304,8 +418,14 @@ function App() {
             <button onClick={() => setSelectedPostId(post.id)}>
               {post.title}
             </button>
-            <button onClick={() => handleStartEdit(post)}>수정</button>
-            <button onClick={() => handleDeletePost(post.id)}>삭제</button>
+
+            {post.ownerLoginId === currentLoginId && (
+              <>
+                <button onClick={() => handleStartEdit(post)}>수정</button>
+                <button onClick={() => handleDeletePost(post.id)}>삭제</button>
+              </>
+            )}
+
             <div>
               {post.tags.map((tag) => tag.name).join(', ')}
             </div>
@@ -349,19 +469,17 @@ function App() {
             {comments.map((comment)=>(
               <li key={comment.id}>
                 {comment.authorName}:{comment.content}
-                <button onClick={()=> handleStartEditComment(comment)}>수정</button>
-                <button onClick={()=> handleDeleteComment(comment.id)}>삭제</button>
+                  {comment.ownerLoginId === currentLoginId && (
+                    <>
+                      <button onClick={() => handleStartEditComment(comment)}>수정</button>
+                      <button onClick={() => handleDeleteComment(comment.id)}>삭제</button>
+                    </>
+                  )}
               </li>
             ))}
           </ul>
 
           <h3>댓글 작성</h3>
-          <input
-            type='text'
-            placeholder='작성자'
-            value={commentAuthorName}
-            onChange={(e)=>setCommentAuthorName(e.target.value)}
-          />
           <br></br>
           <textarea
             placeholder='댓글 내용'

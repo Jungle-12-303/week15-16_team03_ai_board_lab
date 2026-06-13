@@ -36,9 +36,13 @@ public class Comment {
     @JoinColumn(name = "post_id", nullable = false)
     private Post post;
 
-    public Comment(String content, String authorName, LocalDateTime createdAt, Post post){
+    @Column(nullable = false)
+    private String ownerLoginId;
+
+    public Comment(String content, String authorName, String ownerLoginId, LocalDateTime createdAt, Post post) {
         this.content = content;
         this.authorName = authorName;
+        this.ownerLoginId = ownerLoginId;
         this.createdAt = createdAt;
         this.post = post;
     }

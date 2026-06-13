@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 @CrossOrigin(origins = "http://localhost:5173")
 @RestController
@@ -37,17 +38,27 @@ public class PostController {
     }
     
     @PostMapping("/api/posts")
-    public Post creaPost(@RequestBody PostCreateRequest request) {
-        return postService.createPost(request);
+    public Post createPost(
+        @RequestHeader("Authorization") String authorizationHeader,
+        @RequestBody PostCreateRequest request
+    ) {
+        return postService.createPost(authorizationHeader, request);
     }
 
     @PutMapping("/api/posts/{id}")
-    public Post updatePost(@PathVariable Long id, @RequestBody PostCreateRequest request) {
-        return postService.updatePost(id, request);
+    public Post updatePost(
+        @RequestHeader("Authorization") String authorizationHeader,
+        @PathVariable Long id,
+        @RequestBody PostCreateRequest request
+    ) {
+        return postService.updatePost(authorizationHeader, id, request);
     }
     
     @DeleteMapping("/api/posts/{id}")
-    public void deletePost(@PathVariable Long id){
-        postService.deletePost(id);
+    public void deletePost(
+        @RequestHeader("Authorization") String authorizationHeader,
+        @PathVariable Long id
+    ){
+        postService.deletePost(authorizationHeader, id);
     }
 }

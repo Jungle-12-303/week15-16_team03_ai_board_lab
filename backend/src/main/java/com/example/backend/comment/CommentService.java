@@ -7,15 +7,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.List;
+import com.example.backend.user.JwtTokenProvider;
 
 @Service
 public class CommentService {
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
+    private final JwtTokenProvider jwtTokenProvider;
 
-    public CommentService(CommentRepository commentRepository, PostRepository postRepository){
+    public CommentService(CommentRepository commentRepository, PostRepository postRepository, JwtTokenProvider jwtTokenProvider) {
         this.commentRepository = commentRepository;
         this.postRepository = postRepository;
+        this.jwtTokenProvider = jwtTokenProvider;
     }
 
     public List<Comment> getComments(Long postId){
@@ -26,13 +29,23 @@ public class CommentService {
         return commentRepository.findByPost(post);
     }
 
-    public Comment createComment(Long postId, CommentCreateRequest request){
+    public Comment createComment(String authorizationHeader, Long postId, CommentCreateRequest request){
+        String token = authorizationHeader.substring(7);
+
+        if (!jwtTokenProvider.validateToken(token)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다.");
+        }
+
+        String loginId = jwtTokenProvider.getLoginId(token);
+
         Post post = postRepository.findById(postId)
-            .orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다."));
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다."));
 
         Comment comment = new Comment(
             request.getContent(),
             request.getAuthorName(),
+            loginId,
             LocalDateTime.now(),
             post
         );
@@ -40,18 +53,43 @@ public class CommentService {
         return commentRepository.save(comment);
     }
 
-    public void deleteComment(Long commentId){
+    public void deleteComment(String authorizationHeader, Long commentId) {
+        String token = authorizationHeader.substring(7);
+
+        if (!jwtTokenProvider.validateToken(token)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다.");
+        }
+
+        String loginId = jwtTokenProvider.getLoginId(token);
+
         Comment comment = commentRepository.findById(commentId)
-            .orElseThrow(()-> new ResponseStatusException(
+            .orElseThrow(() -> new ResponseStatusException(
                 HttpStatus.NOT_FOUND, "댓글을 찾을 수 없습니다."));
+
+        if (!comment.getOwnerLoginId().equals(loginId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "자기 댓글만 삭제할 수 있습니다.");
+        }
 
         commentRepository.delete(comment);
     }
 
-    public Comment updateComment(Long commentId, CommentCreateRequest request){
+    public Comment updateComment(String authorizationHeader, Long commentId, CommentCreateRequest request) {
+        String token = authorizationHeader.substring(7);
+
+        if (!jwtTokenProvider.validateToken(token)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다.");
+        }
+
+        String loginId = jwtTokenProvider.getLoginId(token);
+
         Comment comment = commentRepository.findById(commentId)
-            .orElseThrow(()->new ResponseStatusException(
+            .orElseThrow(() -> new ResponseStatusException(
                 HttpStatus.NOT_FOUND, "댓글을 찾을 수 없습니다."));
+
+        if (!comment.getOwnerLoginId().equals(loginId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "자기 댓글만 수정할 수 있습니다.");
+        }
+
         comment.update(request.getContent());
 
         return commentRepository.save(comment);

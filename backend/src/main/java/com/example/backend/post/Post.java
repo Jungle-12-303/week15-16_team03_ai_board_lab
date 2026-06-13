@@ -25,10 +25,11 @@ import java.util.List;
 @NoArgsConstructor
 public class Post {
 
-    public Post(String title, String content, String authorName, LocalDateTime createdAt,List<Tag> tags){
+    public Post(String title, String content, String authorName, String ownerLoginId, LocalDateTime createdAt,List<Tag> tags){
         this.title = title;
         this.content = content;
         this.authorName = authorName;
+        this.ownerLoginId = ownerLoginId;
         this.createdAt = createdAt;
         this.tags = tags;
     }
@@ -55,6 +56,9 @@ public class Post {
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
+
+    @Column(nullable = false)
+    private String ownerLoginId;
 
     @ManyToMany
     @JoinTable(

@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import java.util.List;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 
@@ -27,19 +28,27 @@ public class CommentController {
    
     @PostMapping("/api/posts/{postId}/comments")
     public Comment createComment(
+        @RequestHeader("Authorization") String authorizationHeader,
         @PathVariable Long postId,
-        @RequestBody CommentCreateRequest request) {       
-        return commentService.createComment(postId, request);
+        @RequestBody CommentCreateRequest request
+    ) {
+        return commentService.createComment(authorizationHeader, postId, request);
     }
 
     @DeleteMapping("/api/comments/{commentId}")
-    public void deleteComment(@PathVariable Long commentId){
-        commentService.deleteComment(commentId);
+    public void deleteComment(
+        @RequestHeader("Authorization") String authorizationHeader,
+        @PathVariable Long commentId
+    ) {
+        commentService.deleteComment(authorizationHeader, commentId);
     }
 
     @PutMapping("/api/comments/{commentId}")
-    public Comment updateComment(@PathVariable Long commentId, @RequestBody CommentCreateRequest request) {
-        return commentService.updateComment(commentId, request);
+    public Comment updateComment(
+        @RequestHeader("Authorization") String authorizationHeader,
+        @PathVariable Long commentId,
+        @RequestBody CommentCreateRequest request
+    ) {
+        return commentService.updateComment(authorizationHeader, commentId, request);
     }
-    
 }
