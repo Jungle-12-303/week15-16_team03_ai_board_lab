@@ -96,5 +96,23 @@ function normalizeSimilarPost(post) {
     category: String(post.category ?? ''),
     content: String(post.content ?? ''),
     score: Number(post.score ?? 0),
+    scoreBreakdown: normalizeScoreBreakdown(post.scoreBreakdown),
+  };
+}
+
+function normalizeScoreBreakdown(scoreBreakdown) {
+  if (scoreBreakdown === null || typeof scoreBreakdown !== 'object') {
+    return null;
+  }
+
+  return {
+    vectorScore: Number(scoreBreakdown.vectorScore ?? 0),
+    bm25Score: Number(scoreBreakdown.bm25Score ?? 0),
+    fusionScore: Number(scoreBreakdown.fusionScore ?? 0),
+    keywordAlignmentScore: Number(scoreBreakdown.keywordAlignmentScore ?? 0),
+    chunkScore: Number(scoreBreakdown.chunkScore ?? 0),
+    matchedTerms: Array.isArray(scoreBreakdown.matchedTerms)
+      ? scoreBreakdown.matchedTerms.map(String)
+      : [],
   };
 }

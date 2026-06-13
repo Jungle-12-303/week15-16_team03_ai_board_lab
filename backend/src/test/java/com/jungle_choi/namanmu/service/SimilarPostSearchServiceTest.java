@@ -152,6 +152,82 @@ class SimilarPostSearchServiceTest {
     }
 
     @Test
+    void searchSimilarPostsKeepsSpecificTagTermsAsRankingSignals() {
+        PostEmbedding gpuPost = embedding(
+                1L,
+                "GPU 팬 소음과 언더볼팅",
+                "Daily",
+                "gpu 팬 소음과 언더볼팅 기록. 업그레이드 전후 체감도 함께 정리한다.",
+                "[1.0,0.0]");
+        PostEmbedding cpuPost = embedding(
+                2L,
+                "7800X3D에서 9800X3D로 CPU 업그레이드",
+                "Daily",
+                "cpu 업그레이드와 7800x3d 9800x3d 성능 차이를 정리한다.",
+                "[0.99,0.01]");
+        when(postEmbeddingRepository.findAllByEmbeddingModel(EMBEDDING_MODEL))
+                .thenReturn(List.of(gpuPost, cpuPost));
+        when(postTagRepository.findAllByPostIdOrderByTagNameAsc(1L))
+                .thenReturn(List.of(postTag(gpuPost.getPost(), "GPU")));
+        when(postTagRepository.findAllByPostIdOrderByTagNameAsc(2L))
+                .thenReturn(List.of(
+                        postTag(cpuPost.getPost(), "CPU"),
+                        postTag(cpuPost.getPost(), "업그레이드")));
+
+        List<SimilarPostSearchService.SimilarPostResult> results =
+                similarPostSearchService.searchSimilarPosts(
+                        List.of(1.0, 0.0),
+                        null,
+                        2,
+                        "Daily",
+                        "7800X3D에서 9800X3D로 업그레이드할지 고민",
+                        "현재 7800X3D를 쓰고 있는데 CPU를 바꿀지 다음 세대를 기다릴지 고민 중입니다.",
+                        List.of("하드웨어", "CPU", "업그레이드"));
+
+        assertThat(results)
+                .extracting(SimilarPostSearchService.SimilarPostResult::postId)
+                .startsWith(2L);
+    }
+
+    @Test
+    void searchSimilarPostsUsesCandidateTagsForRanking() {
+        PostEmbedding broadUpgradePost = embedding(
+                1L,
+                "업그레이드 전후 체감",
+                "Daily",
+                "부품 교체 후 체감과 소음을 간단히 적어둔다.",
+                "[1.0,0.0]");
+        PostEmbedding cpuPost = embedding(
+                2L,
+                "다음 교체 우선순위",
+                "Daily",
+                "현재 시스템에서 병목을 확인하고 다음 세대를 기다릴지 고민한다.",
+                "[0.95,0.05]");
+        when(postEmbeddingRepository.findAllByEmbeddingModel(EMBEDDING_MODEL))
+                .thenReturn(List.of(broadUpgradePost, cpuPost));
+        when(postTagRepository.findAllByPostIdOrderByTagNameAsc(1L))
+                .thenReturn(List.of(postTag(broadUpgradePost.getPost(), "업그레이드")));
+        when(postTagRepository.findAllByPostIdOrderByTagNameAsc(2L))
+                .thenReturn(List.of(
+                        postTag(cpuPost.getPost(), "CPU"),
+                        postTag(cpuPost.getPost(), "업그레이드")));
+
+        List<SimilarPostSearchService.SimilarPostResult> results =
+                similarPostSearchService.searchSimilarPosts(
+                        List.of(1.0, 0.0),
+                        null,
+                        2,
+                        "Daily",
+                        "CPU 업그레이드 고민",
+                        "CPU를 바꿀지 다음 세대를 기다릴지 정리하려고 합니다.",
+                        List.of("CPU", "업그레이드"));
+
+        assertThat(results)
+                .extracting(SimilarPostSearchService.SimilarPostResult::postId)
+                .startsWith(2L);
+    }
+
+    @Test
     void searchSimilarPostsUsesRrfToCombineVectorRankAndBm25Rank() {
         when(postEmbeddingRepository.findAllByEmbeddingModel(EMBEDDING_MODEL))
                 .thenReturn(List.of(
@@ -232,6 +308,69 @@ class SimilarPostSearchServiceTest {
                         "Spring JWT",
                         "Spring Security와 JWT 로그인을 정리한다.",
                         List.of("JWT", "Spring"));
+
+        assertThat(results)
+                .extracting(SimilarPostSearchService.SimilarPostResult::postId)
+                .containsExactly(1L);
+    }
+
+    @Test
+    void searchSimilarPostsRelaxesMetadataWhenStrictStageHasNoResults() {
+        PostEmbedding learningPost = embedding(
+                1L,
+                "React state",
+                "Learning",
+                "React 상태 관리 메모",
+                "[0.0,1.0]");
+        PostEmbedding githubPost = embedding(
+                2L,
+                "GitHub Actions 배포 실패",
+                "Project",
+                "github actions workflow 배포 실패와 secrets 설정을 정리한다.",
+                "[1.0,0.0]");
+        when(postEmbeddingRepository.findAllByEmbeddingModel(EMBEDDING_MODEL))
+                .thenReturn(List.of(learningPost, githubPost));
+        when(postTagRepository.findAllByPostIdOrderByTagNameAsc(1L))
+                .thenReturn(List.of(postTag(learningPost.getPost(), "React")));
+        when(postTagRepository.findAllByPostIdOrderByTagNameAsc(2L))
+                .thenReturn(List.of(postTag(githubPost.getPost(), "GitHub")));
+
+        List<SimilarPostSearchService.SimilarPostResult> results =
+                similarPostSearchService.searchSimilarPosts(
+                        List.of(1.0, 0.0),
+                        null,
+                        5,
+                        "Learning",
+                        "GitHub Actions 배포 실패",
+                        "GitHub Actions workflow와 secrets를 확인한다.",
+                        List.of("GitHub"));
+
+        assertThat(results)
+                .extracting(SimilarPostSearchService.SimilarPostResult::postId)
+                .contains(2L);
+    }
+
+    @Test
+    void searchSimilarPostsMatchesKoreanWeatherTermsWithEnglishTags() {
+        PostEmbedding weatherPost = embeddingWithCategory(
+                1L,
+                "Seoul weather briefing",
+                "Briefing",
+                "[1.0,0.0]");
+        when(postEmbeddingRepository.findAllByEmbeddingModel(EMBEDDING_MODEL))
+                .thenReturn(List.of(weatherPost));
+        when(postTagRepository.findAllByPostIdOrderByTagNameAsc(1L))
+                .thenReturn(List.of(postTag(weatherPost.getPost(), "Weather")));
+
+        List<SimilarPostSearchService.SimilarPostResult> results =
+                similarPostSearchService.searchSimilarPosts(
+                        List.of(1.0, 0.0),
+                        null,
+                        5,
+                        "Briefing",
+                        "오늘 날씨 브리핑",
+                        "오늘 지역 날씨와 기온을 짧은 게시글로 정리하려고 합니다.",
+                        List.of("날씨", "브리핑"));
 
         assertThat(results)
                 .extracting(SimilarPostSearchService.SimilarPostResult::postId)

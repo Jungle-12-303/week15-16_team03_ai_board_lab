@@ -41,6 +41,8 @@ public class SimilarPostSearchService {
     private static final double KEYWORD_ALIGNMENT_WEIGHT = 0.25;
     private static final double CHUNK_EVIDENCE_WEIGHT = 0.01;
     private static final double RRF_RANK_CONSTANT = 60.0;
+    private static final int MAX_QUERY_TERMS = 16;
+    private static final int MAX_GUARD_TERMS = 8;
     private static final TypeReference<List<Double>> EMBEDDING_VECTOR_TYPE = new TypeReference<>() {
     };
 
@@ -95,16 +97,37 @@ public class SimilarPostSearchService {
         List<String> queryTerms = buildQueryTerms(title, content, tags);
         List<String> guardTerms = buildGuardTerms(title, content, tags);
         SearchMetadata metadata = SearchMetadata.from(category, tags);
-        List<PostEmbeddingChunk> chunkCandidates = findChunkCandidates(metadata, excludedPostId);
-        List<PostEmbedding> candidates = findPostCandidates(metadata, excludedPostId);
+        Map<Long, SimilarPostResult> bestResultsByPostId = new HashMap<>();
+        Map<Long, List<String>> tagNamesByPostId = new HashMap<>();
 
-        return searchSimilarPostsByCandidates(
-                queryEmbedding,
-                normalizedLimit,
-                queryTerms,
-                guardTerms,
-                chunkCandidates,
-                candidates);
+        for (SearchMetadata searchStage : metadata.relaxationStages()) {
+            List<PostEmbeddingChunk> chunkCandidates =
+                    findChunkCandidates(searchStage, excludedPostId, tagNamesByPostId);
+            List<PostEmbedding> candidates =
+                    findPostCandidates(searchStage, excludedPostId, tagNamesByPostId);
+            List<SimilarPostResult> stageResults = searchSimilarPostsByCandidates(
+                    queryEmbedding,
+                    MAX_LIMIT,
+                    queryTerms,
+                    guardTerms,
+                    chunkCandidates,
+                    candidates,
+                    tagNamesByPostId);
+
+            for (SimilarPostResult result : stageResults) {
+                bestResultsByPostId.merge(
+                        result.postId(),
+                        result,
+                        (current, next) -> current.score() >= next.score() ? current : next);
+            }
+        }
+
+        return bestResultsByPostId.values()
+                .stream()
+                .sorted(Comparator.comparingDouble(SimilarPostResult::score).reversed()
+                        .thenComparing(SimilarPostResult::postId))
+                .limit(normalizedLimit)
+                .toList();
     }
 
     private List<SimilarPostResult> searchSimilarPostsByCandidates(
@@ -113,11 +136,13 @@ public class SimilarPostSearchService {
             List<String> queryTerms,
             List<String> guardTerms,
             List<PostEmbeddingChunk> chunkCandidates,
-            List<PostEmbedding> candidates) {
+            List<PostEmbedding> candidates,
+            Map<Long, List<String>> tagNamesByPostId) {
         Bm25CorpusStats postBm25CorpusStats = Bm25CorpusStats.from(
                 candidates.stream()
-                        .map(PostEmbedding::getPost)
-                        .map(SimilarPostSearchService::buildDocumentTerms)
+                        .map((postEmbedding) -> buildDocumentTerms(
+                                postEmbedding.getPost(),
+                                loadTagNames(postEmbedding.getPost(), tagNamesByPostId)))
                         .toList(),
                 queryTerms);
 
@@ -128,7 +153,8 @@ public class SimilarPostSearchService {
                         queryEmbedding,
                         queryTerms,
                         guardTerms,
-                        postBm25CorpusStats))
+                        postBm25CorpusStats,
+                        tagNamesByPostId))
                 .flatMap(Optional::stream)
                 .forEach(postScoredCandidates::add);
 
@@ -138,7 +164,8 @@ public class SimilarPostSearchService {
                 chunkCandidates,
                 queryEmbedding,
                 queryTerms,
-                guardTerms);
+                guardTerms,
+                tagNamesByPostId);
 
         return postResults.stream()
                 .map((result) -> applyChunkEvidenceBoost(result, chunkScoresByPostId))
@@ -153,14 +180,17 @@ public class SimilarPostSearchService {
             List<PostEmbeddingChunk> chunkCandidates,
             List<Double> queryEmbedding,
             List<String> queryTerms,
-            List<String> guardTerms) {
+            List<String> guardTerms,
+            Map<Long, List<String>> tagNamesByPostId) {
         if (chunkCandidates.isEmpty()) {
             return Map.of();
         }
 
         Bm25CorpusStats chunkBm25CorpusStats = Bm25CorpusStats.from(
                 chunkCandidates.stream()
-                        .map(SimilarPostSearchService::buildChunkDocumentTerms)
+                        .map((chunk) -> buildChunkDocumentTerms(
+                                chunk,
+                                loadTagNames(chunk.getPost(), tagNamesByPostId)))
                         .toList(),
                 queryTerms);
 
@@ -170,7 +200,8 @@ public class SimilarPostSearchService {
                         queryEmbedding,
                         queryTerms,
                         guardTerms,
-                        chunkBm25CorpusStats))
+                        chunkBm25CorpusStats,
+                        tagNamesByPostId))
                 .flatMap(Optional::stream)
                 .toList();
 
@@ -198,7 +229,8 @@ public class SimilarPostSearchService {
                 postResult.title(),
                 postResult.category(),
                 postResult.content(),
-                boostedScore);
+                boostedScore,
+                postResult.scoreBreakdown().withChunkScore(chunkScore));
     }
 
     private static boolean passesResultScoreThreshold(
@@ -211,7 +243,10 @@ public class SimilarPostSearchService {
         return result.score() >= MIN_RANKED_RESULT_SCORE;
     }
 
-    private List<PostEmbeddingChunk> findChunkCandidates(SearchMetadata metadata, Long excludedPostId) {
+    private List<PostEmbeddingChunk> findChunkCandidates(
+            SearchMetadata metadata,
+            Long excludedPostId,
+            Map<Long, List<String>> tagNamesByPostId) {
         List<PostEmbeddingChunk> chunks =
                 postEmbeddingChunkRepository.findAllByEmbeddingModel(openAiProperties.embeddingModel());
 
@@ -220,13 +255,18 @@ public class SimilarPostSearchService {
         }
 
         return chunks.stream()
-                .filter((chunk) -> isSearchCandidate(chunk, metadata, excludedPostId))
+                .filter((chunk) -> isSearchCandidate(
+                        chunk,
+                        metadata,
+                        excludedPostId,
+                        tagNamesByPostId))
                 .toList();
     }
 
     private List<PostEmbedding> findPostCandidates(
             SearchMetadata metadata,
-            Long excludedPostId) {
+            Long excludedPostId,
+            Map<Long, List<String>> tagNamesByPostId) {
         List<PostEmbedding> embeddings =
                 postEmbeddingRepository.findAllByEmbeddingModel(openAiProperties.embeddingModel());
 
@@ -235,28 +275,43 @@ public class SimilarPostSearchService {
         }
 
         return embeddings.stream()
-                .filter((postEmbedding) -> isSearchCandidate(postEmbedding, metadata, excludedPostId))
+                .filter((postEmbedding) -> isSearchCandidate(
+                        postEmbedding,
+                        metadata,
+                        excludedPostId,
+                        tagNamesByPostId))
                 .toList();
     }
 
     private boolean isSearchCandidate(
             PostEmbedding postEmbedding,
             SearchMetadata metadata,
-            Long excludedPostId) {
-        return isSearchCandidate(postEmbedding.getPost(), metadata, excludedPostId);
+            Long excludedPostId,
+            Map<Long, List<String>> tagNamesByPostId) {
+        return isSearchCandidate(
+                postEmbedding.getPost(),
+                metadata,
+                excludedPostId,
+                tagNamesByPostId);
     }
 
     private boolean isSearchCandidate(
             PostEmbeddingChunk postEmbeddingChunk,
             SearchMetadata metadata,
-            Long excludedPostId) {
-        return isSearchCandidate(postEmbeddingChunk.getPost(), metadata, excludedPostId);
+            Long excludedPostId,
+            Map<Long, List<String>> tagNamesByPostId) {
+        return isSearchCandidate(
+                postEmbeddingChunk.getPost(),
+                metadata,
+                excludedPostId,
+                tagNamesByPostId);
     }
 
     private boolean isSearchCandidate(
             Post post,
             SearchMetadata metadata,
-            Long excludedPostId) {
+            Long excludedPostId,
+            Map<Long, List<String>> tagNamesByPostId) {
         if (post.getStatus() != PostStatus.PUBLISHED) {
             return false;
         }
@@ -265,7 +320,7 @@ public class SimilarPostSearchService {
             return false;
         }
 
-        return matchesMetadata(post, metadata);
+        return matchesMetadata(post, metadata, tagNamesByPostId);
     }
 
     private Optional<ScoredCandidate> toScoredCandidate(
@@ -273,10 +328,15 @@ public class SimilarPostSearchService {
             List<Double> queryEmbedding,
             List<String> queryTerms,
             List<String> guardTerms,
-            Bm25CorpusStats bm25CorpusStats) {
+            Bm25CorpusStats bm25CorpusStats,
+            Map<Long, List<String>> tagNamesByPostId) {
         Post post = postEmbedding.getPost();
-        List<String> documentTerms = buildDocumentTerms(post);
-        double keywordAlignmentScore = keywordAlignmentScore(buildCandidateGuardTerms(post), guardTerms);
+        List<String> tagNames = loadTagNames(post, tagNamesByPostId);
+        List<String> documentTerms = buildDocumentTerms(post, tagNames);
+        double keywordAlignmentScore = keywordAlignmentScore(
+                buildCandidateGuardTerms(post, tagNames),
+                guardTerms);
+        List<String> matchedTerms = matchedTerms(documentTerms, queryTerms);
 
         List<Double> storedEmbedding = parseEmbedding(postEmbedding);
         if (storedEmbedding.size() != queryEmbedding.size()) {
@@ -299,7 +359,8 @@ public class SimilarPostSearchService {
                 vectorScore,
                 bm25Score,
                 keywordAlignmentScore,
-                !guardTerms.isEmpty()));
+                !guardTerms.isEmpty(),
+                matchedTerms));
     }
 
     private Optional<ScoredCandidate> toScoredChunkCandidate(
@@ -307,10 +368,15 @@ public class SimilarPostSearchService {
             List<Double> queryEmbedding,
             List<String> queryTerms,
             List<String> guardTerms,
-            Bm25CorpusStats bm25CorpusStats) {
+            Bm25CorpusStats bm25CorpusStats,
+            Map<Long, List<String>> tagNamesByPostId) {
         Post post = postEmbeddingChunk.getPost();
-        List<String> documentTerms = buildChunkDocumentTerms(postEmbeddingChunk);
-        double keywordAlignmentScore = keywordAlignmentScore(buildCandidateGuardTerms(post), guardTerms);
+        List<String> tagNames = loadTagNames(post, tagNamesByPostId);
+        List<String> documentTerms = buildChunkDocumentTerms(postEmbeddingChunk, tagNames);
+        double keywordAlignmentScore = keywordAlignmentScore(
+                buildCandidateGuardTerms(post, tagNames),
+                guardTerms);
+        List<String> matchedTerms = matchedTerms(documentTerms, queryTerms);
 
         List<Double> storedEmbedding = parseEmbedding(postEmbeddingChunk.getEmbeddingJson());
         if (storedEmbedding.size() != queryEmbedding.size()) {
@@ -336,7 +402,8 @@ public class SimilarPostSearchService {
                 vectorScore,
                 bm25Score,
                 keywordAlignmentScore,
-                !guardTerms.isEmpty()));
+                !guardTerms.isEmpty(),
+                matchedTerms));
     }
 
     private static boolean passesRelevanceThreshold(
@@ -368,6 +435,20 @@ public class SimilarPostSearchService {
                 .count();
 
         return matchedTermCount / (double) guardTerms.size();
+    }
+
+    private static List<String> matchedTerms(
+            List<String> documentTerms,
+            List<String> queryTerms) {
+        if (documentTerms.isEmpty() || queryTerms.isEmpty()) {
+            return List.of();
+        }
+
+        Set<String> documentTermSet = new HashSet<>(documentTerms);
+        return queryTerms.stream()
+                .filter(documentTermSet::contains)
+                .distinct()
+                .toList();
     }
 
     private List<Double> parseEmbedding(PostEmbedding postEmbedding) {
@@ -413,7 +494,7 @@ public class SimilarPostSearchService {
             Post post,
             List<String> queryTerms,
             Bm25CorpusStats corpusStats) {
-        return bm25Score(buildDocumentTerms(post), queryTerms, corpusStats);
+        return bm25Score(buildDocumentTerms(post, List.of()), queryTerms, corpusStats);
     }
 
     private static double bm25Score(
@@ -476,10 +557,14 @@ public class SimilarPostSearchService {
             boolean useHybridFusion) {
         if (!useHybridFusion) {
             return candidates.stream()
-                    .map((candidate) -> candidate.toResult(applyKeywordAlignmentScore(
-                            candidate.vectorScore(),
-                            candidate.keywordAlignmentScore(),
-                            candidate.keywordAlignmentEnabled())))
+                    .map((candidate) -> {
+                        double fusionScore = candidate.vectorScore();
+                        return candidate.toResult(applyKeywordAlignmentScore(
+                                        fusionScore,
+                                        candidate.keywordAlignmentScore(),
+                                        candidate.keywordAlignmentEnabled()),
+                                fusionScore);
+                    })
                     .toList();
         }
 
@@ -493,10 +578,14 @@ public class SimilarPostSearchService {
                 (candidate) -> candidate.bm25Score() > 0.0);
 
         return candidates.stream()
-                .map((candidate) -> candidate.toResult(applyKeywordAlignmentScore(
-                        rrfScore(candidate, vectorRanks, bm25Ranks),
-                        candidate.keywordAlignmentScore(),
-                        candidate.keywordAlignmentEnabled())))
+                .map((candidate) -> {
+                    double fusionScore = rrfScore(candidate, vectorRanks, bm25Ranks);
+                    return candidate.toResult(applyKeywordAlignmentScore(
+                                    fusionScore,
+                                    candidate.keywordAlignmentScore(),
+                                    candidate.keywordAlignmentEnabled()),
+                            fusionScore);
+                })
                 .toList();
     }
 
@@ -560,7 +649,10 @@ public class SimilarPostSearchService {
         return 1.0 / (RRF_RANK_CONSTANT + rank);
     }
 
-    private boolean matchesMetadata(Post post, SearchMetadata metadata) {
+    private boolean matchesMetadata(
+            Post post,
+            SearchMetadata metadata,
+            Map<Long, List<String>> tagNamesByPostId) {
         if (!metadata.hasFilters()) {
             return true;
         }
@@ -574,32 +666,31 @@ public class SimilarPostSearchService {
             return true;
         }
 
-        Set<String> postTags = postTagRepository.findAllByPostIdOrderByTagNameAsc(post.getId())
+        Set<String> postTags = loadTagNames(post, tagNamesByPostId)
                 .stream()
-                .map((postTag) -> normalizeSearchText(postTag.getTag().getName()))
+                .map(SimilarPostSearchService::normalizeSearchText)
                 .collect(java.util.stream.Collectors.toSet());
 
         return metadata.tags().stream().anyMatch(postTags::contains);
     }
 
     private static List<String> buildQueryTerms(String title, String content, List<String> tags) {
-        String joinedTags = tags == null ? "" : String.join(" ", tags);
-        Set<String> terms = new LinkedHashSet<>(tokenizeSearchText("%s %s %s".formatted(
-                title,
-                content,
-                joinedTags)));
+        Set<String> terms = new LinkedHashSet<>();
+        addTerms(terms, title);
+        addTerms(terms, tags == null ? "" : String.join(" ", tags));
+        addTerms(terms, content);
 
         return terms.stream()
-                .limit(12)
+                .limit(MAX_QUERY_TERMS)
                 .toList();
     }
 
     private static List<String> buildGuardTerms(String title, String content, List<String> tags) {
-        String joinedTags = tags == null ? "" : String.join(" ", tags);
-        Set<String> titleTerms = new LinkedHashSet<>(tokenizeSearchText("%s %s".formatted(
-                title,
-                joinedTags)));
-        List<String> guardTerms = toGuardTerms(titleTerms);
+        Set<String> primaryTerms = new LinkedHashSet<>();
+        addTerms(primaryTerms, title);
+        addTerms(primaryTerms, tags == null ? "" : String.join(" ", tags));
+
+        List<String> guardTerms = toGuardTerms(primaryTerms);
 
         if (!guardTerms.isEmpty()) {
             return guardTerms;
@@ -611,30 +702,57 @@ public class SimilarPostSearchService {
     private static List<String> toGuardTerms(Set<String> terms) {
         return terms.stream()
                 .filter((term) -> !isGenericGuardTerm(term))
-                .limit(5)
+                .limit(MAX_GUARD_TERMS)
                 .toList();
     }
 
-    private static List<String> buildDocumentTerms(Post post) {
+    private static void addTerms(Set<String> terms, String text) {
+        terms.addAll(tokenizeSearchText(text));
+    }
+
+    private List<String> loadTagNames(Post post, Map<Long, List<String>> tagNamesByPostId) {
+        Long postId = post.getId();
+        if (postId == null) {
+            return readTagNames(post);
+        }
+
+        return tagNamesByPostId.computeIfAbsent(postId, (ignored) -> readTagNames(post));
+    }
+
+    private List<String> readTagNames(Post post) {
+        return postTagRepository.findAllByPostIdOrderByTagNameAsc(post.getId())
+                .stream()
+                .map((postTag) -> postTag.getTag().getName())
+                .toList();
+    }
+
+    private static List<String> buildDocumentTerms(Post post, List<String> tags) {
+        String joinedTags = tags == null ? "" : String.join(" ", tags);
+
         return tokenizeSearchText("%s %s %s %s".formatted(
                 post.getTitle(),
                 post.getTitle(),
                 post.getCategory(),
-                post.getContent()));
+                "%s %s".formatted(joinedTags, post.getContent())));
     }
 
-    private static List<String> buildCandidateGuardTerms(Post post) {
-        return tokenizeSearchText("%s %s".formatted(
+    private static List<String> buildCandidateGuardTerms(Post post, List<String> tags) {
+        String joinedTags = tags == null ? "" : String.join(" ", tags);
+
+        return tokenizeSearchText("%s %s %s".formatted(
                 post.getTitle(),
+                joinedTags,
                 post.getCategory()));
     }
 
-    private static List<String> buildChunkDocumentTerms(PostEmbeddingChunk chunk) {
+    private static List<String> buildChunkDocumentTerms(PostEmbeddingChunk chunk, List<String> tags) {
         Post post = chunk.getPost();
+        String joinedTags = tags == null ? "" : String.join(" ", tags);
 
-        return tokenizeSearchText("%s %s %s %s".formatted(
+        return tokenizeSearchText("%s %s %s %s %s".formatted(
                 post.getTitle(),
                 post.getTitle(),
+                joinedTags,
                 post.getCategory(),
                 chunk.getChunkText()));
     }
@@ -643,9 +761,39 @@ public class SimilarPostSearchService {
         String normalizedText = normalizeSearchText(text);
 
         return java.util.Arrays.stream(normalizedText.split("[^\\p{L}\\p{N}]+"))
-                .map(SimilarPostSearchService::stripKoreanParticle)
+                .map(SimilarPostSearchService::normalizeSearchToken)
                 .filter(SimilarPostSearchService::isMeaningfulTerm)
                 .toList();
+    }
+
+    private static String normalizeSearchToken(String token) {
+        String particleStrippedToken = stripKoreanParticle(token);
+
+        if (particleStrippedToken.startsWith("업그레이드")) {
+            return "upgrade";
+        }
+
+        if (particleStrippedToken.startsWith("언더볼팅")) {
+            return "undervolt";
+        }
+
+        if (particleStrippedToken.startsWith("워크플로")) {
+            return "workflow";
+        }
+
+        if (particleStrippedToken.startsWith("배포")) {
+            return "deploy";
+        }
+
+        if (particleStrippedToken.startsWith("소음")) {
+            return "noise";
+        }
+
+        if (particleStrippedToken.startsWith("하드웨어")) {
+            return "hardware";
+        }
+
+        return particleStrippedToken;
     }
 
     private static String stripKoreanParticle(String token) {
@@ -684,6 +832,12 @@ public class SimilarPostSearchService {
                 "from",
                 "about",
                 "daily",
+                "learning",
+                "project",
+                "development",
+                "review",
+                "briefing",
+                "current",
                 "하고",
                 "싶다",
                 "정리",
@@ -697,6 +851,27 @@ public class SimilarPostSearchService {
                 "찾고",
                 "오늘",
                 "그냥",
+                "지역",
+                "짧은",
+                "하려고",
+                "합니다",
+                "현재",
+                "다음",
+                "위해",
+                "위해서",
+                "대한",
+                "대해",
+                "있는",
+                "없는",
+                "있고",
+                "중입니다",
+                "했습니다",
+                "고민",
+                "기록",
+                "메모",
+                "확인",
+                "간단히",
+                "짧게",
                 "기분",
                 "피곤",
                 "피곤해서",
@@ -733,10 +908,40 @@ public class SimilarPostSearchService {
         }
 
         return text.toLowerCase(Locale.ROOT)
+                .replace("깃허브 액션", " github actions ")
+                .replace("깃헙 액션", " github actions ")
                 .replace("깃허브", " github ")
                 .replace("깃헙", " github ")
                 .replace("깃랩", " gitlab ")
                 .replace("깃 액션", " github actions ")
+                .replace("github action", " github actions ")
+                .replace("워크플로우", " workflow ")
+                .replace("워크플로", " workflow ")
+                .replace("시크릿", " secrets ")
+                .replace("비밀값", " secrets ")
+                .replace("배포", " deploy ")
+                .replace("시피유", " cpu ")
+                .replace("씨피유", " cpu ")
+                .replace("프로세서", " cpu ")
+                .replace("그래픽 카드", " gpu ")
+                .replace("그래픽카드", " gpu ")
+                .replace("팬 소음", " fan noise ")
+                .replace("소음", " noise ")
+                .replace("언더볼팅", " undervolt ")
+                .replace("발열", " temperature ")
+                .replace("온도", " temperature ")
+                .replace("날씨", " weather ")
+                .replace("기상", " weather ")
+                .replace("기온", " temperature ")
+                .replace("브리핑", " briefing ")
+                .replace("리액트", " react ")
+                .replace("유즈 스테이트", " usestate ")
+                .replace("유즈스테이트", " usestate ")
+                .replace("상태 관리", " state ")
+                .replace("상태관리", " state ")
+                .replace("상태", " state ")
+                .replace("훅", " hook ")
+                .replace("예보", " forecast ")
                 .replaceAll("\\s+", " ")
                 .trim();
     }
@@ -758,6 +963,7 @@ public class SimilarPostSearchService {
                     : tags.stream()
                             .map(SimilarPostSearchService::normalizeSearchText)
                             .filter((tag) -> !tag.isBlank())
+                            .filter((tag) -> !isGenericMetadataTag(tag))
                             .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
 
             return new SearchMetadata(normalizedCategory, normalizedTags);
@@ -766,6 +972,38 @@ public class SimilarPostSearchService {
         boolean hasFilters() {
             return !category.isBlank() || !tags.isEmpty();
         }
+
+        List<SearchMetadata> relaxationStages() {
+            List<SearchMetadata> stages = new ArrayList<>();
+            stages.add(this);
+
+            if (!tags.isEmpty()) {
+                stages.add(new SearchMetadata(category, Set.of()));
+            }
+
+            if (!category.isBlank()) {
+                stages.add(new SearchMetadata("", tags));
+            }
+
+            if (hasFilters()) {
+                stages.add(new SearchMetadata("", Set.of()));
+            }
+
+            return stages.stream()
+                    .distinct()
+                    .toList();
+        }
+    }
+
+    private static boolean isGenericMetadataTag(String tag) {
+        return Set.of(
+                "daily",
+                "learning",
+                "project",
+                "development",
+                "review",
+                "briefing")
+                .contains(tag);
     }
 
     private record Bm25CorpusStats(
@@ -813,15 +1051,23 @@ public class SimilarPostSearchService {
             double vectorScore,
             double bm25Score,
             double keywordAlignmentScore,
-            boolean keywordAlignmentEnabled) {
+            boolean keywordAlignmentEnabled,
+            List<String> matchedTerms) {
 
-        SimilarPostResult toResult(double score) {
+        SimilarPostResult toResult(double score, double fusionScore) {
             return new SimilarPostResult(
                     post.getId(),
                     post.getTitle(),
                     post.getCategory(),
                     post.getContent(),
-                    score);
+                    score,
+                    new SearchScoreBreakdown(
+                            vectorScore,
+                            bm25Score,
+                            fusionScore,
+                            keywordAlignmentScore,
+                            0.0,
+                            matchedTerms));
         }
     }
 
@@ -830,6 +1076,26 @@ public class SimilarPostSearchService {
             String title,
             String category,
             String content,
-            double score) {
+            double score,
+            SearchScoreBreakdown scoreBreakdown) {
+    }
+
+    public record SearchScoreBreakdown(
+            double vectorScore,
+            double bm25Score,
+            double fusionScore,
+            double keywordAlignmentScore,
+            double chunkScore,
+            List<String> matchedTerms) {
+
+        SearchScoreBreakdown withChunkScore(double nextChunkScore) {
+            return new SearchScoreBreakdown(
+                    vectorScore,
+                    bm25Score,
+                    fusionScore,
+                    keywordAlignmentScore,
+                    nextChunkScore,
+                    matchedTerms);
+        }
     }
 }

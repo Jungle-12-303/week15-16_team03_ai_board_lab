@@ -143,7 +143,8 @@ public class AiController {
             String title,
             String category,
             String content,
-            double score) {
+            double score,
+            SimilarPostSearchService.SearchScoreBreakdown scoreBreakdown) {
 
         static SimilarPostResponse from(SimilarPostSearchService.SimilarPostResult result) {
             return new SimilarPostResponse(
@@ -151,7 +152,8 @@ public class AiController {
                     result.title(),
                     result.category(),
                     result.content(),
-                    result.score());
+                    result.score(),
+                    result.scoreBreakdown());
         }
     }
 }

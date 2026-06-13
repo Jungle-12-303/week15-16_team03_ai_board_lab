@@ -185,14 +185,18 @@ public class RagDraftService {
             Long postId,
             String title,
             String category,
-            double score) {
+            String content,
+            double score,
+            SimilarPostSearchService.SearchScoreBreakdown scoreBreakdown) {
 
         static RagDraftSource from(SimilarPostSearchService.SimilarPostResult result) {
             return new RagDraftSource(
                     result.postId(),
                     result.title(),
                     result.category(),
-                    result.score());
+                    result.content(),
+                    result.score(),
+                    result.scoreBreakdown());
         }
     }
 }

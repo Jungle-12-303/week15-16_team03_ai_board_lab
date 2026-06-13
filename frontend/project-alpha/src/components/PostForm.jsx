@@ -112,10 +112,29 @@ export default function PostForm({
             <ul className="similar-list">
               {similarPosts.map((post) => (
                 <li key={post.postId}>
-                  <strong>{post.title}</strong>
-                  <span>
-                    {post.category} · score {post.score.toFixed(3)}
-                  </span>
+                  <details className="similar-item">
+                    <summary>
+                      <strong>{post.title}</strong>
+                      <span>
+                        {post.category} · score {post.score.toFixed(3)}
+                      </span>
+                    </summary>
+                    <p>{post.content || '본문을 불러올 수 없습니다.'}</p>
+                    {post.scoreBreakdown && (
+                      <div className="similar-score-breakdown">
+                        <span>Vector {formatScore(post.scoreBreakdown.vectorScore)}</span>
+                        <span>BM25 {formatScore(post.scoreBreakdown.bm25Score)}</span>
+                        <span>Fusion {formatScore(post.scoreBreakdown.fusionScore)}</span>
+                        <span>Keyword {formatScore(post.scoreBreakdown.keywordAlignmentScore)}</span>
+                        {post.scoreBreakdown.chunkScore > 0 && (
+                          <span>Chunk {formatScore(post.scoreBreakdown.chunkScore)}</span>
+                        )}
+                        {post.scoreBreakdown.matchedTerms.length > 0 && (
+                          <span>Matched {post.scoreBreakdown.matchedTerms.join(', ')}</span>
+                        )}
+                      </div>
+                    )}
+                  </details>
                 </li>
               ))}
             </ul>
@@ -130,4 +149,8 @@ export default function PostForm({
       )}
     </form>
   );
+}
+
+function formatScore(score) {
+  return Number(score).toFixed(3);
 }
