@@ -1,0 +1,49 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - heading "회원가입" [level=2] [ref=e5]
+    - textbox "아이디" [ref=e6]: codex0614user
+    - textbox "비밀번호" [ref=e7]
+    - textbox "닉네임" [ref=e8]
+    - button "회원가입" [ref=e9]
+    - generic [ref=e10]:
+      - heading "로그인" [level=2] [ref=e11]
+      - textbox "아이디" [ref=e12]: codex0614user
+      - textbox "비밀번호" [ref=e13]
+      - button "로그인" [active] [ref=e14]
+      - generic [ref=e15]:
+        - paragraph [ref=e16]: 로그인됨
+        - paragraph [ref=e29]: "현재 사용자: 코드엑스"
+        - paragraph [ref=e30]: "현재 loginId: codex0614user"
+    - textbox "검색어 입력" [ref=e17]: 배포테스트글
+    - button "검색" [ref=e18]
+    - heading "게시글 작성" [level=2] [ref=e19]
+    - textbox "제목" [ref=e20]
+    - textbox "내용" [ref=e21]
+    - textbox "태그를 입력 후 Enter" [ref=e22]
+    - button "작성하기" [ref=e23]
+  - heading "게시글 목록" [level=1] [ref=e24]
+  - list [ref=e34]:
+    - listitem [ref=e35]:
+      - button "배포테스트글" [ref=e36]
+      - button "수정" [ref=e54]
+      - button "삭제" [ref=e55]
+      - generic [ref=e39]: testtag
+  - generic [ref=e25]:
+    - button "이전" [disabled] [ref=e26]
+    - generic [ref=e27]: 1 / 1
+    - button "다음" [disabled] [ref=e28]
+  - generic [ref=e40]:
+    - heading "게시글 상세" [level=2] [ref=e41]
+    - paragraph [ref=e42]: "제목: 배포테스트글"
+    - paragraph [ref=e43]: "내용: 렌더와 버셀 배포 확인용 글"
+    - paragraph [ref=e44]: "작성자: 코드엑스"
+    - paragraph [ref=e45]: 태그:testtag
+    - heading "댓글" [level=3] [ref=e46]
+    - list [ref=e50]:
+      - listitem [ref=e51]:
+        - text: 코드엑스:배포댓글확인
+        - button "수정" [ref=e56]
+        - button "삭제" [ref=e57]
+    - heading "댓글 작성" [level=3] [ref=e47]
+    - textbox "댓글 내용" [ref=e48]
+    - button "댓글 작성" [ref=e49]

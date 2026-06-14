@@ -1,0 +1,26 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - heading "회원가입" [level=2] [ref=e5]
+    - textbox "아이디" [ref=e6]
+    - textbox "비밀번호" [ref=e7]
+    - textbox "닉네임" [ref=e8]
+    - button "회원가입" [active] [ref=e9]
+    - generic [ref=e10]:
+      - heading "로그인" [level=2] [ref=e11]
+      - textbox "아이디" [ref=e12]
+      - textbox "비밀번호" [ref=e13]
+      - button "로그인" [ref=e14]
+      - paragraph [ref=e16]: 로그인 안 됨
+    - textbox "검색어 입력" [ref=e17]
+    - button "검색" [ref=e18]
+    - heading "게시글 작성" [level=2] [ref=e19]
+    - textbox "제목" [ref=e20]
+    - textbox "내용" [ref=e21]
+    - textbox "태그를 입력 후 Enter" [ref=e22]
+    - button "작성하기" [ref=e23]
+  - heading "게시글 목록" [level=1] [ref=e24]
+  - list
+  - generic [ref=e25]:
+    - button "이전" [disabled] [ref=e26]
+    - generic [ref=e27]: 1 / 0
+    - button "다음" [disabled] [ref=e28]
