@@ -4,3 +4,7 @@ backend/.env
 frontend/project-alpha/.env
 frontend/project-alpha/.env.local
 backend/*.log
+eval/ragas/.venv/
+eval/ragas/output/
+eval/ragas/__pycache__/
+*.pyc

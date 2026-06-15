@@ -1,0 +1,42 @@
+[
+  {
+    "id": "hardware_cpu_upgrade",
+    "category": "Daily",
+    "title": "컴퓨터 업그레이드 고민",
+    "content": "현재 7800X3D를 사용 중인데, 9800X3D로 업그레이드할지 아니면 다음 세대를 기다릴지 고민하고 있습니다. 게임 성능, 발열, 비용 대비 체감 차이를 기준으로 정리하고 싶습니다.",
+    "tags": ["하드웨어", "CPU", "업그레이드"],
+    "reference": "CPU 업그레이드 판단은 현재 병목, 게임 해상도, GPU 조합, 발열과 비용 대비 체감 차이를 함께 비교해야 한다. 7800X3D 사용자는 9800X3D의 성능 향상이 실제 사용 환경에서 충분한지 확인하고, 체감 차이가 작다면 다음 세대를 기다리는 선택도 가능하다."
+  },
+  {
+    "id": "hardware_gpu_noise",
+    "category": "Daily",
+    "title": "GPU 팬 소음과 언더볼팅 기록",
+    "content": "그래픽카드 팬 소음이 거슬려서 언더볼팅을 적용해볼지 고민하고 있습니다. 온도, 전력, 프레임 변화와 실제 체감 소음을 기준으로 기록하고 싶습니다.",
+    "tags": ["하드웨어", "GPU", "언더볼팅"],
+    "reference": "GPU 팬 소음과 언더볼팅 기록은 온도, 전력, 프레임, 팬 속도, 체감 소음을 함께 비교해야 한다. 언더볼팅은 발열과 소음을 낮출 수 있지만 안정성 테스트와 게임별 성능 변화를 같이 확인해야 한다."
+  },
+  {
+    "id": "react_state_hook",
+    "category": "Learning",
+    "title": "React 커스텀 훅으로 상태 관리 분리",
+    "content": "게시판 작성 폼과 로그인 폼을 만들면서 useState, useEffect, custom hook을 어떻게 분리하면 좋은지 정리하려고 합니다. 컴포넌트가 커질 때 상태 관리 코드를 어디에 두는 게 좋은지 궁금합니다.",
+    "tags": ["React", "State", "Hook"],
+    "reference": "React에서는 컴포넌트 내부 상태가 커지면 반복되는 상태 변경과 비동기 요청 로직을 custom hook으로 분리할 수 있다. 훅은 use로 시작하는 함수이며, useState와 useEffect 같은 React hook을 조합해 화면 컴포넌트에서 관심사를 덜어내는 역할을 한다."
+  },
+  {
+    "id": "spring_jwt_auth",
+    "category": "Development",
+    "title": "Spring Boot JWT 로그인 구조 정리",
+    "content": "Spring Boot에서 회원가입과 로그인을 만들고 JWT를 발급했습니다. Spring Security, PasswordEncoder, JWT 필터가 각각 어떤 역할을 하는지 정리하고 싶습니다.",
+    "tags": ["Spring", "JWT", "Security"],
+    "reference": "Spring Boot 인증 구조에서 회원가입은 비밀번호를 PasswordEncoder로 해시해 저장하고, 로그인은 입력 비밀번호와 저장된 해시를 비교한다. 로그인 성공 시 JWT를 발급하고, 이후 요청은 Spring Security 필터가 Authorization 헤더의 JWT를 검증해 인증 사용자를 구성한다."
+  },
+  {
+    "id": "github_actions_deploy",
+    "category": "Learning",
+    "title": "GitHub Actions 배포 실패 정리",
+    "content": "GitHub Actions workflow에서 배포가 실패했습니다. secrets, CI 설정, 배포 로그를 확인하면서 원인을 정리하는 글을 쓰고 싶습니다.",
+    "tags": ["GitHub", "CI", "배포"],
+    "reference": "GitHub Actions 배포 실패를 정리할 때는 workflow 파일, secrets 설정, 브랜치 조건, 빌드 로그, 배포 대상 서버나 클라우드 권한을 순서대로 확인해야 한다. 원인과 해결 과정을 기록하면 다음 배포 문제를 재현하고 줄이는 데 도움이 된다."
+  }
+]
