@@ -1,0 +1,58 @@
+-- CREATE EXTENSION IF NOT EXISTS vector;
+--
+-- CREATE TABLE users (
+--     user_id BIGSERIAL PRIMARY KEY,
+--     email VARCHAR(255) NOT NULL UNIQUE,
+--     password VARCHAR(20) NOT NULL,
+--     nickname VARCHAR(20) NOT NULL UNIQUE,
+--     created_at TIMESTAMP NOT NULL DEFAULT NOW()
+-- );
+--
+-- CREATE TABLE post
+-- (
+--     post_id BIGSERIAL PRIMARY KEY,
+--     user_id BIGINT NOT NULL REFERENCES users(user_id),
+--     title      VARCHAR(20)  NOT NULL,
+--     content    VARCHAR(255) NOT NULL,
+--     created_at TIMESTAMP DEFAULT NOW(),
+--     embedding  vector(1536) -- 차원개수,
+-- );
+--
+-- CREATE TABLE comment
+-- (
+--     comment_id BIGSERIAL PRIMARY KEY,
+--     text VARCHAR(50),
+--     post_id BIGINT REFERENCES post(post_id),
+--     created_at TIMESTAMP DEFAULT NOW()
+-- );
+--
+-- CREATE TABLE tag (
+--     tag_id BIGSERIAL PRIMARY KEY,
+--     tag_name VARCHAR(10) NOT NULL
+-- );
+--
+-- CREATE TABLE post_tags (
+--     post_id BIGINT REFERENCES post(post_id),
+--     tag_id BIGINT REFERENCES tag(tag_id),
+--     PRIMARY KEY (post_id, tag_id)
+--
+-- );
+--
+-- CREATE TABLE post_embeddings (
+--     id BIGSERIAL PRIMARY KEY,
+--     post_id BIGINT NOT NULL UNIQUE REFERENCES posts(id) ON DELETE CASCADE,
+--     embedding vector(1536) NOT NULL,
+--     source_text TEXT NOT NULL,
+--     created_at TIMESTAMP NOT NULL DEFAULT now(),
+--     updated_at TIMESTAMP NOT NULL DEFAULT now()
+-- );
+--
+-- CREATE TABLE ai_logs (
+--     id BIGSERIAL PRIMARY KEY,
+--     feature_type VARCHAR(50) NOT NULL,
+--     input_summary TEXT,
+--     output_summary TEXT,
+--     success BOOLEAN NOT NULL,
+--     error_message TEXT,
+--     created_at TIMESTAMP NOT NULL DEFAULT now()
+-- );

@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="820" viewBox="0 0 1280 820">
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#1f4e79"/>
+    </marker>
+    <style>
+      .title { font: 700 32px Arial, sans-serif; fill: #123047; }
+      .subtitle { font: 18px Arial, sans-serif; fill: #476375; }
+      .box-title { font: 700 20px Arial, sans-serif; fill: #17324d; }
+      .label { font: 16px Arial, sans-serif; fill: #17324d; }
+      .small { font: 14px Arial, sans-serif; fill: #40566b; }
+      .tiny { font: 12px Arial, sans-serif; fill: #5c6f82; }
+      .pill { font: 700 15px Arial, sans-serif; fill: #17324d; }
+      .outer { fill: #f3f9ff; stroke: #2f6f9f; stroke-width: 3; }
+      .green { fill: #e8f6e8; stroke: #3c8c45; stroke-width: 2; }
+      .blue { fill: #e7f1fb; stroke: #2f6f9f; stroke-width: 2; }
+      .yellow { fill: #fff7df; stroke: #d99a21; stroke-width: 2; }
+      .gray { fill: #f2f4f7; stroke: #7b8794; stroke-width: 2; }
+      .white { fill: #ffffff; stroke: #b9c6d3; stroke-width: 2; }
+      .arrow { stroke: #1f4e79; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+      .thin-arrow { stroke: #5b7d99; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect width="1280" height="820" fill="#ffffff"/>
+
+  <text x="640" y="50" text-anchor="middle" class="title">Spring Boot 내장 서버 구조</text>
+  <text x="640" y="80" text-anchor="middle" class="subtitle">실행 JAR 안에 애플리케이션 코드, 의존성, 내장 Tomcat이 함께 들어간다</text>
+
+  <!-- Deployment -->
+  <rect x="45" y="335" width="170" height="110" rx="14" class="gray"/>
+  <circle cx="87" cy="378" r="26" fill="#d9ecff" stroke="#2f6f9f" stroke-width="2"/>
+  <path d="M80 363 L80 393 L103 378 Z" fill="#2f6f9f"/>
+  <text x="130" y="375" text-anchor="middle" class="box-title">실행</text>
+  <text x="130" y="404" text-anchor="middle" class="label">java -jar app.jar</text>
+
+  <!-- Main JAR -->
+  <rect x="275" y="120" width="720" height="560" rx="24" class="outer"/>
+  <text x="635" y="154" text-anchor="middle" class="box-title">SPRING BOOT APPLICATION JAR</text>
+
+  <!-- App code -->
+  <rect x="320" y="190" width="295" height="235" rx="16" class="green"/>
+  <text x="468" y="222" text-anchor="middle" class="box-title">Application Code</text>
+  <text x="468" y="249" text-anchor="middle" class="small">내가 작성한 코드</text>
+
+  <rect x="348" y="278" width="245" height="44" rx="10" class="white"/>
+  <text x="470" y="306" text-anchor="middle" class="pill">Controller</text>
+  <rect x="348" y="333" width="245" height="44" rx="10" class="white"/>
+  <text x="470" y="361" text-anchor="middle" class="pill">Service</text>
+  <rect x="348" y="388" width="245" height="44" rx="10" class="white"/>
+  <text x="470" y="416" text-anchor="middle" class="pill">Repository 코드</text>
+
+  <!-- Boot support -->
+  <rect x="650" y="190" width="300" height="235" rx="16" class="yellow"/>
+  <text x="800" y="222" text-anchor="middle" class="box-title">Boot 지원 영역</text>
+  <text x="800" y="250" text-anchor="middle" class="small">Starters / Auto-Configuration</text>
+  <rect x="680" y="285" width="120" height="72" rx="12" class="white"/>
+  <text x="740" y="318" text-anchor="middle" class="label">Starter</text>
+  <text x="740" y="340" text-anchor="middle" class="tiny">web, jpa, security</text>
+  <rect x="820" y="285" width="120" height="72" rx="12" class="white"/>
+  <text x="880" y="318" text-anchor="middle" class="label">자동 설정</text>
+  <text x="880" y="340" text-anchor="middle" class="tiny">Bean 생성</text>
+  <rect x="680" y="372" width="260" height="42" rx="10" class="white"/>
+  <text x="810" y="398" text-anchor="middle" class="pill">Dependency JARs</text>
+
+  <!-- Embedded container -->
+  <rect x="320" y="475" width="630" height="120" rx="16" class="blue"/>
+  <text x="635" y="506" text-anchor="middle" class="box-title">Embedded Servlet Container</text>
+  <text x="635" y="532" text-anchor="middle" class="small">Tomcat이 JAR 안에 포함되어 HTTP 서버 역할을 한다</text>
+  <rect x="370" y="552" width="240" height="42" rx="10" class="white"/>
+  <text x="490" y="579" text-anchor="middle" class="pill">내장 Tomcat</text>
+  <rect x="645" y="552" width="250" height="42" rx="10" class="white"/>
+  <text x="770" y="579" text-anchor="middle" class="pill">DispatcherServlet</text>
+
+  <!-- External client -->
+  <rect x="1070" y="270" width="170" height="110" rx="14" class="gray"/>
+  <text x="1155" y="310" text-anchor="middle" class="box-title">외부 클라이언트</text>
+  <text x="1155" y="338" text-anchor="middle" class="label">Browser / App</text>
+  <text x="1155" y="362" text-anchor="middle" class="small">HTTP 요청</text>
+
+  <!-- External DB -->
+  <rect x="1070" y="515" width="170" height="110" rx="14" class="gray"/>
+  <text x="1155" y="555" text-anchor="middle" class="box-title">외부 DB</text>
+  <text x="1155" y="584" text-anchor="middle" class="label">PostgreSQL</text>
+  <text x="1155" y="608" text-anchor="middle" class="small">JAR 안에 없음</text>
+
+  <!-- Arrows -->
+  <path d="M215 390 H270" class="arrow"/>
+  <text x="240" y="374" text-anchor="middle" class="small">JAR 실행</text>
+
+  <path d="M1070 320 H980" class="arrow"/>
+  <text x="1025" y="304" text-anchor="middle" class="small">HTTP request</text>
+  <path d="M980 350 H1070" class="arrow"/>
+  <text x="1025" y="374" text-anchor="middle" class="small">HTTP response</text>
+
+  <path d="M770 552 C770 520 760 505 735 505" class="thin-arrow"/>
+  <path d="M645 573 H610" class="thin-arrow"/>
+  <path d="M490 552 C490 505 490 465 490 432" class="thin-arrow"/>
+  <path d="M470 322 V333" class="thin-arrow"/>
+  <path d="M470 377 V388" class="thin-arrow"/>
+  <path d="M593 410 C710 455 850 455 895 410" class="thin-arrow"/>
+
+  <path d="M593 410 C770 510 920 540 1070 565" class="arrow"/>
+  <text x="897" y="522" text-anchor="middle" class="small">Repository가 DB에 연결</text>
+
+  <!-- Bottom note -->
+  <rect x="210" y="715" width="860" height="58" rx="14" fill="#fffaf0" stroke="#d99a21" stroke-width="2"/>
+  <text x="640" y="739" text-anchor="middle" class="box-title">핵심: 서버를 따로 설치하지 않아도 JAR 실행만으로 HTTP 서버가 뜬다</text>
+  <text x="640" y="762" text-anchor="middle" class="small">단, DB / Redis / 외부 API 같은 외부 인프라는 보통 JAR 밖에 있다</text>
+</svg>
