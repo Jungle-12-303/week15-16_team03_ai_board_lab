@@ -1,6 +1,6 @@
 package com.jungle_choi.namanmu.api;
 
-import com.jungle_choi.namanmu.service.RagEvaluationService;
+import com.jungle_choi.namanmu.service.rag.RagEvaluationService;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

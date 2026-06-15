@@ -1,11 +1,11 @@
 package com.jungle_choi.namanmu.api;
 
-import com.jungle_choi.namanmu.service.EmbeddingJobProcessor;
-import com.jungle_choi.namanmu.service.EmbeddingJobService;
-import com.jungle_choi.namanmu.service.OpenAiEmbeddingClient;
-import com.jungle_choi.namanmu.service.PostEmbeddingTextBuilder;
-import com.jungle_choi.namanmu.service.RagDraftService;
-import com.jungle_choi.namanmu.service.SimilarPostSearchService;
+import com.jungle_choi.namanmu.service.rag.EmbeddingJobProcessor;
+import com.jungle_choi.namanmu.service.rag.EmbeddingJobService;
+import com.jungle_choi.namanmu.service.rag.OpenAiEmbeddingClient;
+import com.jungle_choi.namanmu.service.rag.PostEmbeddingTextBuilder;
+import com.jungle_choi.namanmu.service.rag.RagDraftService;
+import com.jungle_choi.namanmu.service.rag.SimilarPostSearchService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

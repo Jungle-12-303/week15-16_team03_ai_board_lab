@@ -4,7 +4,7 @@ import com.jungle_choi.namanmu.config.CorpusImportProperties;
 import com.jungle_choi.namanmu.domain.post.PostRepository;
 import com.jungle_choi.namanmu.domain.user.User;
 import com.jungle_choi.namanmu.domain.user.UserRepository;
-import com.jungle_choi.namanmu.service.PostService;
+import com.jungle_choi.namanmu.service.post.PostService;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

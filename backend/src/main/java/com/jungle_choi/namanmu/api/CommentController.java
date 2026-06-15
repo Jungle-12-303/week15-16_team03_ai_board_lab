@@ -4,7 +4,7 @@ import com.jungle_choi.namanmu.api.dto.CommentResponse;
 import com.jungle_choi.namanmu.api.mapper.PostResponseMapper;
 import com.jungle_choi.namanmu.domain.comment.Comment;
 import com.jungle_choi.namanmu.domain.user.User;
-import com.jungle_choi.namanmu.service.CommentService;
+import com.jungle_choi.namanmu.service.post.CommentService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

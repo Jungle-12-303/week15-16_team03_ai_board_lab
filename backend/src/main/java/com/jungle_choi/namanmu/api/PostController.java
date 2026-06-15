@@ -6,7 +6,7 @@ import com.jungle_choi.namanmu.api.dto.PostResponse;
 import com.jungle_choi.namanmu.api.mapper.PostResponseMapper;
 import com.jungle_choi.namanmu.domain.post.Post;
 import com.jungle_choi.namanmu.domain.user.User;
-import com.jungle_choi.namanmu.service.PostService;
+import com.jungle_choi.namanmu.service.post.PostService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

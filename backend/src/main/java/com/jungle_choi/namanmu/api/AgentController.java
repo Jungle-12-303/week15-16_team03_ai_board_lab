@@ -1,7 +1,7 @@
 package com.jungle_choi.namanmu.api;
 
 import com.jungle_choi.namanmu.domain.user.User;
-import com.jungle_choi.namanmu.service.AgentRecommendationService;
+import com.jungle_choi.namanmu.service.agent.AgentRecommendationService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
