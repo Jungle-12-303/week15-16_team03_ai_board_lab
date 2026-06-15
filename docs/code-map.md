@@ -35,8 +35,10 @@ flowchart LR
 | `frontend/project-alpha/src/api/authApi.js` | 로그인/회원가입 HTTP 요청 함수 | 백엔드 인증 API 주소 |
 | `frontend/project-alpha/src/api/ragApi.js` | 유사 게시글 검색과 RAG 초안 생성 요청 | RAG 프론트 진입점 |
 | `frontend/project-alpha/src/api/mcpApi.js` | MCP 팩트체크 요청 | MCP 프론트 진입점 |
+| `frontend/project-alpha/src/api/agentApi.js` | Agent 놓친 글 추천 요청 | Agent 프론트 진입점 |
 | `frontend/project-alpha/src/components/PostForm.jsx` | 글 작성 폼과 RAG 버튼 | 작성 모달 내부 |
-| `frontend/project-alpha/src/components/WeatherFactCheckPanel.jsx` | MCP 팩트체크 결과 표시 | 팩트체크 UI |
+| `frontend/project-alpha/src/components/FactCheckPanel.jsx` | MCP 팩트체크 결과 표시 | 팩트체크 UI |
+| `frontend/project-alpha/src/components/AgentRecommendationsPanel.jsx` | 놓친 글 추천 결과 표시 | Agent 추천 UI |
 | `frontend/project-alpha/src/components/PostCard.jsx` | 목록의 게시글 카드 | 게시글 목록 아이템 |
 
 ## Backend
@@ -55,19 +57,26 @@ flowchart LR
 | `backend/src/main/java/com/jungle_choi/namanmu/domain/comment/Comment.java` | 댓글 Entity | `comments` 테이블 구조 |
 | `backend/src/main/java/com/jungle_choi/namanmu/domain/tag/Tag.java` | 태그 Entity | `tags` 테이블 구조 |
 | `backend/src/main/java/com/jungle_choi/namanmu/domain/embedding/PostEmbedding.java` | 게시글 임베딩 Entity | `post_embeddings` 테이블 구조 |
+| `backend/src/main/java/com/jungle_choi/namanmu/domain/embedding/PostEmbeddingChunk.java` | 청크 임베딩 Entity | `post_embedding_chunks` 테이블 구조 |
 | `backend/src/main/java/com/jungle_choi/namanmu/domain/embedding/EmbeddingJob.java` | 임베딩 작업 Entity | `embedding_jobs` 테이블 구조 |
 | `backend/src/main/java/com/jungle_choi/namanmu/domain/read/PostRead.java` | 읽음 기록 Entity | Agent 추천용 상태 데이터 |
-| `backend/src/main/java/com/jungle_choi/namanmu/service/PostService.java` | 게시글 검색, 상세, 생성, 수정, 삭제 규칙 | 게시글 비즈니스 로직 |
-| `backend/src/main/java/com/jungle_choi/namanmu/service/CommentService.java` | 댓글 생성, 삭제와 작성자 검증 | 댓글 비즈니스 로직 |
-| `backend/src/main/java/com/jungle_choi/namanmu/service/PostTagService.java` | 게시글 태그 정규화와 저장 | 태그 저장 규칙 |
-| `backend/src/main/java/com/jungle_choi/namanmu/service/EmbeddingJobService.java` | 게시글 임베딩 작업 예약 | 게시글 저장 후 RAG 준비 |
-| `backend/src/main/java/com/jungle_choi/namanmu/service/EmbeddingJobProcessor.java` | 임베딩 작업 처리 | OpenAI Embedding 호출 위치 |
-| `backend/src/main/java/com/jungle_choi/namanmu/service/SimilarPostSearchService.java` | 코사인 유사도로 비슷한 게시글 검색 | Retrieval 구현 |
-| `backend/src/main/java/com/jungle_choi/namanmu/service/RagDraftService.java` | 유사 게시글을 근거로 초안 생성 | RAG 생성 구현 |
-| `backend/src/main/java/com/jungle_choi/namanmu/service/McpServerService.java` | MCP 도구 목록/호출 처리 | MCP server 핵심 |
-| `backend/src/main/java/com/jungle_choi/namanmu/service/WeatherApiClient.java` | 외부 날씨 API 호출 | MCP 외부 연동 |
-| `backend/src/main/java/com/jungle_choi/namanmu/service/WeatherFactCheckService.java` | 날씨 도구 결과로 게시글 팩트체크 | MCP 응용 기능 |
-| `backend/src/main/java/com/jungle_choi/namanmu/service/PostReadService.java` | 상세 조회 시 읽음 기록 저장 | Agent 데이터 수집 |
+| `backend/src/main/java/com/jungle_choi/namanmu/service/post/PostService.java` | 게시글 검색, 상세, 생성, 수정, 삭제 규칙 | 게시글 비즈니스 로직 |
+| `backend/src/main/java/com/jungle_choi/namanmu/service/post/CommentService.java` | 댓글 생성, 삭제와 작성자 검증 | 댓글 비즈니스 로직 |
+| `backend/src/main/java/com/jungle_choi/namanmu/service/post/PostTagService.java` | 게시글 태그 정규화와 저장 | 태그 저장 규칙 |
+| `backend/src/main/java/com/jungle_choi/namanmu/service/post/PostReadService.java` | 상세 조회 시 읽음 기록 저장 | Agent 데이터 수집 |
+| `backend/src/main/java/com/jungle_choi/namanmu/service/rag/EmbeddingJobService.java` | 게시글 임베딩 작업 예약 | 게시글 저장 후 RAG 준비 |
+| `backend/src/main/java/com/jungle_choi/namanmu/service/rag/EmbeddingJobProcessor.java` | 임베딩 작업 처리 | OpenAI Embedding 호출 위치 |
+| `backend/src/main/java/com/jungle_choi/namanmu/service/rag/SimilarPostSearchService.java` | 코사인 유사도, BM25, 키워드 신호로 유사 게시글 검색 | Retrieval 구현 |
+| `backend/src/main/java/com/jungle_choi/namanmu/service/rag/RagDraftService.java` | 유사 게시글을 근거로 초안 생성 | RAG 생성 구현 |
+| `backend/src/main/java/com/jungle_choi/namanmu/service/rag/OpenAiEmbeddingClient.java` | OpenAI Embedding API 호출 | 임베딩 외부 연동 |
+| `backend/src/main/java/com/jungle_choi/namanmu/service/rag/OpenAiTextClient.java` | OpenAI Chat/Text API 호출 | 생성형 AI 외부 연동 |
+| `backend/src/main/java/com/jungle_choi/namanmu/service/mcp/McpServerService.java` | MCP 도구 목록/호출 처리 | MCP server 핵심 |
+| `backend/src/main/java/com/jungle_choi/namanmu/service/mcp/WeatherApiClient.java` | 외부 날씨 API 호출 | MCP 외부 연동 |
+| `backend/src/main/java/com/jungle_choi/namanmu/service/mcp/GitHubApiClient.java` | 외부 GitHub API 호출 | MCP 외부 연동 |
+| `backend/src/main/java/com/jungle_choi/namanmu/service/mcp/McpFactCheckService.java` | GitHub/날씨 팩트체크 도구 선택 | 통합 MCP 팩트체크 |
+| `backend/src/main/java/com/jungle_choi/namanmu/service/mcp/GitHubFactCheckService.java` | GitHub 도구 결과로 게시글 팩트체크 | MCP 응용 기능 |
+| `backend/src/main/java/com/jungle_choi/namanmu/service/mcp/WeatherFactCheckService.java` | 날씨 도구 결과로 게시글 팩트체크 | MCP 응용 기능 |
+| `backend/src/main/java/com/jungle_choi/namanmu/service/agent/AgentRecommendationService.java` | 읽음 기록 기반 놓친 글 5개 추천 | Agent 추천 구현 |
 | `backend/src/main/java/com/jungle_choi/namanmu/corpus/CorpusImportRunner.java` | 외부 웹 텍스트를 posts에 넣는 import 실행기 | 코퍼스 주입 진입점 |
 | `backend/src/main/java/com/jungle_choi/namanmu/corpus/CorpusSourceLoader.java` | `corpus-sources.tsv` 읽기 | URL 목록 파싱 |
 | `backend/src/main/java/com/jungle_choi/namanmu/corpus/CorpusWebCrawler.java` | URL의 HTML에서 본문 텍스트 추출 | 크롤링/본문 추출 |
@@ -111,16 +120,17 @@ flowchart LR
 7. `PostService.createPost`
 8. `EmbeddingJobService.enqueuePostEmbedding`
 
-### MCP 날씨 팩트체크
+### MCP 통합 팩트체크
 
 1. `PostDetailPage.jsx`
-2. `mcpApi.js`의 `checkWeatherFact`
-3. `PostFactCheckController.checkWeatherFact`
-4. `WeatherFactCheckService.check`
-5. `McpServerService.callWeatherTool`
-6. `WeatherApiClient.getCurrentForecast`
+2. `mcpApi.js`의 `checkFact`
+3. `PostFactCheckController.checkFact`
+4. `McpFactCheckService.check`
+5. `GitHubFactCheckService.check` 또는 `WeatherFactCheckService.check`
+6. `McpServerService`
+7. `GitHubApiClient` 또는 `WeatherApiClient`
 
-### Agent 읽음 기록
+### Agent 놓친 글 추천
 
 1. `PostDetailPage.jsx`
 2. `postApi.js`의 `fetchPost`
@@ -128,7 +138,17 @@ flowchart LR
 4. `PostService.getPublishedPost`
 5. `PostReadService.markRead`
 6. `PostReadRepository.findByUserIdAndPostId`
+7. `BoardPage.jsx`
+8. `useAgentRecommendations.js`
+9. `agentApi.js`의 `fetchMissedPosts`
+10. `AgentController.recommendMissedPosts`
+11. `AgentRecommendationService.recommendMissedPosts`
 
-## 현재 정리 필요 지점
+## 서비스 패키지 기준
 
-- AI 기능이 늘어나면 `backend/src/main/java/com/jungle_choi/namanmu/service` 아래의 RAG, MCP, Agent 서비스를 기능별 하위 패키지로 한 번 더 나눌 수 있다.
+| 패키지 | 책임 |
+| --- | --- |
+| `service/post` | 게시글, 댓글, 태그, 읽음 기록 |
+| `service/rag` | 임베딩, 검색, 초안 생성, RAG 평가 |
+| `service/mcp` | MCP server, GitHub/날씨 도구, 팩트체크 |
+| `service/agent` | 사용자 읽음 기록 기반 추천 |
