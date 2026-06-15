@@ -5,6 +5,7 @@ import com.jungle_choi.namanmu.domain.post.PostRepository;
 import com.jungle_choi.namanmu.domain.post.PostStatus;
 import com.jungle_choi.namanmu.domain.post.PostTagRepository;
 import com.jungle_choi.namanmu.service.GitHubFactCheckService;
+import com.jungle_choi.namanmu.service.McpFactCheckService;
 import com.jungle_choi.namanmu.service.WeatherFactCheckService;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -22,18 +23,34 @@ public class PostFactCheckController {
 
     private final PostRepository postRepository;
     private final PostTagRepository postTagRepository;
+    private final McpFactCheckService mcpFactCheckService;
     private final WeatherFactCheckService weatherFactCheckService;
     private final GitHubFactCheckService gitHubFactCheckService;
 
     public PostFactCheckController(
             PostRepository postRepository,
             PostTagRepository postTagRepository,
+            McpFactCheckService mcpFactCheckService,
             WeatherFactCheckService weatherFactCheckService,
             GitHubFactCheckService gitHubFactCheckService) {
         this.postRepository = postRepository;
         this.postTagRepository = postTagRepository;
+        this.mcpFactCheckService = mcpFactCheckService;
         this.weatherFactCheckService = weatherFactCheckService;
         this.gitHubFactCheckService = gitHubFactCheckService;
+    }
+
+    @PostMapping("/{postId}/fact-check")
+    public McpFactCheckService.UnifiedFactCheckResult checkFact(
+            @PathVariable Long postId) {
+        Post post = findPublishedPost(postId);
+        List<String> tags = tagsForPost(post);
+
+        return mcpFactCheckService.check(
+                post.getCategory(),
+                post.getTitle(),
+                post.getContent(),
+                tags);
     }
 
     @PostMapping("/{postId}/fact-check/weather")

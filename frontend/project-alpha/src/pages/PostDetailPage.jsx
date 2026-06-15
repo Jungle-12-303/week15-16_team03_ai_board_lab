@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { checkGitHubFact, checkWeatherFact } from '../api/mcpApi';
+import { checkFact } from '../api/mcpApi';
 import { fetchPost } from '../api/postApi';
 import FactCheckPanel from '../components/FactCheckPanel';
 
@@ -16,12 +16,9 @@ export default function PostDetailPage({
   const [post, setPost] = useState(null);
   const [isLoadingPost, setIsLoadingPost] = useState(true);
   const [postError, setPostError] = useState('');
-  const [weatherFactCheck, setWeatherFactCheck] = useState(null);
-  const [weatherFactCheckError, setWeatherFactCheckError] = useState('');
-  const [isCheckingWeatherFact, setIsCheckingWeatherFact] = useState(false);
-  const [gitHubFactCheck, setGitHubFactCheck] = useState(null);
-  const [gitHubFactCheckError, setGitHubFactCheckError] = useState('');
-  const [isCheckingGitHubFact, setIsCheckingGitHubFact] = useState(false);
+  const [factCheck, setFactCheck] = useState(null);
+  const [factCheckError, setFactCheckError] = useState('');
+  const [isCheckingFact, setIsCheckingFact] = useState(false);
   const [commentInput, setCommentInput] = useState('');
   const activePostIdRef = useRef(null);
 
@@ -33,12 +30,9 @@ export default function PostDetailPage({
       try {
         setIsLoadingPost(true);
         setCommentInput('');
-        setWeatherFactCheck(null);
-        setWeatherFactCheckError('');
-        setIsCheckingWeatherFact(false);
-        setGitHubFactCheck(null);
-        setGitHubFactCheckError('');
-        setIsCheckingGitHubFact(false);
+        setFactCheck(null);
+        setFactCheckError('');
+        setIsCheckingFact(false);
 
         const nextPost = await fetchPost(postId, currentUser.token);
 
@@ -78,7 +72,7 @@ export default function PostDetailPage({
     }
   }
 
-  async function handleCheckWeatherFact() {
+  async function handleCheckFact() {
     if (post === null) {
       return;
     }
@@ -86,48 +80,21 @@ export default function PostDetailPage({
     const checkedPostId = String(post.id);
 
     try {
-      setIsCheckingWeatherFact(true);
-      setWeatherFactCheckError('');
+      setIsCheckingFact(true);
+      setFactCheckError('');
 
-      const result = await checkWeatherFact(post.id, currentUser.token);
+      const result = await checkFact(post.id, currentUser.token);
       if (activePostIdRef.current === checkedPostId) {
-        setWeatherFactCheck(result);
+        setFactCheck(result);
       }
     } catch {
       if (activePostIdRef.current === checkedPostId) {
-        setWeatherFactCheck(null);
-        setWeatherFactCheckError('Weather fact check could not be completed.');
+        setFactCheck(null);
+        setFactCheckError('MCP fact check could not be completed.');
       }
     } finally {
       if (activePostIdRef.current === checkedPostId) {
-        setIsCheckingWeatherFact(false);
-      }
-    }
-  }
-
-  async function handleCheckGitHubFact() {
-    if (post === null) {
-      return;
-    }
-
-    const checkedPostId = String(post.id);
-
-    try {
-      setIsCheckingGitHubFact(true);
-      setGitHubFactCheckError('');
-
-      const result = await checkGitHubFact(post.id, currentUser.token);
-      if (activePostIdRef.current === checkedPostId) {
-        setGitHubFactCheck(result);
-      }
-    } catch {
-      if (activePostIdRef.current === checkedPostId) {
-        setGitHubFactCheck(null);
-        setGitHubFactCheckError('GitHub fact check could not be completed.');
-      }
-    } finally {
-      if (activePostIdRef.current === checkedPostId) {
-        setIsCheckingGitHubFact(false);
+        setIsCheckingFact(false);
       }
     }
   }
@@ -198,18 +165,13 @@ export default function PostDetailPage({
   }
 
   const canManagePost = post.author === currentUser.name;
-  const weatherMetaItems = [
-    { label: 'Tool', value: weatherFactCheck?.toolName ?? '' },
-    { label: 'Location', value: weatherFactCheck?.location ?? '' },
-    { label: 'Source', value: weatherFactCheck?.source ?? '' },
-    { label: 'Observed', value: weatherFactCheck?.observedAt ?? '' },
-  ];
-  const gitHubMetaItems = [
-    { label: 'Tool', value: gitHubFactCheck?.toolName ?? '' },
-    { label: 'Repository', value: gitHubFactCheck?.repository ?? '' },
-    { label: 'URL', value: gitHubFactCheck?.repositoryUrl ?? '' },
-    { label: 'Source', value: gitHubFactCheck?.source ?? '' },
-    { label: 'Updated', value: gitHubFactCheck?.observedAt ?? '' },
+  const factCheckMetaItems = [
+    { label: 'Tool', value: factCheck?.toolName ?? '' },
+    { label: 'Repository', value: factCheck?.repository ?? '' },
+    { label: 'URL', value: factCheck?.repositoryUrl ?? '' },
+    { label: 'Location', value: factCheck?.location ?? '' },
+    { label: 'Source', value: factCheck?.source ?? '' },
+    { label: 'Observed', value: factCheck?.observedAt ?? '' },
   ];
 
   return (
@@ -250,23 +212,13 @@ export default function PostDetailPage({
       </article>
 
       <FactCheckPanel
-        title="MCP Weather fact check"
-        result={weatherFactCheck}
-        error={weatherFactCheckError}
-        isLoading={isCheckingWeatherFact}
-        onCheck={handleCheckWeatherFact}
-        metaItems={weatherMetaItems}
-        externalFactTitle="Fetched weather data"
-      />
-
-      <FactCheckPanel
-        title="MCP GitHub fact check"
-        result={gitHubFactCheck}
-        error={gitHubFactCheckError}
-        isLoading={isCheckingGitHubFact}
-        onCheck={handleCheckGitHubFact}
-        metaItems={gitHubMetaItems}
-        externalFactTitle="Fetched GitHub data"
+        title="MCP fact check"
+        result={factCheck}
+        error={factCheckError}
+        isLoading={isCheckingFact}
+        onCheck={handleCheckFact}
+        metaItems={factCheckMetaItems}
+        externalFactTitle="Fetched MCP data"
       />
 
       <section className="box comments-panel">

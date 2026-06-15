@@ -1,5 +1,18 @@
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
 
+export async function checkFact(postId, token) {
+  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}/fact-check`, {
+    method: 'POST',
+    headers: authHeaders(token),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to check facts.');
+  }
+
+  return normalizeFactCheck(await response.json());
+}
+
 export async function checkWeatherFact(postId, token) {
   const response = await fetch(`${apiBaseUrl}/api/posts/${postId}/fact-check/weather`, {
     method: 'POST',
