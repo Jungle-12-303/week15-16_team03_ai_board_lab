@@ -4,7 +4,7 @@ import './App.css'
 import BoardPage from './pages/BoardPage'
 import LoginPage from './pages/LoginPage'
 import SignUpPage from './pages/SignUpPage'
-import type { Comment, Post } from './types'
+import type { Comment, Post, RagAnswerResponse, RagReindexResponse, RagStatusResponse } from './types'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 const AUTH_STORAGE_KEY = 'ai-board-auth'
@@ -75,6 +75,13 @@ function App() {
   const [totalPages, setTotalPages] = useState(0)
   const [searchKeyword, setSearchKeyword] = useState('')
   const [auth, setAuth] = useState<StoredAuth>(() => getStoredAuth())
+  const [ragQuestion, setRagQuestion] = useState('')
+  const [ragResult, setRagResult] = useState<RagAnswerResponse | null>(null)
+  const [ragError, setRagError] = useState('')
+  const [isRagLoading, setIsRagLoading] = useState(false)
+  const [isRagReindexing, setIsRagReindexing] = useState(false)
+  const [ragStatusMessage, setRagStatusMessage] = useState('')
+  const [ragSystemStatus, setRagSystemStatus] = useState<RagStatusResponse | null>(null)
 
   const token = auth.token
   const currentNickname = auth.currentNickname
@@ -129,6 +136,27 @@ function App() {
     setComments(data)
   }
 
+  const loadRagStatus = async () => {
+    if (token === '') {
+      setRagSystemStatus(null)
+      return
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/rag/status`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+
+    if (!response.ok) {
+      setRagSystemStatus(null)
+      return
+    }
+
+    const data = (await response.json()) as RagStatusResponse
+    setRagSystemStatus(data)
+  }
+
   useEffect(() => {
     if (auth.token === '') {
       window.localStorage.removeItem(AUTH_STORAGE_KEY)
@@ -152,6 +180,15 @@ function App() {
     void loadSelectedPost(selectedPostId)
     void loadComments(selectedPostId)
   }, [selectedPostId])
+
+  useEffect(() => {
+    if (token === '') {
+      setRagSystemStatus(null)
+      return
+    }
+
+    void loadRagStatus()
+  }, [token])
 
   const handleCreatePost = async () => {
     if (token === '') {
@@ -187,6 +224,7 @@ function App() {
     setSelectedPostId(data.id)
     resetPostEditor()
     setIsPostEditorOpen(false)
+    void loadRagStatus()
   }
 
   const handleDeletePost = async (id: number) => {
@@ -211,10 +249,12 @@ function App() {
 
     if (posts.length === 1 && page > 0) {
       setPage(page - 1)
+      void loadRagStatus()
       return
     }
 
     await loadPosts(page, searchKeyword)
+    void loadRagStatus()
   }
 
   const handleStartEditPost = (post: Post) => {
@@ -257,6 +297,7 @@ function App() {
     setSelectedPostId(data.id)
     resetPostEditor()
     setIsPostEditorOpen(false)
+    void loadRagStatus()
   }
 
   const handleCreateComment = async () => {
@@ -441,7 +482,97 @@ function App() {
     })
     closePostEditor()
     clearSelectedPost()
+    setRagQuestion('')
+    setRagResult(null)
+    setRagError('')
+    setRagStatusMessage('')
+    setRagSystemStatus(null)
     navigate('/login')
+  }
+
+  const readErrorMessage = async (response: Response) => {
+    try {
+      const errorData = (await response.json()) as { message?: string }
+      return errorData.message ?? '요청 처리 중 오류가 발생했습니다.'
+    } catch {
+      return '요청 처리 중 오류가 발생했습니다.'
+    }
+  }
+
+  const handleAskRag = async () => {
+    if (token === '') {
+      setRagError('AI 검색은 로그인 후 사용할 수 있습니다.')
+      return
+    }
+
+    const trimmedQuestion = ragQuestion.trim()
+
+    if (trimmedQuestion === '') {
+      setRagError('질문을 입력해주세요.')
+      return
+    }
+
+    setIsRagLoading(true)
+    setRagError('')
+    setRagStatusMessage('')
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/rag/ask`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          question: trimmedQuestion,
+        }),
+      })
+
+      if (!response.ok) {
+        setRagResult(null)
+        setRagError(await readErrorMessage(response))
+        return
+      }
+
+      const data = (await response.json()) as RagAnswerResponse
+      setRagResult(data)
+    } finally {
+      setIsRagLoading(false)
+    }
+  }
+
+  const handleReindexPosts = async () => {
+    if (token === '') {
+      setRagError('재임베딩은 로그인 후 사용할 수 있습니다.')
+      return
+    }
+
+    setIsRagReindexing(true)
+    setRagError('')
+    setRagStatusMessage('')
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/rag/reindex/posts`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        setRagStatusMessage('')
+        setRagError(await readErrorMessage(response))
+        return
+      }
+
+      const data = (await response.json()) as RagReindexResponse
+      setRagStatusMessage(
+        `재임베딩 완료: 전체 ${data.totalPosts}개 중 ${data.successCount}개 성공, ${data.failedCount}개 실패`,
+      )
+      await loadRagStatus()
+    } finally {
+      setIsRagReindexing(false)
+    }
   }
 
   return (
@@ -495,6 +626,9 @@ function App() {
               clearSelectedPost()
               setPage(nextPage)
             }}
+            onAskRag={handleAskRag}
+            onReindexPosts={handleReindexPosts}
+            onRagQuestionChange={setRagQuestion}
             onRemoveTag={handleRemoveTag}
             onSearch={handleSearchPosts}
             onSearchKeywordChange={setKeyword}
@@ -512,6 +646,13 @@ function App() {
             onUpdatePost={handleUpdatePost}
             page={page}
             posts={posts}
+            ragError={ragError}
+            ragQuestion={ragQuestion}
+            ragResult={ragResult}
+            isRagLoading={isRagLoading}
+            isRagReindexing={isRagReindexing}
+            ragStatusMessage={ragStatusMessage}
+            ragSystemStatus={ragSystemStatus}
             selectedPost={selectedPost}
             selectedPostId={selectedPostId}
             tagInput={tagInput}

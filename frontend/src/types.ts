@@ -20,3 +20,41 @@ export type Comment = {
   createdAt: string
   ownerLoginId: string
 }
+
+export type RagReference = {
+  postId: number
+  title: string
+  authorName: string
+  createdAt: string
+  contentPreview: string
+  matchedChunkText: string
+  similarityScore: number
+  tags: Tag[]
+}
+
+export type RagAnswerResponse = {
+  question: string
+  answer: string
+  answerModel: string
+  embeddingModel: string
+  totalMatches: number
+  references: RagReference[]
+}
+
+export type RagReindexResponse = {
+  requestedBy: string
+  embeddingModel: string
+  totalPosts: number
+  successCount: number
+  failedCount: number
+  failedPostIds: number[]
+}
+
+export type RagStatusResponse = {
+  apiKeyConfigured: boolean
+  embeddingModel: string
+  chatModel: string
+  embeddingDimensions: number
+  indexedPostCount: number
+  embeddingRowCount: number
+}

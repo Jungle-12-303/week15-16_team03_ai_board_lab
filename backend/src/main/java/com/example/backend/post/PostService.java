@@ -7,17 +7,23 @@ import java.time.LocalDateTime;
 import com.example.backend.tag.Tag;
 import java.util.ArrayList;
 import java.util.List;
+import com.example.backend.rag.PostEmbeddingService;
 import com.example.backend.tag.TagRepository;
 import com.example.backend.user.JwtTokenProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 @Service
 public class PostService {
+    private static final Logger log = LoggerFactory.getLogger(PostService.class);
+
     private final PostRepository postRepository;
     private final TagRepository tagRepository;
     private final JwtTokenProvider jwtTokenProvider;
+    private final PostEmbeddingService postEmbeddingService;
 
     public Post createPost(String authorizationHeader, PostCreateRequest request){  
         String token = authorizationHeader.substring(7);
@@ -38,7 +44,9 @@ public class PostService {
             tags
         );
 
-        return postRepository.save(post);
+        Post savedPost = postRepository.save(post);
+        syncEmbeddingSafely(savedPost);
+        return savedPost;
     }
 
     public Post updatePost(String authorizationHeader, Long id, PostCreateRequest request){
@@ -66,7 +74,9 @@ public class PostService {
             tags
         );
 
-        return postRepository.save(post);
+        Post savedPost = postRepository.save(post);
+        syncEmbeddingSafely(savedPost);
+        return savedPost;
     }
 
     public void deletePost(String authorizationHeader, Long id){
@@ -86,12 +96,19 @@ public class PostService {
         }
 
         postRepository.delete(post);
+        postEmbeddingService.deletePostEmbeddings(id);
     }
 
-    public PostService(PostRepository postRepository, TagRepository tagRepository, JwtTokenProvider jwtTokenProvider){
+    public PostService(
+        PostRepository postRepository,
+        TagRepository tagRepository,
+        JwtTokenProvider jwtTokenProvider,
+        PostEmbeddingService postEmbeddingService
+    ){
         this.postRepository = postRepository;
         this.tagRepository = tagRepository;
         this.jwtTokenProvider = jwtTokenProvider;
+        this.postEmbeddingService = postEmbeddingService;
     }
 
     public Page<Post> getPosts(String keyword, Pageable pageable){
@@ -122,6 +139,14 @@ public class PostService {
         }
 
         return tags;
+    }
+
+    private void syncEmbeddingSafely(Post post) {
+        try {
+            postEmbeddingService.syncPostEmbedding(post);
+        } catch (Exception e) {
+            log.warn("게시글 {} 임베딩 동기화에 실패했습니다.", post.getId(), e);
+        }
     }
 
 }

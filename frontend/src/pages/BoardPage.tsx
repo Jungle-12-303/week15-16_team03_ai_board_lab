@@ -1,6 +1,6 @@
 import type { KeyboardEvent } from 'react'
 import { Link } from 'react-router-dom'
-import type { Comment, Post } from '../types'
+import type { Comment, Post, RagAnswerResponse, RagStatusResponse } from '../types'
 
 type BoardPageProps = {
   posts: Post[]
@@ -21,11 +21,19 @@ type BoardPageProps = {
   isLoggedIn: boolean
   currentNickname: string
   currentLoginId: string
+  ragQuestion: string
+  ragResult: RagAnswerResponse | null
+  ragError: string
+  isRagLoading: boolean
+  isRagReindexing: boolean
+  ragStatusMessage: string
+  ragSystemStatus: RagStatusResponse | null
   onTitleChange: (value: string) => void
   onContentChange: (value: string) => void
   onCommentContentChange: (value: string) => void
   onTagInputChange: (value: string) => void
   onSearchKeywordChange: (value: string) => void
+  onRagQuestionChange: (value: string) => void
   onSelectPost: (id: number) => void
   onStartEditPost: (post: Post) => void
   onCreatePost: () => void
@@ -34,6 +42,8 @@ type BoardPageProps = {
   onTagKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void
   onRemoveTag: (tag: string) => void
   onSearch: () => void
+  onAskRag: () => void
+  onReindexPosts: () => void
   onPageChange: (page: number) => void
   onCreateComment: () => void
   onStartEditComment: (comment: Comment) => void
@@ -68,11 +78,19 @@ function BoardPage({
   isLoggedIn,
   currentNickname,
   currentLoginId,
+  ragQuestion,
+  ragResult,
+  ragError,
+  isRagLoading,
+  isRagReindexing,
+  ragStatusMessage,
+  ragSystemStatus,
   onTitleChange,
   onContentChange,
   onCommentContentChange,
   onTagInputChange,
   onSearchKeywordChange,
+  onRagQuestionChange,
   onSelectPost,
   onStartEditPost,
   onCreatePost,
@@ -81,6 +99,8 @@ function BoardPage({
   onTagKeyDown,
   onRemoveTag,
   onSearch,
+  onAskRag,
+  onReindexPosts,
   onPageChange,
   onCreateComment,
   onStartEditComment,
@@ -317,6 +337,106 @@ function BoardPage({
         ) : (
           <>
             <section className="board-toolbar">
+              <div className="panel-card rag-card">
+                <div className="section-header">
+                  <p className="section-kicker">AI Search</p>
+                  <h2>AI 게시글 검색 도우미</h2>
+                </div>
+
+                {isLoggedIn ? (
+                  <div className="rag-layout">
+                    <div className="search-row rag-search-row">
+                      <input
+                        className="text-input"
+                        type="text"
+                        placeholder="예: JWT 로그인 구현할 때 필요한 흐름이 뭐야?"
+                        value={ragQuestion}
+                        onChange={(event) => onRagQuestionChange(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                            onAskRag()
+                          }
+                        }}
+                      />
+                      <button className="primary-button" onClick={onAskRag} type="button" disabled={isRagLoading}>
+                        {isRagLoading ? '검색 중...' : 'AI 검색'}
+                      </button>
+                    </div>
+
+                    <p className="helper-text">
+                      자연어 질문을 입력하면 관련 게시글을 찾아 짧게 요약해서 답변합니다.
+                    </p>
+
+                    {ragSystemStatus !== null && (
+                      <p className="meta-text">
+                        API 키: {ragSystemStatus.apiKeyConfigured ? '설정됨' : '미설정'} · 임베딩 모델:{' '}
+                        {ragSystemStatus.embeddingModel} · 채팅 모델: {ragSystemStatus.chatModel} · 인덱싱된 게시글:{' '}
+                        {ragSystemStatus.indexedPostCount}개 · 임베딩 행: {ragSystemStatus.embeddingRowCount}개
+                      </p>
+                    )}
+
+                    <div className="rag-actions">
+                      <button
+                        className="secondary-button"
+                        onClick={onReindexPosts}
+                        type="button"
+                        disabled={isRagReindexing}
+                      >
+                        {isRagReindexing ? '임베딩 갱신 중...' : '기존 글 임베딩 갱신'}
+                      </button>
+                    </div>
+
+                    {ragError !== '' && <p className="rag-error">{ragError}</p>}
+                    {ragStatusMessage !== '' && <p className="rag-status">{ragStatusMessage}</p>}
+
+                    {ragResult !== null && (
+                      <div className="rag-result-card">
+                        <div className="section-header compact">
+                          <p className="section-kicker">Answer</p>
+                          <h3>AI 답변</h3>
+                        </div>
+                        <p className="detail-content">{ragResult.answer}</p>
+                        <p className="meta-text">
+                          답변 모델: {ragResult.answerModel} · 임베딩 모델: {ragResult.embeddingModel}
+                        </p>
+
+                        <div className="section-header compact">
+                          <p className="section-kicker">Reference</p>
+                          <h3>참고 게시글</h3>
+                        </div>
+
+                        <ul className="rag-reference-list">
+                          {ragResult.references.map((reference) => (
+                            <li className="rag-reference-item" key={reference.postId}>
+                              <button
+                                className="post-title-button"
+                                onClick={() => onSelectPost(reference.postId)}
+                                type="button"
+                              >
+                                {reference.title}
+                              </button>
+                              <p className="meta-text">
+                                {reference.authorName} · {formatDate(reference.createdAt)} · 유사도 {reference.similarityScore.toFixed(3)}
+                              </p>
+                              <p className="comment-content">{reference.contentPreview}</p>
+                              <div className="tag-list compact">
+                                {reference.tags.map((tag) => (
+                                  <span className="tag-chip compact" key={`${reference.postId}-${tag.id}`}>
+                                    {tag.name}
+                                  </span>
+                                ))}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="helper-text">AI 검색은 로그인 후 사용할 수 있습니다.</p>
+                )}
+              </div>
+
               <div className="panel-card search-card">
                 <div className="section-header">
                   <p className="section-kicker">Search</p>

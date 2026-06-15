@@ -1,0 +1,13 @@
+{
+  "sample_count": 20,
+  "average_latency_ms": 3178.05,
+  "max_latency_ms": 4601.66,
+  "min_latency_ms": 2585.79,
+  "average_total_matches": 8.0,
+  "metric_means": {
+    "faithfulness": 0.7475,
+    "answer_relevancy": 0.4239,
+    "context_precision": 0.8446,
+    "context_recall": 0.65
+  }
+}
