@@ -263,6 +263,7 @@ Spring Boot 기본 구조와 JPA 설계를 설명하는 질문이다.
 | 로그인 비밀번호를 계속 틀리면 어떻게 되나요? | `LoginAttemptService`가 계정 기준 실패 횟수를 기록합니다. 기본값은 10분 안에 5회 실패 시 5분 잠금입니다. 현재는 단일 서버 인메모리라 다중 서버 운영에서는 Redis 같은 공유 저장소로 옮겨야 합니다. |
 | CORS는 왜 필요하나요? | Vite dev server와 Spring Boot API origin이 다르기 때문 |
 | 권한 체크는 어디서 하나요? | Spring Security filter와 API/service owner 검증 |
+| 임베딩 job 처리나 Qdrant sync API는 아무나 호출할 수 있나요? | 아니요. `/api/ai/embedding-jobs/**`, `/api/ai/vector-store/**`, `/api/ai/evaluation/**`는 `ADMIN` role만 접근하도록 제한했습니다. 일반 로그인 사용자는 403을 받습니다. |
 | 다른 사용자의 게시글을 수정할 수 있나요? | owner 검증 필요, 발표 전 실제 동작 확인 포인트 |
 | API key가 노출되면 어떻게 되나요? | 즉시 폐기/재발급, secret manager 사용 |
 

@@ -112,6 +112,7 @@ RAG를 AWS 서비스 중심으로 바꾸면 Bedrock Knowledge Bases, OpenSearch,
 - CORS 허용 origin 제한
 - 회원 비밀번호 hash 저장
 - 로그인 실패 rate limit
+- maintenance endpoint는 ADMIN role로 제한
 - 관리자 기능이 생기면 권한 분리 필요
 
 ## 현재 범위 밖의 운영 기능
@@ -121,7 +122,7 @@ RAG를 AWS 서비스 중심으로 바꾸면 Bedrock Knowledge Bases, OpenSearch,
 - Flyway 초기 migration은 적용했지만, 이후 변경마다 V2/V3 migration을 계속 작성해야 함
 - 전체 refresh token 로그아웃은 적용했지만 세션 목록/기기 관리 화면은 없음
 - Qdrant는 도입했지만 운영 백업/복구 전략은 별도 필요
-- 관리자 페이지 없음
+- 관리자 role은 있지만 관리자 계정 생성/관리 페이지는 없음
 - 모니터링/알림 없음
 - 사용자-facing AI 요청 rate limit은 적용했지만 전체 API rate limit은 없음
 - RAG 평가 케이스 수 부족
@@ -129,7 +130,7 @@ RAG를 AWS 서비스 중심으로 바꾸면 Bedrock Knowledge Bases, OpenSearch,
 ## 다음 개선 우선순위
 
 1. 세션 목록/기기별 로그아웃 화면 보강
-2. 전체 API rate limit과 관리자/maintenance endpoint 보호
+2. 전체 API rate limit과 관리자 계정 관리 화면
 3. Qdrant 백업/복구와 운영 모니터링 정리
 4. RAG 평가 케이스 확장
 5. MCP 도구 추가

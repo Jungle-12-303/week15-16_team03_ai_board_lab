@@ -247,4 +247,35 @@ class AuthControllerTest {
                         HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS,
                         "true"));
     }
+
+    @Test
+    void regularUserCannotAccessEmbeddingMaintenanceEndpoint() throws Exception {
+        String username = "maintenance-user";
+        String password = "password123";
+
+        mockMvc.perform(post("/api/auth/signup")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"username":"%s","password":"%s"}
+                                """.formatted(username, password)))
+                .andExpect(status().isOk());
+
+        MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"username":"%s","password":"%s"}
+                                """.formatted(username, password)))
+                .andExpect(status().isOk())
+                .andReturn();
+        Cookie accessTokenCookie = loginResult.getResponse()
+                .getCookie(JwtAuthenticationFilter.ACCESS_TOKEN_COOKIE_NAME);
+
+        assertThat(accessTokenCookie).isNotNull();
+
+        mockMvc.perform(get("/api/ai/embedding-jobs/status")
+                        .cookie(accessTokenCookie))
+                .andExpect(status().isForbidden());
+    }
 }
