@@ -1,6 +1,13 @@
 import type { KeyboardEvent } from 'react'
 import { Link } from 'react-router-dom'
-import type { Comment, McpWeatherDraftResponse, Post, RagAnswerResponse, RagStatusResponse } from '../types'
+import type {
+  AgentDraftResponse,
+  Comment,
+  McpWeatherDraftResponse,
+  Post,
+  RagAnswerResponse,
+  RagStatusResponse,
+} from '../types'
 
 type BoardPageProps = {
   posts: Post[]
@@ -21,6 +28,10 @@ type BoardPageProps = {
   isLoggedIn: boolean
   currentNickname: string
   currentLoginId: string
+  agentUserRequest: string
+  agentResult: AgentDraftResponse | null
+  agentError: string
+  isAgentLoading: boolean
   mcpCity: string
   mcpForecastDays: string
   mcpResult: McpWeatherDraftResponse | null
@@ -38,6 +49,7 @@ type BoardPageProps = {
   onCommentContentChange: (value: string) => void
   onTagInputChange: (value: string) => void
   onSearchKeywordChange: (value: string) => void
+  onAgentUserRequestChange: (value: string) => void
   onMcpCityChange: (value: string) => void
   onMcpForecastDaysChange: (value: string) => void
   onRagQuestionChange: (value: string) => void
@@ -49,6 +61,7 @@ type BoardPageProps = {
   onTagKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void
   onRemoveTag: (tag: string) => void
   onSearch: () => void
+  onAskAgentDraft: () => void
   onAskMcpWeatherDraft: () => void
   onAskRag: () => void
   onReindexPosts: () => void
@@ -61,6 +74,7 @@ type BoardPageProps = {
   onBackToList: () => void
   onOpenCreatePost: () => void
   onClosePostEditor: () => void
+  onUseAgentDraft: () => void
   onUseMcpDraft: () => void
 }
 
@@ -87,6 +101,10 @@ function BoardPage({
   isLoggedIn,
   currentNickname,
   currentLoginId,
+  agentUserRequest,
+  agentResult,
+  agentError,
+  isAgentLoading,
   mcpCity,
   mcpForecastDays,
   mcpResult,
@@ -104,6 +122,7 @@ function BoardPage({
   onCommentContentChange,
   onTagInputChange,
   onSearchKeywordChange,
+  onAgentUserRequestChange,
   onMcpCityChange,
   onMcpForecastDaysChange,
   onRagQuestionChange,
@@ -115,6 +134,7 @@ function BoardPage({
   onTagKeyDown,
   onRemoveTag,
   onSearch,
+  onAskAgentDraft,
   onAskMcpWeatherDraft,
   onAskRag,
   onReindexPosts,
@@ -127,6 +147,7 @@ function BoardPage({
   onBackToList,
   onOpenCreatePost,
   onClosePostEditor,
+  onUseAgentDraft,
   onUseMcpDraft,
 }: BoardPageProps) {
   const safeTotalPages = totalPages === 0 ? 1 : totalPages
@@ -532,6 +553,96 @@ function BoardPage({
 
                           <div className="rag-actions">
                             <button className="secondary-button" onClick={onUseMcpDraft} type="button">
+                              이 초안으로 게시글 작성하기
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    <div className="rag-result-card">
+                      <div className="section-header compact">
+                        <p className="section-kicker">AI Agent</p>
+                        <h3>게시글 초안 생성</h3>
+                      </div>
+
+                      <div className="search-row rag-search-row">
+                        <input
+                          className="text-input"
+                          type="text"
+                          placeholder="예: Render에서 PostgreSQL 연결 오류 났던 경험을 글로 정리하고 싶어"
+                          value={agentUserRequest}
+                          onChange={(event) => onAgentUserRequestChange(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter') {
+                              onAskAgentDraft()
+                            }
+                          }}
+                        />
+                        <button
+                          className="primary-button"
+                          onClick={onAskAgentDraft}
+                          type="button"
+                          disabled={isAgentLoading}
+                        >
+                          {isAgentLoading ? '초안 생성 중...' : 'Agent 초안 생성'}
+                        </button>
+                      </div>
+
+                      <p className="helper-text">
+                        프론트는 짧은 요청만 보내고, 백엔드가 RAG 검색 결과와 MCP 결과를 붙여서 게시글 초안을 만듭니다.
+                      </p>
+
+                      {agentError !== '' && <p className="rag-error">{agentError}</p>}
+
+                      {agentResult !== null && (
+                        <>
+                          <div className="section-header compact">
+                            <p className="section-kicker">Draft</p>
+                            <h3>Agent 생성 결과</h3>
+                          </div>
+
+                          <div>
+                            <p className="comment-author">{agentResult.title}</p>
+                            <p className="detail-content">{agentResult.content}</p>
+                          </div>
+
+                          <div className="tag-list">
+                            {agentResult.tags.map((tag) => (
+                              <span className="tag-chip" key={tag}>
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+
+                          <p className="meta-text">사용 도구: {agentResult.toolsUsed.join(', ')}</p>
+                          <p className="meta-text">생성 근거: {agentResult.reasoningSummary}</p>
+
+                          <div className="section-header compact">
+                            <p className="section-kicker">Reference</p>
+                            <h3>참고 게시글</h3>
+                          </div>
+
+                          {agentResult.references.length > 0 ? (
+                            <ul className="rag-reference-list">
+                              {agentResult.references.map((reference) => (
+                                <li className="rag-reference-item" key={reference.postId}>
+                                  <button
+                                    className="post-title-button"
+                                    onClick={() => onSelectPost(reference.postId)}
+                                    type="button"
+                                  >
+                                    #{reference.postId} {reference.title}
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="helper-text">참고 게시글이 없는 초안입니다.</p>
+                          )}
+
+                          <div className="rag-actions">
+                            <button className="secondary-button" onClick={onUseAgentDraft} type="button">
                               이 초안으로 게시글 작성하기
                             </button>
                           </div>

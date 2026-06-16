@@ -5,6 +5,7 @@ import BoardPage from './pages/BoardPage'
 import LoginPage from './pages/LoginPage'
 import SignUpPage from './pages/SignUpPage'
 import type {
+  AgentDraftResponse,
   Comment,
   McpWeatherDraftResponse,
   Post,
@@ -94,6 +95,10 @@ function App() {
   const [mcpResult, setMcpResult] = useState<McpWeatherDraftResponse | null>(null)
   const [mcpError, setMcpError] = useState('')
   const [isMcpLoading, setIsMcpLoading] = useState(false)
+  const [agentUserRequest, setAgentUserRequest] = useState('')
+  const [agentResult, setAgentResult] = useState<AgentDraftResponse | null>(null)
+  const [agentError, setAgentError] = useState('')
+  const [isAgentLoading, setIsAgentLoading] = useState(false)
 
   const token = auth.token
   const currentNickname = auth.currentNickname
@@ -137,6 +142,20 @@ function App() {
     setTitle(mcpResult.title)
     setContent(mcpResult.content)
     setTagNames(mcpResult.tags)
+    setTagInput('')
+    setIsPostEditorOpen(true)
+  }
+
+  const handleUseAgentDraft = () => {
+    if (agentResult === null) {
+      return
+    }
+
+    clearSelectedPost()
+    setEditingPostId(null)
+    setTitle(agentResult.title)
+    setContent(agentResult.content)
+    setTagNames(agentResult.tags)
     setTagInput('')
     setIsPostEditorOpen(true)
   }
@@ -515,6 +534,9 @@ function App() {
     setRagSystemStatus(null)
     setMcpResult(null)
     setMcpError('')
+    setAgentUserRequest('')
+    setAgentResult(null)
+    setAgentError('')
     navigate('/login')
   }
 
@@ -652,6 +674,47 @@ function App() {
     }
   }
 
+  const handleAskAgentDraft = async () => {
+    if (token === '') {
+      setAgentError('Agent 기능은 로그인 후 사용할 수 있습니다.')
+      return
+    }
+
+    const trimmedUserRequest = agentUserRequest.trim()
+
+    if (trimmedUserRequest === '') {
+      setAgentError('게시글로 만들 요청을 입력해주세요.')
+      return
+    }
+
+    setIsAgentLoading(true)
+    setAgentError('')
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/agent/draft`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          userRequest: trimmedUserRequest,
+        }),
+      })
+
+      if (!response.ok) {
+        setAgentResult(null)
+        setAgentError(await readErrorMessage(response))
+        return
+      }
+
+      const data = (await response.json()) as AgentDraftResponse
+      setAgentResult(data)
+    } finally {
+      setIsAgentLoading(false)
+    }
+  }
+
   return (
     <Routes>
       <Route path="/" element={<Navigate replace to="/posts" />} />
@@ -703,6 +766,8 @@ function App() {
               clearSelectedPost()
               setPage(nextPage)
             }}
+            onAgentUserRequestChange={setAgentUserRequest}
+            onAskAgentDraft={handleAskAgentDraft}
             onAskMcpWeatherDraft={handleAskMcpWeatherDraft}
             onAskRag={handleAskRag}
             onReindexPosts={handleReindexPosts}
@@ -724,7 +789,12 @@ function App() {
             onTitleChange={setTitle}
             onUpdateComment={handleUpdateComment}
             onUpdatePost={handleUpdatePost}
+            onUseAgentDraft={handleUseAgentDraft}
             onUseMcpDraft={handleUseMcpDraft}
+            agentError={agentError}
+            agentResult={agentResult}
+            agentUserRequest={agentUserRequest}
+            isAgentLoading={isAgentLoading}
             isMcpLoading={isMcpLoading}
             page={page}
             posts={posts}

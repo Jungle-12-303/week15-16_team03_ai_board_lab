@@ -116,14 +116,9 @@ public class PostEmbeddingService {
             );
         }
 
-        List<Double> questionEmbedding = openAiEmbeddingClient.createEmbedding(trimmedQuestion, requestedBy);
-        List<RagSearchMatch> matches = ragSearchRepository.searchSimilarPosts(
-            questionEmbedding,
-            openAiEmbeddingClient.getEmbeddingModel(),
-            RAG_MATCH_LIMIT
-        );
+        List<RagReferenceResponse> references = findRelevantReferences(trimmedQuestion, requestedBy, RAG_MATCH_LIMIT);
 
-        if (matches.isEmpty()) {
+        if (references.isEmpty()) {
             return new RagAskResponse(
                 trimmedQuestion,
                 "관련 게시글을 찾지 못했습니다. 다른 표현으로 다시 질문해 주세요.",
@@ -132,6 +127,50 @@ public class PostEmbeddingService {
                 0,
                 List.of()
             );
+        }
+
+        String answer = openAiChatClient.createAnswer(
+            buildDeveloperPrompt(),
+            buildUserPrompt(trimmedQuestion, references),
+            requestedBy
+        );
+
+        return new RagAskResponse(
+            trimmedQuestion,
+            answer,
+            openAiChatClient.getChatModel(),
+            openAiEmbeddingClient.getEmbeddingModel(),
+            references.size(),
+            references
+        );
+    }
+
+    public List<RagReferenceResponse> findRelevantReferences(
+        String question,
+        String requestedBy,
+        int limit
+    ) {
+        ensureConfigured();
+
+        String trimmedQuestion = question == null ? "" : question.trim();
+
+        if (trimmedQuestion.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "질문을 입력해주세요.");
+        }
+
+        if (postEmbeddingRepository.countAllEmbeddings() == 0) {
+            return List.of();
+        }
+
+        List<Double> questionEmbedding = openAiEmbeddingClient.createEmbedding(trimmedQuestion, requestedBy);
+        List<RagSearchMatch> matches = ragSearchRepository.searchSimilarPosts(
+            questionEmbedding,
+            openAiEmbeddingClient.getEmbeddingModel(),
+            limit
+        );
+
+        if (matches.isEmpty()) {
+            return List.of();
         }
 
         Map<Long, RagSearchMatch> matchByPostId = new HashMap<>();
@@ -145,7 +184,7 @@ public class PostEmbeddingService {
         Map<Long, Post> postById = postRepository.findAllById(orderedPostIds).stream()
             .collect(Collectors.toMap(Post::getId, post -> post));
 
-        List<RagReferenceResponse> references = orderedPostIds.stream()
+        return orderedPostIds.stream()
             .map(postById::get)
             .filter(post -> post != null)
             .map(post -> {
@@ -163,21 +202,6 @@ public class PostEmbeddingService {
             })
             .sorted(Comparator.comparingDouble(RagReferenceResponse::getSimilarityScore).reversed())
             .toList();
-
-        String answer = openAiChatClient.createAnswer(
-            buildDeveloperPrompt(),
-            buildUserPrompt(trimmedQuestion, references),
-            requestedBy
-        );
-
-        return new RagAskResponse(
-            trimmedQuestion,
-            answer,
-            openAiChatClient.getChatModel(),
-            openAiEmbeddingClient.getEmbeddingModel(),
-            references.size(),
-            references
-        );
     }
 
     private void replacePostEmbeddings(Post post) {

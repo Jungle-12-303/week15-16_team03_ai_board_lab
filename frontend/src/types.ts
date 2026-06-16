@@ -68,3 +68,17 @@ export type McpWeatherDraftResponse = {
   tags: string[]
   sourceSummary: string[]
 }
+
+export type AgentReferenceItem = {
+  postId: number
+  title: string
+}
+
+export type AgentDraftResponse = {
+  title: string
+  content: string
+  tags: string[]
+  references: AgentReferenceItem[]
+  toolsUsed: string[]
+  reasoningSummary: string
+}
