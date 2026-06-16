@@ -20,6 +20,18 @@
 | MySQL | `docker compose ps mysql` | `running` |
 | Qdrant | `http://127.0.0.1:6333/dashboard` | Qdrant dashboard 접근 가능 |
 
+## 2026-06-17 데모 검증 기록
+
+| 항목 | 확인 결과 |
+|---|---|
+| 데모 계정 로그인 | `korean-seed / korean-seed-password`로 브라우저 로그인 성공 |
+| 메인 게시판 | 전체 `1303`개 게시글과 카테고리별 개수 표시 확인 |
+| 글쓰기 모달 | `Write post`, `Related posts`, `Draft from sources`, `Publish` 버튼 표시 확인 |
+| RAG API | 유사글 후보 `3`개, 초안 생성 정상 |
+| MCP API | GitHub fact check 결과 `supported` 반환 |
+| Agent API | 놓친 글 추천 `5`개와 reasoning step `4`개 반환 |
+| 빌드/테스트 | Backend test, Frontend build 통과 |
+
 ## 데모 흐름
 
 | 순서 | 화면 | 보여줄 것 | 말할 포인트 |

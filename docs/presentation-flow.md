@@ -22,7 +22,7 @@
 | 3:20-4:20 | RAG 개선 설명 | RAG 보고서 핵심 표 | vector-only에서 Qdrant + BM25 + RRF + Nori + chunk evidence 구조로 개선했다. |
 | 4:20-5:10 | MCP 데모 | 게시글 상세 fact check | MCP server가 GitHub/날씨 같은 외부 도구를 호출하고 글의 주장과 비교한다. |
 | 5:10-5:50 | Agent 데모 | Missed posts 패널 | 사용자 읽음 기록 기반으로 이미 본 글을 제외하고 놓친 글 5개를 추천한다. |
-| 5:50-6:35 | 평가와 한계 | RAG 성능 보고서 | `MRR@5 1.0`, `NDCG@5 0.9076`, RAGAS 보조 평가, 과적합/holdout 한계를 설명한다. |
+| 5:50-6:35 | 평가와 운영성 | RAG 성능 보고서, QA 체크리스트 | `MRR@5 1.0`, `NDCG@5 0.9076`, RAGAS 보조 평가와 JWT/CSRF/rate limit/admin endpoint 보강을 설명한다. |
 | 6:35-7:00 | 회고와 개선 | 한계점 표 | reranker, 평가셋 확장, 배포 migration, MCP 도구 확장이 다음 과제다. |
 
 ## 발표 스크립트 요약
@@ -54,6 +54,10 @@ RAG 검색은 `Precision@5`, `Recall@5`, `MRR@5`, `NDCG@5`, `Hit@5`로 평가했
 ### 7. 회고
 
 가장 큰 배움은 RAG 성능이 embedding 하나로 결정되지 않는다는 점입니다. 실제 서비스에서는 Qdrant 후보 생성, BM25 단어 검색, RRF 순위 결합, metadata 완화, 한국어 형태소 분석, chunk 근거가 함께 작동해야 했습니다. 다음 개선은 수동 라벨 평가셋 확장, holdout 평가, reranker 도입, MCP 도구 확장입니다.
+
+### 8. 운영성 보강
+
+개발 속도를 위해 처음에는 로컬 상태와 단순 API 호출 중심으로 시작했지만, 최종 단계에서는 httpOnly cookie 기반 JWT, refresh token 재발급, CSRF 보호, 로그인/AI 요청 rate limit, 관리자 전용 운영 endpoint를 추가했습니다. 이 부분은 실제 서비스라면 최소한으로 필요한 방어선이고, 발표 전 QA에서는 회원가입/로그인/로그아웃, 잘못된 비밀번호, 게시글/댓글 CRUD, RAG/MCP/Agent API를 함께 확인했습니다.
 
 ## 데모 실패 시 대체 흐름
 

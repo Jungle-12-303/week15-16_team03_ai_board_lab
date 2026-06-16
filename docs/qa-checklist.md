@@ -2,6 +2,59 @@
 
 이 문서는 발표 전 직접 눌러볼 항목을 정리한 체크리스트다. 모든 항목을 완벽한 자동 테스트로 대체하기보다, 발표 직전에 실제 화면 기준으로 깨지는 부분이 없는지 확인하는 용도다.
 
+## 2026-06-17 QA 실행 결과
+
+아래 결과는 발표 전 기준으로 실제 로컬 서버와 API를 대상으로 확인한 내용이다. 체크리스트 본문은 발표 직전 다시 눌러볼 수 있도록 유지한다.
+
+| 구분 | 확인 내용 | 결과 |
+|---|---|---|
+| Backend test | `backend`에서 `.\gradlew.bat test` 실행 | 통과 |
+| Frontend build | `frontend/project-alpha`에서 `npm run build` 실행 | 통과 |
+| Docker | `mysql`, `qdrant` 컨테이너 실행 상태 | 실행 중 |
+| Backend | `http://127.0.0.1:8080/api/health` | `200` |
+| Frontend | `http://127.0.0.1:5173` | `200` |
+| OpenAI key | `backend/.env`에 `OPENAI_API_KEY` 존재 | 확인 |
+| Qdrant | collection 목록 | `project_alpha_posts`, `project_alpha_chunks` |
+| 게시글 데이터 | `GET /api/posts?page=0&size=3` | 총 `1303`개 |
+| 카테고리 개수 | 전체 기준 category count | Development 201, Learning 200, Project 202, Daily 300, Review 200, Briefing 200 |
+
+### API Smoke Test
+
+| 기능 | 확인 내용 | 결과 |
+|---|---|---|
+| 인증 | 회원가입, 로그인, `me`, 로그아웃 | 통과 |
+| 인증 실패 | 잘못된 비밀번호 로그인 | `401`로 거절 |
+| 게시글 | 생성, 수정, 삭제 | 통과 |
+| 댓글 | 생성, 삭제 | 통과 |
+| 검색 | `keyword=GitHub` | 총 `321`개 |
+| 카테고리 필터 | `category=Daily` | 총 `300`개 |
+| 태그 검색 | `tag=React` | 총 `139`개 |
+| 페이징 | `page=1&size=3` | 총 `435`페이지 |
+| RAG 유사글 | `similar-posts` | 후보 `3`개 반환 |
+| RAG 초안 | `draft` | 근거 `3`개, 초안 본문 생성 |
+| MCP fact check | GitHub 저장소 주장 검증 | `CHECKED`, `supported` |
+| Agent 추천 | 놓친 글 추천 | 추천 `5`개, reasoning step `4`개 |
+
+### Browser Smoke Test
+
+| 화면 | 확인 내용 | 결과 |
+|---|---|---|
+| 로그인 | username/password 기본값이 비어 있음 | 통과 |
+| 로그인 | `korean-seed` 계정으로 게시판 진입 | 통과 |
+| 메인 | 전체/카테고리별 게시글 개수 표시 | 통과 |
+| 메인 | 긴 본문 `펼쳐보기` 버튼 표시 | 통과 |
+| 페이징 | `1`, `2`, `435` 형태의 축약 페이지 버튼 | 통과 |
+| 글쓰기 모달 | `Write post` 클릭 시 작성 모달 표시 | 통과 |
+| RAG 버튼 | `Related posts`, `Draft from sources` 버튼 표시 | 통과 |
+
+### QA 메모
+
+| 항목 | 메모 |
+|---|---|
+| CSRF | 수동 API 스크립트는 로그인 뒤 mutating request마다 최신 CSRF token을 다시 읽어야 한다. 프론트엔드는 `withCsrf()`에서 처리한다. |
+| Vector sync | `/api/ai/vector-store/sync` 같은 운영성 endpoint는 관리자 권한으로 보호된다. 일반/비로그인 요청은 `403`이 맞다. |
+| 데모 계정 | `korean-seed / korean-seed-password`로 브라우저 로그인 확인 완료. |
+
 ## 실행 환경
 
 | 체크 | 항목 | 기대 결과 |
