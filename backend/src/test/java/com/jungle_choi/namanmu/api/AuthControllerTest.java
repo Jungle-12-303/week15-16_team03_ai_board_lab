@@ -160,6 +160,66 @@ class AuthControllerTest {
     }
 
     @Test
+    void logoutAllRevokesEveryRefreshTokenForCurrentUser() throws Exception {
+        String username = "logout-all-user";
+        String password = "password123";
+
+        mockMvc.perform(post("/api/auth/signup")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"username":"%s","password":"%s"}
+                                """.formatted(username, password)))
+                .andExpect(status().isOk());
+
+        MvcResult firstLoginResult = mockMvc.perform(post("/api/auth/login")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"username":"%s","password":"%s"}
+                                """.formatted(username, password)))
+                .andExpect(status().isOk())
+                .andReturn();
+        Cookie firstRefreshCookie = firstLoginResult.getResponse()
+                .getCookie(REFRESH_TOKEN_COOKIE_NAME);
+
+        MvcResult secondLoginResult = mockMvc.perform(post("/api/auth/login")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"username":"%s","password":"%s"}
+                                """.formatted(username, password)))
+                .andExpect(status().isOk())
+                .andReturn();
+        Cookie secondAccessCookie = secondLoginResult.getResponse()
+                .getCookie(JwtAuthenticationFilter.ACCESS_TOKEN_COOKIE_NAME);
+        Cookie secondRefreshCookie = secondLoginResult.getResponse()
+                .getCookie(REFRESH_TOKEN_COOKIE_NAME);
+
+        assertThat(firstRefreshCookie).isNotNull();
+        assertThat(secondAccessCookie).isNotNull();
+        assertThat(secondRefreshCookie).isNotNull();
+
+        mockMvc.perform(post("/api/auth/logout-all")
+                        .with(csrf())
+                        .cookie(secondAccessCookie))
+                .andExpect(status().isNoContent())
+                .andExpect(cookie().maxAge(
+                        JwtAuthenticationFilter.ACCESS_TOKEN_COOKIE_NAME,
+                        0))
+                .andExpect(cookie().maxAge(REFRESH_TOKEN_COOKIE_NAME, 0));
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .with(csrf())
+                        .cookie(firstRefreshCookie))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/auth/refresh")
+                        .with(csrf())
+                        .cookie(secondRefreshCookie))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void csrfEndpointReturnsTokenForBrowserRequests() throws Exception {
         mockMvc.perform(get("/api/auth/csrf"))
                 .andExpect(status().isOk())

@@ -1,6 +1,12 @@
 import AuthPanel from './AuthPanel';
 
-export default function Topbar({ currentUser, onLogout, searchTerm, onSearchChange }) {
+export default function Topbar({
+  currentUser,
+  onLogout,
+  onLogoutAll,
+  searchTerm,
+  onSearchChange,
+}) {
   const hasSearch = onSearchChange !== undefined;
 
   return (
@@ -19,7 +25,11 @@ export default function Topbar({ currentUser, onLogout, searchTerm, onSearchChan
           <div className="topbar-spacer" />
         )}
 
-        <AuthPanel currentUser={currentUser} onLogout={onLogout} />
+        <AuthPanel
+          currentUser={currentUser}
+          onLogout={onLogout}
+          onLogoutAll={onLogoutAll}
+        />
       </div>
     </header>
   );

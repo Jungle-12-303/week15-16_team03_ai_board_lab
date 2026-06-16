@@ -117,7 +117,7 @@ RAG를 AWS 서비스 중심으로 바꾸면 Bedrock Knowledge Bases, OpenSearch,
 다음 항목은 현재 구현 범위에 포함되지 않습니다.
 
 - Flyway 초기 migration은 적용했지만, 이후 변경마다 V2/V3 migration을 계속 작성해야 함
-- refresh token rotation은 적용했지만 운영용 전체 세션 관리 화면은 없음
+- 전체 refresh token 로그아웃은 적용했지만 세션 목록/기기 관리 화면은 없음
 - Qdrant는 도입했지만 운영 백업/복구 전략은 별도 필요
 - 관리자 페이지 없음
 - 모니터링/알림 없음
@@ -126,7 +126,7 @@ RAG를 AWS 서비스 중심으로 바꾸면 Bedrock Knowledge Bases, OpenSearch,
 
 ## 다음 개선 우선순위
 
-1. 관리자용 세션 조회/강제 로그아웃 전략 보강
+1. 세션 목록/기기별 로그아웃 화면 보강
 2. 로그인 외 API rate limit 확장
 3. Qdrant 백업/복구와 운영 모니터링 정리
 4. RAG 평가 케이스 확장

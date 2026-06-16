@@ -76,6 +76,18 @@ export async function logout() {
   clearCsrfToken();
 }
 
+export async function logoutAll() {
+  const response = await authFetch(`${apiBaseUrl}/api/auth/logout-all`, await withCsrf({
+    method: 'POST',
+  }));
+
+  if (!response.ok) {
+    throw new Error('Failed to logout all sessions.');
+  }
+
+  clearCsrfToken();
+}
+
 function normalizeUser(user) {
   return {
     name: String(user.name ?? ''),

@@ -19,7 +19,7 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedTag, setSelectedTag] = useState('');
-  const { currentUser, isLoadingAuth, login, signUp, logout } = useAuth();
+  const { currentUser, isLoadingAuth, login, signUp, logout, logoutAll } = useAuth();
   const composer = usePostComposer();
   const ragDraft = useRagDraft(currentUser);
   const agentRecommendations = useAgentRecommendations(currentUser);
@@ -137,6 +137,12 @@ export default function App() {
     agentRecommendations.resetAgentRecommendations();
   }
 
+  async function handleLogoutAll() {
+    await logoutAll();
+    cancelEditPost();
+    agentRecommendations.resetAgentRecommendations();
+  }
+
   function cancelEditPost() {
     composer.resetComposer();
     ragDraft.resetRagDraft();
@@ -199,7 +205,11 @@ export default function App() {
   if (location.pathname.startsWith('/posts/')) {
     return (
       <>
-        <Topbar currentUser={currentUser} onLogout={handleLogout} />
+        <Topbar
+          currentUser={currentUser}
+          onLogout={handleLogout}
+          onLogoutAll={handleLogoutAll}
+        />
 
         <main className="detail-shell">
           <Routes>
@@ -256,6 +266,7 @@ export default function App() {
       canSubmit={canSubmit}
       isEditing={composer.editingPostId !== null}
       onLogout={handleLogout}
+      onLogoutAll={handleLogoutAll}
       onSearchChange={changeSearchTerm}
       onSelectCategory={selectCategory}
       onTagChange={changeSelectedTag}

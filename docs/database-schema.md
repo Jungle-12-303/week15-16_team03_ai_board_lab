@@ -260,6 +260,9 @@ Agent의 놓친 글 추천 기능을 위한 읽음 기록 테이블이다.
 | --- | --- |
 | `POST /api/auth/signup` | `users` 테이블에 사용자 저장, 비밀번호는 해시로 저장 |
 | `POST /api/auth/login` | `users` 조회 후 access token cookie와 refresh token cookie 발급 |
+| `POST /api/auth/refresh` | `refresh_tokens`의 해시를 검증하고 기존 refresh token을 폐기한 뒤 새 token 발급 |
+| `POST /api/auth/logout` | 현재 refresh token을 폐기하고 auth cookie 삭제 |
+| `POST /api/auth/logout-all` | 현재 사용자의 활성 refresh token을 모두 폐기하고 auth cookie 삭제 |
 | `GET /api/posts` | `posts`, `post_tags`, `comments`를 조회해 목록 응답 생성 |
 | `GET /api/posts/{postId}` | 게시글 상세 조회 후 `post_reads`에 읽음 기록 저장 |
 | `POST /api/posts` | `posts` 저장, `post_tags` 갱신, `embedding_jobs` 예약 |

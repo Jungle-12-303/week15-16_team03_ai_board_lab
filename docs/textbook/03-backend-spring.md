@@ -100,6 +100,8 @@ JWT는 프론트와 백엔드가 분리된 구조에서 API 요청마다 인증 
 
 프론트의 일반 API 요청은 `authFetch`를 거칩니다. 서버가 access token 만료로 401을 반환하면 프론트는 `/api/auth/refresh`를 한 번 호출하고, 성공하면 원래 API 요청을 한 번 재시도합니다. 이 재시도 횟수를 제한해 refresh 실패가 무한 루프로 이어지지 않게 했습니다.
 
+`POST /api/auth/logout-all`은 현재 사용자의 활성 refresh token을 모두 폐기합니다. 이미 발급된 access token은 15분 만료 전까지 stateless 검증이 가능하므로, 더 강한 즉시 무효화가 필요하면 access token blocklist나 사용자별 token version을 추가해야 합니다.
+
 ## 트랜잭션
 
 게시글 생성처럼 여러 DB 작업이 함께 일어나야 하는 기능에는 `@Transactional`을 사용합니다.
@@ -122,7 +124,7 @@ PostService.createPost
 ## 백엔드의 적용 범위와 확장 지점
 
 - DB migration 도구가 아직 없습니다.
-- access token blocklist나 강제 전체 로그아웃 기능은 아직 없습니다.
+- access token blocklist는 아직 없습니다. 강한 즉시 무효화가 필요하면 Redis blocklist나 사용자별 token version을 추가해야 합니다.
 - API rate limit이 없습니다.
 - Service가 더 커지면 use case 단위 클래스로 더 쪼갤 수 있습니다.
 - OpenAI/GitHub/Weather API 장애 대응은 기본 오류 처리와 fallback 메시지 중심입니다.

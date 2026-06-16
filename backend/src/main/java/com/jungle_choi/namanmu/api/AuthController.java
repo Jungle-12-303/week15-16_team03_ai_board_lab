@@ -123,6 +123,22 @@ public class AuthController {
                 .build();
     }
 
+    @PostMapping("/logout-all")
+    public ResponseEntity<Void> logoutAll(@AuthenticationPrincipal User user) {
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        refreshTokenService.revokeAll(user);
+
+        return ResponseEntity.noContent()
+                .headers((headers) -> {
+                    headers.add(HttpHeaders.SET_COOKIE, clearAccessTokenCookie().toString());
+                    headers.add(HttpHeaders.SET_COOKIE, clearRefreshTokenCookie().toString());
+                })
+                .build();
+    }
+
     @PostMapping("/refresh")
     public ResponseEntity<AuthResponse> refresh(HttpServletRequest request) {
         String rawRefreshToken = readCookie(request, REFRESH_TOKEN_COOKIE_NAME)

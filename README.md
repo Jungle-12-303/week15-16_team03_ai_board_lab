@@ -32,7 +32,7 @@ Project Alpha는 개발, 학습, 프로젝트, 일상 기록을 남기는 Linked
 
 - 회원가입, 로그인, 로그아웃
 - httpOnly cookie 기반 JWT 인증 요청
-- CSRF token, refresh token rotation, 로그인 실패 rate limit
+- CSRF token, refresh token rotation, 로그인 실패 rate limit, 전체 refresh token logout
 - 게시글 목록, 상세, 생성, 수정, 삭제
 - 댓글 생성, 삭제
 - 카테고리 필터, 태그 검색, 키워드 검색

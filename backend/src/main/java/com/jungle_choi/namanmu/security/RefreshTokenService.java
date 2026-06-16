@@ -71,6 +71,13 @@ public class RefreshTokenService {
                 .ifPresent((refreshToken) -> refreshToken.revoke(now));
     }
 
+    @Transactional
+    public int revokeAll(User user) {
+        return refreshTokenRepository.revokeActiveTokensByUserId(
+                user.getId(),
+                LocalDateTime.now());
+    }
+
     public long expirationSeconds() {
         return expirationSeconds;
     }

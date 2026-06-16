@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   getCurrentUser,
+  logoutAll as logoutAllRequest,
   login as loginRequest,
   logout as logoutRequest,
   signUp as signUpRequest,
@@ -69,11 +70,20 @@ export default function useAuth() {
     }
   }
 
+  async function logoutAll() {
+    try {
+      await logoutAllRequest();
+    } finally {
+      setCurrentUser(null);
+    }
+  }
+
   return {
     currentUser,
     isLoadingAuth,
     login,
     signUp,
     logout,
+    logoutAll,
   };
 }

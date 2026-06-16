@@ -152,7 +152,7 @@ Spring Boot 기본 구조와 JPA 설계를 설명하는 질문이다.
 
 | 질문 | 좋은 답변 방향 |
 |---|---|
-| 다시 만든다면 뭐부터 고칠 건가요? | 평가셋 확장, migration 도입, 관리자용 세션 관리, embedding job retry, reranker 도입을 우선하겠습니다. |
+| 다시 만든다면 뭐부터 고칠 건가요? | 평가셋 확장, 세션 목록/기기별 로그아웃 화면, embedding job retry, cross-encoder reranker 도입을 우선하겠습니다. |
 | 가장 어려웠던 점은요? | RAG가 embedding 하나로 끝나지 않는다는 점이었습니다. 실제로는 검색 후보 생성, BM25, RRF, 형태소 분석, 청크 근거, 평가 방식이 함께 맞물렸습니다. |
 | 본인이 직접 이해한 부분은 어디까지인가요? | React 상태 관리부터 Spring Boot API, JPA 테이블 설계, JWT 인증, RAG 검색 파이프라인, Qdrant 동기화, MCP 도구 호출, Agent 추천 로직까지 전체 흐름을 직접 따라가며 구현했습니다. |
 | 이 프로젝트의 가장 큰 한계는요? | 평가셋 규모와 실서비스 운영 안정성입니다. 기능은 end-to-end로 구현했지만, 실제 서비스 수준으로 가려면 대규모 평가셋, 배포 migration, 보안 강화, 장애 대응이 필요합니다. |
@@ -201,7 +201,7 @@ Spring Boot 기본 구조와 JPA 설계를 설명하는 질문이다.
 |---|---|
 | 이번 프로젝트에서 설계를 바꾼 가장 좋은 결정은요? | MCP를 글 생성 기능에서 분리해 fact check로 바꾼 것입니다. RAG와 역할이 겹치지 않게 되었고 외부 도구 사용 이유가 더 명확해졌습니다. |
 | 가장 아쉬운 결정은요? | 초기에 평가셋을 더 일찍 설계하지 못한 점입니다. 검색 품질을 체감으로만 보면 방향이 흔들려서, 지표와 시나리오 평가를 나중에 보강했습니다. |
-| 다음 주에 하루 더 있다면 무엇을 하겠습니까? | RAG 결과 캡처 추가, holdout 평가셋 확장, MCP 도구 추가, 관리자용 세션 관리, migration 도입 중 하나를 우선하겠습니다. |
+| 다음 주에 하루 더 있다면 무엇을 하겠습니까? | RAG 결과 캡처 추가, holdout 평가셋 확장, MCP 도구 추가, 세션 목록 UI, embedding job 재시도 중 하나를 우선하겠습니다. |
 | 팀 프로젝트라면 어떻게 나누겠습니까? | frontend/UI, Spring API/JPA, RAG/search, MCP/external tools, Agent/evaluation으로 역할을 나눌 수 있습니다. |
 | 본인이 이 프로젝트에서 가장 많이 성장한 부분은요? | 단일 기능 구현보다 기능을 끝까지 연결하고 평가/문서/발표까지 준비하는 흐름을 배운 점입니다. |
 
@@ -218,7 +218,7 @@ Spring Boot 기본 구조와 JPA 설계를 설명하는 질문이다.
 | Agent라고 부를 수 있나요? | 자율적으로 행동하지 않는데요? | 완전 자율형 agent는 아니다. 상태 관찰, 추론, 후보 검색, 랭킹 단계를 명시한 제한형 추천 agent로 보는 것이 정확하다. |
 | MCP가 꼭 필요한가요? | 그냥 service에서 API 호출하면 안 되나요? | 구현만 보면 가능하다. 하지만 과제 요구는 MCP였고, 외부 도구 호출을 JSON-RPC/tool 단위로 분리해 AI 기능과 외부 시스템 사이의 경계를 만들었다. |
 | JPA로 테이블을 만들었다고요? | 운영에서도 그렇게 하나요? | 로컬 개발은 `ddl-auto=update`를 병행했다. 다만 설정값을 환경변수로 뺐고, 초기 스키마는 Flyway migration 파일로 기록했다. 운영에서는 `validate`와 Flyway migration이 맞다. |
-| JWT는 안전한가요? | localStorage면 XSS에 취약하지 않나요? | 현재는 localStorage가 아니라 httpOnly cookie를 쓴다. 쿠키 인증으로 바꾼 뒤에는 Spring Security CSRF token과 refresh token rotation도 함께 적용했다. 운영 수준에서는 secure cookie, CSP/XSS 대응, 관리자용 세션 관리까지 더 봐야 한다. |
+| JWT는 안전한가요? | localStorage면 XSS에 취약하지 않나요? | 현재는 localStorage가 아니라 httpOnly cookie를 쓴다. 쿠키 인증으로 바꾼 뒤에는 Spring Security CSRF token, refresh token rotation, 전체 refresh token logout도 적용했다. 운영 수준에서는 secure cookie, CSP/XSS 대응, access token 즉시 무효화까지 더 봐야 한다. |
 | 크롤링 데이터는 합법인가요? | 실제 서비스라면요? | 학습/로컬 평가용으로 사용했다. 실제 서비스는 robots.txt, 저작권, 출처, 저장 범위, 삭제 정책을 설계해야 한다. |
 | 평가 점수가 좋은데 믿을 수 있나요? | 6케이스 아닌가요? | 일반화 점수가 아니라 현재 데이터셋 기준선이다. 그래서 한계로 명시했고 holdout 확장이 다음 개선이다. |
 
@@ -426,7 +426,7 @@ Spring Boot 기본 구조와 JPA 설계를 설명하는 질문이다.
 | Spring Security는 어떤 역할인가요? | 인증과 인가 흐름을 filter chain 기반으로 처리하는 프레임워크입니다. |
 | JWT 인증 흐름을 설명해보세요. | 로그인 성공 시 서버가 access token JWT를 httpOnly cookie로 내려줍니다. 이후 요청에서 `JwtAuthenticationFilter`가 cookie의 JWT를 검증해 인증 객체를 만듭니다. access token이 만료되면 refresh token cookie로 `/api/auth/refresh`를 호출합니다. |
 | 세션 방식 대신 JWT를 쓴 이유는요? | 프론트와 백엔드가 분리된 구조에서 stateless API 인증을 연습하기 적합했습니다. |
-| JWT의 단점은요? | 탈취되면 만료 전까지 위험하고, 서버에서 즉시 무효화하기 어렵습니다. 그래서 access token은 cookie로 숨기고, refresh token은 DB에 해시 저장 후 rotation합니다. 남은 과제는 access token blocklist나 전체 세션 강제 종료입니다. |
+| JWT의 단점은요? | 탈취되면 만료 전까지 위험하고, 서버에서 즉시 무효화하기 어렵습니다. 그래서 access token은 15분으로 짧게 두고, refresh token은 DB에 해시 저장 후 rotation하며 전체 refresh token logout을 제공합니다. 남은 과제는 access token blocklist나 token version입니다. |
 | localStorage 저장은 안전한가요? | 인증 token은 localStorage에 저장하지 않도록 개선했습니다. 현재는 httpOnly cookie, CSRF token, refresh token rotation을 함께 사용하고, 운영 배포에서는 HTTPS 기반 secure cookie와 CSP까지 묶어야 합니다. |
 | 인가와 인증 차이는요? | 인증은 사용자가 누구인지 확인하는 것이고, 인가는 그 사용자가 특정 작업을 할 권한이 있는지 확인하는 것입니다. |
 | CORS는 Spring Security와 왜 같이 설정하나요? | 브라우저가 다른 origin의 API 호출을 제한하기 때문에, frontend dev server에서 backend API를 호출하려면 CORS 허용이 필요합니다. |
@@ -458,7 +458,7 @@ Spring Boot 기본 구조와 JPA 설계를 설명하는 질문이다.
 | Agent 맞나요? | 네, 그냥 Agent입니다. | 완전 자율형은 아니고, 상태 관찰과 추론 단계를 명시한 제한형 추천 agent입니다. |
 | MCP 맞나요? | API 호출이긴 한데요. | 외부 API 호출을 JSON-RPC/tool 인터페이스로 분리해 MCP 형태로 구현했습니다. |
 | 평가가 충분한가요? | 점수 좋게 나왔습니다. | 현재 케이스 규모는 작아 한계가 있습니다. 그래서 online/offline을 분리했고 holdout 확장이 다음 개선입니다. |
-| 보안 괜찮나요? | 로컬이라 괜찮습니다. | 인증은 httpOnly cookie, CSRF token, refresh token rotation까지 보강했다. 또한 production mode에서 기본 JWT secret과 insecure cookie를 막았다. 그래도 운영에서는 migration, secret manager, 관리자용 세션 관리가 추가로 필요합니다. |
+| 보안 괜찮나요? | 로컬이라 괜찮습니다. | 인증은 httpOnly cookie, CSRF token, refresh token rotation, 로그인 실패 rate limit, 전체 refresh token logout까지 보강했다. 또한 production mode에서 기본 JWT secret과 insecure cookie를 막았다. 그래도 운영에서는 secret manager, access token 즉시 무효화, 모니터링이 추가로 필요합니다. |
 | 왜 이 기술을 썼나요? | 그냥 많이 쓴다길래요. | 과제 조건, 학습 목표, 현재 DB 선택, 기능 요구를 기준으로 선택했습니다. |
 
 ## 16. 강도별 답변 길이

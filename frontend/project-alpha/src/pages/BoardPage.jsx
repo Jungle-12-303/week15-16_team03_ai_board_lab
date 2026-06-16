@@ -35,6 +35,7 @@ export default function BoardPage({
   canSubmit,
   isEditing,
   onLogout,
+  onLogoutAll,
   onSearchChange,
   onSelectCategory,
   onTagChange,
@@ -55,6 +56,7 @@ export default function BoardPage({
       <Topbar
         currentUser={currentUser}
         onLogout={onLogout}
+        onLogoutAll={onLogoutAll}
         searchTerm={searchTerm}
         onSearchChange={onSearchChange}
       />
