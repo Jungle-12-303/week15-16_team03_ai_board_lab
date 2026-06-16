@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.RequestHeader;
 
 @CrossOrigin(origins = "*")
@@ -27,7 +29,10 @@ public class PostController {
     @GetMapping("/api/posts")
     public Page<Post> getPosts(
         @RequestParam(required = false) String keyword,
-        Pageable pageable
+        @PageableDefault(
+            sort = {"createdAt", "id"},
+            direction = Sort.Direction.DESC
+        ) Pageable pageable
     ) {
         return postService.getPosts(keyword, pageable);
     }
