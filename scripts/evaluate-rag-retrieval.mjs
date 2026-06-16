@@ -1,9 +1,15 @@
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+
 const API_BASE_URL = process.env.PROJECT_ALPHA_API_BASE_URL ?? 'http://localhost:8080';
 const USERNAME = process.env.PROJECT_ALPHA_SEED_USERNAME ?? 'korean-seed';
 const PASSWORD = process.env.PROJECT_ALPHA_SEED_PASSWORD ?? 'korean-seed-password';
 const K = Number(process.env.PROJECT_ALPHA_RAG_EVAL_K ?? 5);
 const RETRY_COUNT = Number(process.env.PROJECT_ALPHA_RAG_EVAL_RETRY_COUNT ?? 1);
 const RETRY_DELAY_MS = Number(process.env.PROJECT_ALPHA_RAG_EVAL_RETRY_DELAY_MS ?? 1000);
+const OUTPUT_PATH =
+  process.env.PROJECT_ALPHA_RAG_EVAL_OUTPUT ??
+  'backend/build/rag-current-retrieval-evaluation.json';
 
 const EVALUATION_CASES = [
   {
@@ -205,16 +211,26 @@ async function main() {
   }
 
   console.table(rows);
-  console.table([
-    {
-      cases: rows.length,
-      [`hit@${K}`]: roundMetric(average(rows, `hit@${K}`)),
-      [`recall@${K}`]: roundMetric(average(rows, `recall@${K}`)),
-      [`precision@${K}`]: roundMetric(average(rows, `precision@${K}`)),
-      [`mrr@${K}`]: roundMetric(average(rows, `mrr@${K}`)),
-      [`ndcg@${K}`]: roundMetric(average(rows, `ndcg@${K}`)),
-    },
-  ]);
+  const averageRow = {
+    cases: rows.length,
+    [`hit@${K}`]: roundMetric(average(rows, `hit@${K}`)),
+    [`recall@${K}`]: roundMetric(average(rows, `recall@${K}`)),
+    [`precision@${K}`]: roundMetric(average(rows, `precision@${K}`)),
+    [`mrr@${K}`]: roundMetric(average(rows, `mrr@${K}`)),
+    [`ndcg@${K}`]: roundMetric(average(rows, `ndcg@${K}`)),
+  };
+  console.table([averageRow]);
+
+  const outputPath = resolve(OUTPUT_PATH);
+  mkdirSync(dirname(outputPath), { recursive: true });
+  writeFileSync(outputPath, `${JSON.stringify({
+    generatedAt: new Date().toISOString(),
+    apiBaseUrl: API_BASE_URL,
+    k: K,
+    cases: rows,
+    average: averageRow,
+  }, null, 2)}\n`, 'utf8');
+  console.log(`Wrote ${outputPath}`);
 }
 
 main().catch((error) => {

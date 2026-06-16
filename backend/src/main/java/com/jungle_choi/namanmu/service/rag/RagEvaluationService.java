@@ -1,14 +1,15 @@
 package com.jungle_choi.namanmu.service.rag;
 
 import com.jungle_choi.namanmu.domain.post.Post;
+import com.jungle_choi.namanmu.domain.post.PostTag;
 import com.jungle_choi.namanmu.domain.post.PostRepository;
 import com.jungle_choi.namanmu.domain.post.PostStatus;
 import com.jungle_choi.namanmu.domain.post.PostTagRepository;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,18 +25,21 @@ public class RagEvaluationService {
     private final SimilarPostSearchService similarPostSearchService;
     private final PostRepository postRepository;
     private final PostTagRepository postTagRepository;
+    private final KoreanTextAnalyzer koreanTextAnalyzer;
 
     public RagEvaluationService(
             PostEmbeddingTextBuilder postEmbeddingTextBuilder,
             OpenAiEmbeddingClient openAiEmbeddingClient,
             SimilarPostSearchService similarPostSearchService,
             PostRepository postRepository,
-            PostTagRepository postTagRepository) {
+            PostTagRepository postTagRepository,
+            KoreanTextAnalyzer koreanTextAnalyzer) {
         this.postEmbeddingTextBuilder = postEmbeddingTextBuilder;
         this.openAiEmbeddingClient = openAiEmbeddingClient;
         this.similarPostSearchService = similarPostSearchService;
         this.postRepository = postRepository;
         this.postTagRepository = postTagRepository;
+        this.koreanTextAnalyzer = koreanTextAnalyzer;
     }
 
     @Transactional(readOnly = true)
@@ -45,10 +49,11 @@ public class RagEvaluationService {
                 .stream()
                 .filter((post) -> post.getStatus() == PostStatus.PUBLISHED)
                 .toList();
+        Map<Long, List<String>> tagNamesByPostId = loadTagNamesByPostId(publishedPosts);
         List<RagEvaluationCaseResult> caseResults = new ArrayList<>();
 
         for (RagEvaluationCase evaluationCase : evaluationCases()) {
-            caseResults.add(evaluateCase(evaluationCase, publishedPosts, limit));
+            caseResults.add(evaluateCase(evaluationCase, publishedPosts, tagNamesByPostId, limit));
         }
 
         return new RagEvaluationReport(
@@ -74,6 +79,7 @@ public class RagEvaluationService {
     private RagEvaluationCaseResult evaluateCase(
             RagEvaluationCase evaluationCase,
             List<Post> publishedPosts,
+            Map<Long, List<String>> tagNamesByPostId,
             int limit) {
         String queryText = postEmbeddingTextBuilder.buildQuery(
                 evaluationCase.category(),
@@ -92,7 +98,10 @@ public class RagEvaluationService {
                         evaluationCase.content(),
                         evaluationCase.tags());
         int relevantTotal = (int) publishedPosts.stream()
-                .filter((post) -> isRelevant(evaluationCase, post))
+                .filter((post) -> isRelevant(
+                        evaluationCase,
+                        post,
+                        tagNamesByPostId.getOrDefault(post.getId(), List.of())))
                 .count();
         List<RagEvaluationRetrievedPost> retrievedPosts = new ArrayList<>();
         int relevantRetrievedCount = 0;
@@ -147,29 +156,48 @@ public class RagEvaluationService {
     private boolean isRelevant(
             RagEvaluationCase evaluationCase,
             SimilarPostSearchService.SimilarPostResult result) {
-        String text = normalize("%s %s %s".formatted(
+        String text = "%s %s %s".formatted(
                 result.title(),
                 result.category(),
-                result.content()));
+                result.content());
 
         return isRelevant(evaluationCase, text);
     }
 
-    private boolean isRelevant(RagEvaluationCase evaluationCase, Post post) {
-        String tags = String.join(" ", postTagRepository.findAllByPostIdOrderByTagNameAsc(post.getId())
-                .stream()
-                .map((postTag) -> postTag.getTag().getName())
-                .toList());
-        String text = normalize("%s %s %s %s".formatted(
+    private boolean isRelevant(
+            RagEvaluationCase evaluationCase,
+            Post post,
+            List<String> tagNames) {
+        String tags = String.join(" ", tagNames);
+        String text = "%s %s %s %s".formatted(
                 post.getTitle(),
                 post.getCategory(),
                 post.getContent(),
-                tags));
+                tags);
 
         return isRelevant(evaluationCase, text);
     }
 
-    private static boolean isRelevant(RagEvaluationCase evaluationCase, String text) {
+    private Map<Long, List<String>> loadTagNamesByPostId(List<Post> posts) {
+        List<Long> postIds = posts.stream()
+                .map(Post::getId)
+                .toList();
+        if (postIds.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Long, List<String>> tagNamesByPostId = new HashMap<>();
+        for (PostTag postTag : postTagRepository.findAllByPost_IdIn(postIds)) {
+            Long postId = postTag.getPost().getId();
+            tagNamesByPostId
+                    .computeIfAbsent(postId, (ignored) -> new ArrayList<>())
+                    .add(postTag.getTag().getName());
+        }
+
+        return tagNamesByPostId;
+    }
+
+    private boolean isRelevant(RagEvaluationCase evaluationCase, String text) {
         Set<String> subjectTerms = extractSubjectTerms(text);
         boolean requiredTermsMatched = evaluationCase.requiredTerms()
                 .stream()
@@ -183,7 +211,7 @@ public class RagEvaluationService {
         return requiredTermsMatched && anyTermsMatched;
     }
 
-    private static boolean containsAllSubjectTerms(Set<String> subjectTerms, String expectedText) {
+    private boolean containsAllSubjectTerms(Set<String> subjectTerms, String expectedText) {
         Set<String> expectedTerms = extractSubjectTerms(expectedText);
         if (expectedTerms.isEmpty()) {
             return false;
@@ -231,169 +259,14 @@ public class RagEvaluationService {
         return sum / values.length;
     }
 
-    private static String normalize(String text) {
-        if (text == null) {
-            return "";
-        }
-
-        return text.toLowerCase(Locale.ROOT)
-                .replace("깃허브 액션", " github actions ")
-                .replace("깃헙 액션", " github actions ")
-                .replace("깃허브", " github ")
-                .replace("깃헙", " github ")
-                .replace("깃 액션", " github actions ")
-                .replace("github action", " github actions ")
-                .replace("워크플로우", " workflow ")
-                .replace("워크플로", " workflow ")
-                .replace("시크릿", " secrets ")
-                .replace("비밀값", " secrets ")
-                .replace("배포", " deploy ")
-                .replace("그래픽 카드", " gpu ")
-                .replace("그래픽카드", " gpu ")
-                .replace("팬 소음", " fan noise ")
-                .replace("소음", " noise ")
-                .replace("언더볼팅", " undervolt ")
-                .replace("발열", " temperature ")
-                .replace("온도", " temperature ")
-                .replace("날씨", " weather ")
-                .replace("기상", " weather ")
-                .replace("기온", " temperature ")
-                .replace("브리핑", " briefing ")
-                .replace("리액트", " react ")
-                .replace("유즈 스테이트", " usestate ")
-                .replace("유즈스테이트", " usestate ")
-                .replace("상태 관리", " state ")
-                .replace("상태관리", " state ")
-                .replace("상태", " state ")
-                .replace("훅", " hook ")
-                .replace("예보", " forecast ")
-                .replaceAll("\\s+", " ")
-                .trim();
-    }
-
-    private static Set<String> extractSubjectTerms(String text) {
-        String normalizedText = normalize(text);
+    private Set<String> extractSubjectTerms(String text) {
         Set<String> subjectTerms = new LinkedHashSet<>();
 
-        Arrays.stream(normalizedText.split("[^\\p{L}\\p{N}]+"))
-                .map(RagEvaluationService::normalizeToken)
-                .filter(RagEvaluationService::isSubjectTerm)
+        koreanTextAnalyzer.tokenize(text)
+                .stream()
                 .forEach(subjectTerms::add);
 
         return subjectTerms;
-    }
-
-    private static String normalizeToken(String token) {
-        String particleStrippedToken = stripKoreanParticle(token);
-
-        if (particleStrippedToken.startsWith("업그레이드")) {
-            return "upgrade";
-        }
-
-        if (particleStrippedToken.startsWith("언더볼팅")) {
-            return "undervolt";
-        }
-
-        if (particleStrippedToken.startsWith("워크플로")) {
-            return "workflow";
-        }
-
-        if (particleStrippedToken.startsWith("배포")) {
-            return "deploy";
-        }
-
-        if (particleStrippedToken.startsWith("소음")) {
-            return "noise";
-        }
-
-        if (particleStrippedToken.startsWith("하드웨어")) {
-            return "hardware";
-        }
-
-        return particleStrippedToken;
-    }
-
-    private static String stripKoreanParticle(String token) {
-        if (token == null) {
-            return "";
-        }
-
-        for (String suffix : List.of("으로", "에서", "에게", "부터", "까지", "처럼", "보다")) {
-            if (token.endsWith(suffix) && token.length() > suffix.length() + 1) {
-                return token.substring(0, token.length() - suffix.length());
-            }
-        }
-
-        for (String suffix : List.of("은", "는", "이", "가", "을", "를", "에", "와", "과", "로", "도", "만", "의")) {
-            if (token.endsWith(suffix) && token.length() > suffix.length() + 1) {
-                return token.substring(0, token.length() - suffix.length());
-            }
-        }
-
-        return token;
-    }
-
-    private static boolean isSubjectTerm(String token) {
-        if (token == null || token.isBlank() || token.length() < 2) {
-            return false;
-        }
-
-        return !Set.of(
-                "this",
-                "that",
-                "with",
-                "from",
-                "about",
-                "daily",
-                "learning",
-                "project",
-                "development",
-                "review",
-                "briefing",
-                "current",
-                "하고",
-                "싶다",
-                "정리",
-                "정리하고",
-                "사용",
-                "사용법",
-                "내용",
-                "관련",
-                "게시글",
-                "작성",
-                "찾고",
-                "오늘",
-                "그냥",
-                "지역",
-                "짧은",
-                "하려고",
-                "합니다",
-                "현재",
-                "다음",
-                "위해",
-                "위해서",
-                "대한",
-                "대해",
-                "있는",
-                "없는",
-                "있고",
-                "중입니다",
-                "했습니다",
-                "고민",
-                "기록",
-                "메모",
-                "확인",
-                "간단히",
-                "짧게",
-                "일상",
-                "생각",
-                "느낌",
-                "이번",
-                "정도",
-                "부분",
-                "때문",
-                "통해")
-                .contains(token);
     }
 
     private static List<RagEvaluationCase> evaluationCases() {
