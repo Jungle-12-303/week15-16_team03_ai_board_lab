@@ -331,6 +331,7 @@ npm run build
 - [코드 읽기 로드맵](docs/code-reading-roadmap.md)
 - [코드 맵](docs/code-map.md)
 - [DB 스키마](docs/database-schema.md)
+- [테스트/데모 계정 모음집](docs/account-inventory.md)
 - [AWS 워크숍 적용 계획](docs/aws-workshop-application-plan.md)
 - [AWS EC2 배포 가이드](docs/aws-ec2-deployment.md)
 - [RAG 검색 성능 보고서](docs/rag-performance-report.md)
