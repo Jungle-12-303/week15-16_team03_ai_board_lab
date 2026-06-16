@@ -9,7 +9,6 @@ import com.jungle_choi.namanmu.service.mcp.McpFactCheckService;
 import com.jungle_choi.namanmu.service.mcp.WeatherFactCheckService;
 import java.util.List;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +17,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/posts")
-@CrossOrigin(origins = {"http://localhost:5173", "http://127.0.0.1:5173"})
 public class PostFactCheckController {
 
     private final PostRepository postRepository;
