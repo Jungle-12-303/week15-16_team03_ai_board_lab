@@ -59,10 +59,10 @@ PostForm.jsx
 | --- | --- | --- | --- |
 | Frontend | React + Vite | 화면 구성, 라우팅, 사용자 입력 상태 | 서버 상태 캐싱 전용 도구는 쓰지 않음 |
 | Backend | Spring Boot 3.5 + Java 25 | REST API, 인증, 트랜잭션, 외부 API 호출 | 단일 애플리케이션 구조 |
-| Database | MySQL 8.4 | 게시판 데이터와 임베딩 결과 저장 | 전용 벡터 인덱스는 없음 |
+| Database | MySQL 8.4 | 게시판 원본 데이터와 작업 상태 저장 | Flyway migration으로 초기 스키마 관리 |
 | Auth | Spring Security + JWT | 로그인 상태 검증과 API 보호 | httpOnly cookie, CSRF, refresh token rotation 적용 |
 | AI | OpenAI API | 임베딩 생성과 초안 생성 | 비용, rate limit, 외부 장애 영향 |
-| RAG 저장 | MySQL JSON vector | 게시글/청크 벡터 저장 | 데이터 증가 시 전용 Vector DB 검토 필요 |
+| Vector DB | Qdrant | 게시글/청크 벡터 후보 검색 | MySQL 원본 조회와 함께 사용 |
 | MCP | Spring 내부 JSON-RPC endpoint | `tools/list`, `tools/call` 처리와 외부 API 호출 | 별도 MCP 프로세스 배포는 없음 |
 
 ## 이 구조의 학습 포인트

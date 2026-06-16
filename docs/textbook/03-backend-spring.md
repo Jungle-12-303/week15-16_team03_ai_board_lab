@@ -123,8 +123,8 @@ PostService.createPost
 
 ## 백엔드의 적용 범위와 확장 지점
 
-- DB migration 도구가 아직 없습니다.
+- 초기 DB 스키마는 Flyway migration으로 관리합니다. 이후 변경도 V2/V3 migration으로 이어가야 합니다.
 - access token blocklist는 아직 없습니다. 강한 즉시 무효화가 필요하면 Redis blocklist나 사용자별 token version을 추가해야 합니다.
-- API rate limit이 없습니다.
+- 로그인 실패와 사용자-facing AI 요청에는 rate limit을 적용했습니다. 전체 API rate limit은 아직 없습니다.
 - Service가 더 커지면 use case 단위 클래스로 더 쪼갤 수 있습니다.
 - OpenAI/GitHub/Weather API 장애 대응은 기본 오류 처리와 fallback 메시지 중심입니다.
