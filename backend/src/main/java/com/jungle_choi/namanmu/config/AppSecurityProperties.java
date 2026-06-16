@@ -7,7 +7,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record AppSecurityProperties(
         List<String> corsAllowedOrigins,
         boolean cookieSecure,
-        String cookieSameSite) {
+        String cookieSameSite,
+        boolean productionMode) {
 
     public List<String> normalizedCorsAllowedOrigins() {
         if (corsAllowedOrigins == null || corsAllowedOrigins.isEmpty()) {

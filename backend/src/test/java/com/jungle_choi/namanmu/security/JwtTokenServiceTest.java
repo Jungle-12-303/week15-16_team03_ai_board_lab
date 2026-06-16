@@ -21,7 +21,7 @@ class JwtTokenServiceTest {
             Base64.getUrlEncoder().withoutPadding();
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final JwtTokenService jwtTokenService =
-            new JwtTokenService(objectMapper, SECRET, 3600);
+            new JwtTokenService(objectMapper, SECRET, 3600, false);
 
     @Test
     void createTokenCanBeReadFromRawToken() {
@@ -61,9 +61,20 @@ class JwtTokenServiceTest {
 
     @Test
     void constructorRejectsShortHs256Secret() {
-        assertThatThrownBy(() -> new JwtTokenService(objectMapper, "short-secret", 3600))
+        assertThatThrownBy(() -> new JwtTokenService(objectMapper, "short-secret", 3600, false))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("at least 32 bytes");
+    }
+
+    @Test
+    void constructorRejectsLocalDevelopmentSecretInProductionMode() {
+        assertThatThrownBy(() -> new JwtTokenService(
+                        objectMapper,
+                        "project-alpha-local-development-secret-change-me",
+                        3600,
+                        true))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("must be changed in production mode");
     }
 
     private String createSignedToken(

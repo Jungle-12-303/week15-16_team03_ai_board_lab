@@ -2,6 +2,7 @@ package com.jungle_choi.namanmu.config;
 
 import com.jungle_choi.namanmu.security.JwtAuthenticationFilter;
 import java.util.List;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -57,6 +58,17 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public ApplicationRunner securityStartupValidator(
+            AppSecurityProperties appSecurityProperties) {
+        return (arguments) -> {
+            if (appSecurityProperties.productionMode() && !appSecurityProperties.cookieSecure()) {
+                throw new IllegalStateException(
+                        "app.security.cookie-secure must be true in production mode.");
+            }
+        };
     }
 
     @Bean

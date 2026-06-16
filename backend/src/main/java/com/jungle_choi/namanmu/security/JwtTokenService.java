@@ -24,19 +24,24 @@ public class JwtTokenService {
     private static final String HMAC_ALGORITHM = "HmacSHA256";
     private static final String JWT_ALGORITHM = "HS256";
     private static final String JWT_TYPE = "JWT";
+    private static final String LOCAL_DEVELOPMENT_SECRET =
+            "project-alpha-local-development-secret-change-me";
     private static final int MINIMUM_HS256_SECRET_BYTES = 32;
 
     private final ObjectMapper objectMapper;
     private final String secret;
     private final long expirationSeconds;
+    private final boolean productionMode;
 
     public JwtTokenService(
             ObjectMapper objectMapper,
             @Value("${app.jwt.secret}") String secret,
-            @Value("${app.jwt.expiration-seconds}") long expirationSeconds) {
+            @Value("${app.jwt.expiration-seconds}") long expirationSeconds,
+            @Value("${app.security.production-mode:false}") boolean productionMode) {
         this.objectMapper = objectMapper;
         this.secret = secret;
         this.expirationSeconds = expirationSeconds;
+        this.productionMode = productionMode;
         validateConfiguration();
     }
 
@@ -110,6 +115,10 @@ public class JwtTokenService {
     private void validateConfiguration() {
         if (secret == null || secret.getBytes(StandardCharsets.UTF_8).length < MINIMUM_HS256_SECRET_BYTES) {
             throw new IllegalStateException("app.jwt.secret must be at least 32 bytes for HS256.");
+        }
+
+        if (productionMode && LOCAL_DEVELOPMENT_SECRET.equals(secret)) {
+            throw new IllegalStateException("app.jwt.secret must be changed in production mode.");
         }
 
         if (expirationSeconds <= 0) {

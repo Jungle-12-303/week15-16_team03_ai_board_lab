@@ -257,6 +257,7 @@ Spring Boot 기본 구조와 JPA 설계를 설명하는 질문이다.
 |---|---|
 | 비밀번호는 어떻게 저장하나요? | 평문 저장 금지, password encoder 사용 |
 | JWT secret은 어디에 있나요? | 환경 변수, `.env.example`에는 예시만 |
+| 기본 secret으로 운영 서버가 뜨면 위험하지 않나요? | `APP_SECURITY_PRODUCTION_MODE=true`일 때 기본 JWT secret을 쓰면 서버가 시작되지 않게 막았습니다. 운영에서는 secret manager나 배포 환경변수로 별도 secret을 주입해야 합니다. |
 | 토큰 만료는 어떻게 처리하나요? | 현재는 단순화, 운영에서는 access/refresh 분리 |
 | CORS는 왜 필요하나요? | Vite dev server와 Spring Boot API origin이 다르기 때문 |
 | 권한 체크는 어디서 하나요? | Spring Security filter와 API/service owner 검증 |
@@ -455,7 +456,7 @@ Spring Boot 기본 구조와 JPA 설계를 설명하는 질문이다.
 | Agent 맞나요? | 네, 그냥 Agent입니다. | 완전 자율형은 아니고, 상태 관찰과 추론 단계를 명시한 제한형 추천 agent입니다. |
 | MCP 맞나요? | API 호출이긴 한데요. | 외부 API 호출을 JSON-RPC/tool 인터페이스로 분리해 MCP 형태로 구현했습니다. |
 | 평가가 충분한가요? | 점수 좋게 나왔습니다. | 현재 케이스 규모는 작아 한계가 있습니다. 그래서 online/offline을 분리했고 holdout 확장이 다음 개선입니다. |
-| 보안 괜찮나요? | 로컬이라 괜찮습니다. | 인증은 httpOnly cookie, CSRF token, refresh token rotation까지 보강했다. 그래도 운영에서는 HTTPS secure cookie, migration, secret manager, 관리자용 세션 관리가 추가로 필요합니다. |
+| 보안 괜찮나요? | 로컬이라 괜찮습니다. | 인증은 httpOnly cookie, CSRF token, refresh token rotation까지 보강했다. 또한 production mode에서 기본 JWT secret과 insecure cookie를 막았다. 그래도 운영에서는 migration, secret manager, 관리자용 세션 관리가 추가로 필요합니다. |
 | 왜 이 기술을 썼나요? | 그냥 많이 쓴다길래요. | 과제 조건, 학습 목표, 현재 DB 선택, 기능 요구를 기준으로 선택했습니다. |
 
 ## 16. 강도별 답변 길이
