@@ -72,7 +72,7 @@ React에서 기능 단위로 상태를 분리한 부분입니다.
 
 | 파일 | 역할 |
 | --- | --- |
-| `frontend/project-alpha/src/hooks/useAuth.js` | 로그인, 회원가입, 로그아웃, JWT 저장 |
+| `frontend/project-alpha/src/hooks/useAuth.js` | 로그인, 회원가입, 로그아웃, 세션 복원 |
 | `frontend/project-alpha/src/hooks/usePosts.js` | 게시글 목록, 생성, 수정, 삭제, 댓글 상태 |
 | `frontend/project-alpha/src/hooks/usePostComposer.js` | 글 작성/수정 모달의 입력값 상태 |
 | `frontend/project-alpha/src/hooks/useRagDraft.js` | RAG 유사글 검색, 초안 생성, 로딩/에러 상태 |
@@ -231,10 +231,10 @@ PostDetailPage.jsx 또는 BoardPage.jsx
 | --- | --- |
 | `frontend/project-alpha/src/hooks/useAuth.js` | 로그인, 로그아웃, `/api/auth/me` 기반 사용자 복원 |
 | `frontend/project-alpha/src/api/config.js` | 쿠키 인증 요청에 공통 `credentials: 'include'`, CSRF header 적용 |
-| `frontend/project-alpha/src/api/*.js` | Authorization header 추가 |
+| `frontend/project-alpha/src/api/*.js` | cookie 인증과 CSRF header를 붙여 API 호출 |
 | `backend/src/main/java/com/jungle_choi/namanmu/config/SecurityConfig.java` | 인증/인가 설정 |
 | `backend/src/main/java/com/jungle_choi/namanmu/security/JwtTokenService.java` | JWT 생성/검증 |
-| `backend/src/main/java/com/jungle_choi/namanmu/security/JwtAuthenticationFilter.java` | 요청 header에서 JWT 읽기 |
+| `backend/src/main/java/com/jungle_choi/namanmu/security/JwtAuthenticationFilter.java` | access token cookie에서 JWT 읽기 |
 | `backend/src/main/java/com/jungle_choi/namanmu/api/AuthController.java` | 회원가입/로그인 API |
 
 핵심 질문:

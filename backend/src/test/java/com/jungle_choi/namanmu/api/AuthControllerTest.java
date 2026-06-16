@@ -22,6 +22,8 @@ import org.springframework.test.web.servlet.MvcResult;
 @AutoConfigureMockMvc
 class AuthControllerTest {
 
+    private static final String REFRESH_TOKEN_COOKIE_NAME = "project_alpha_refresh_token";
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -49,6 +51,7 @@ class AuthControllerTest {
                 .andExpect(cookie().httpOnly(
                         JwtAuthenticationFilter.ACCESS_TOKEN_COOKIE_NAME,
                         true))
+                .andExpect(cookie().httpOnly(REFRESH_TOKEN_COOKIE_NAME, true))
                 .andExpect(jsonPath("$.name").value(username))
                 .andReturn();
 
@@ -70,7 +73,54 @@ class AuthControllerTest {
                 .andExpect(status().isNoContent())
                 .andExpect(cookie().maxAge(
                         JwtAuthenticationFilter.ACCESS_TOKEN_COOKIE_NAME,
-                        0));
+                        0))
+                .andExpect(cookie().maxAge(REFRESH_TOKEN_COOKIE_NAME, 0));
+    }
+
+    @Test
+    void refreshRotatesRefreshTokenAndIssuesNewAccessCookie() throws Exception {
+        String username = "refresh-user";
+        String password = "password123";
+
+        mockMvc.perform(post("/api/auth/signup")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"username":"%s","password":"%s"}
+                                """.formatted(username, password)))
+                .andExpect(status().isOk());
+
+        MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"username":"%s","password":"%s"}
+                                """.formatted(username, password)))
+                .andExpect(status().isOk())
+                .andReturn();
+        Cookie firstRefreshCookie = loginResult.getResponse()
+                .getCookie(REFRESH_TOKEN_COOKIE_NAME);
+
+        assertThat(firstRefreshCookie).isNotNull();
+
+        MvcResult refreshResult = mockMvc.perform(post("/api/auth/refresh")
+                        .with(csrf())
+                        .cookie(firstRefreshCookie))
+                .andExpect(status().isOk())
+                .andExpect(cookie().exists(JwtAuthenticationFilter.ACCESS_TOKEN_COOKIE_NAME))
+                .andExpect(cookie().exists(REFRESH_TOKEN_COOKIE_NAME))
+                .andExpect(jsonPath("$.name").value(username))
+                .andReturn();
+        Cookie secondRefreshCookie = refreshResult.getResponse()
+                .getCookie(REFRESH_TOKEN_COOKIE_NAME);
+
+        assertThat(secondRefreshCookie).isNotNull();
+        assertThat(secondRefreshCookie.getValue()).isNotEqualTo(firstRefreshCookie.getValue());
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .with(csrf())
+                        .cookie(firstRefreshCookie))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

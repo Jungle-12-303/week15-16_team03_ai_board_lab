@@ -41,6 +41,7 @@ Controller가 DB를 직접 만지지 않는 이유는 책임을 분리하기 위
 | 백엔드 시작점 | [NamanmuApplication.java](../../backend/src/main/java/com/jungle_choi/namanmu/NamanmuApplication.java) |
 | 인증 API | [AuthController.java](../../backend/src/main/java/com/jungle_choi/namanmu/api/AuthController.java), [SecurityConfig.java](../../backend/src/main/java/com/jungle_choi/namanmu/config/SecurityConfig.java) |
 | JWT 생성/검증 | [JwtTokenService.java](../../backend/src/main/java/com/jungle_choi/namanmu/security/JwtTokenService.java), [JwtAuthenticationFilter.java](../../backend/src/main/java/com/jungle_choi/namanmu/security/JwtAuthenticationFilter.java) |
+| Refresh token rotation | [RefreshTokenService.java](../../backend/src/main/java/com/jungle_choi/namanmu/security/RefreshTokenService.java), [RefreshToken.java](../../backend/src/main/java/com/jungle_choi/namanmu/domain/auth/RefreshToken.java) |
 | 게시글 API | [PostController.java](../../backend/src/main/java/com/jungle_choi/namanmu/api/PostController.java), [CommentController.java](../../backend/src/main/java/com/jungle_choi/namanmu/api/CommentController.java) |
 | 게시글 비즈니스 규칙 | [PostService.java](../../backend/src/main/java/com/jungle_choi/namanmu/service/post/PostService.java), [CommentService.java](../../backend/src/main/java/com/jungle_choi/namanmu/service/post/CommentService.java), [PostReadService.java](../../backend/src/main/java/com/jungle_choi/namanmu/service/post/PostReadService.java) |
 | Entity와 Repository | [Post.java](../../backend/src/main/java/com/jungle_choi/namanmu/domain/post/Post.java), [PostRepository.java](../../backend/src/main/java/com/jungle_choi/namanmu/domain/post/PostRepository.java), [User.java](../../backend/src/main/java/com/jungle_choi/namanmu/domain/user/User.java) |
@@ -70,7 +71,7 @@ POST /api/auth/login
 -> AuthController
 -> UserRepository
 -> JwtTokenService
--> httpOnly JWT cookie 발급
+-> httpOnly access token cookie와 refresh token cookie 발급
 ```
 
 이후 요청은 다음 흐름을 탑니다.
@@ -83,7 +84,7 @@ Cookie: project_alpha_access_token=<JWT>
 -> Controller에서 @AuthenticationPrincipal User 사용
 ```
 
-JWT는 프론트와 백엔드가 분리된 구조에서 API 요청마다 인증 정보를 전달하는 방식입니다. 현재 구현 범위에는 refresh token과 token rotation이 포함되지 않습니다.
+JWT는 프론트와 백엔드가 분리된 구조에서 API 요청마다 인증 정보를 전달하는 방식입니다. access token은 JWT로 짧게 검증하고, refresh token은 DB에 해시로 저장해 재발급 때마다 회전시킵니다.
 
 쿠키 인증은 브라우저가 자동으로 인증 정보를 붙인다는 장점이 있지만, 그만큼 CSRF 방어가 필요합니다. Project Alpha는 Spring Security의 `CookieCsrfTokenRepository`를 사용하고, React는 `/api/auth/csrf`로 받은 token을 변경 요청 header에 넣습니다.
 
@@ -109,7 +110,7 @@ PostService.createPost
 ## 백엔드의 적용 범위와 확장 지점
 
 - DB migration 도구가 아직 없습니다.
-- refresh token 전략이 없습니다.
+- access token blocklist나 강제 전체 로그아웃 기능은 아직 없습니다.
 - API rate limit이 없습니다.
 - Service가 더 커지면 use case 단위 클래스로 더 쪼갤 수 있습니다.
 - OpenAI/GitHub/Weather API 장애 대응은 기본 오류 처리와 fallback 메시지 중심입니다.

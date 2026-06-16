@@ -115,7 +115,7 @@ RAG를 AWS 서비스 중심으로 바꾸면 Bedrock Knowledge Bases, OpenSearch,
 다음 항목은 현재 구현 범위에 포함되지 않습니다.
 
 - DB migration 도구 없음
-- refresh token 없음
+- refresh token rotation은 적용했지만 운영용 전체 세션 관리 화면은 없음
 - Vector DB 없음
 - 검색 index 없음
 - 관리자 페이지 없음
@@ -126,7 +126,7 @@ RAG를 AWS 서비스 중심으로 바꾸면 Bedrock Knowledge Bases, OpenSearch,
 ## 다음 개선 우선순위
 
 1. Flyway로 DB migration 도입
-2. refresh token 또는 session 전략 보강
+2. 관리자용 세션 조회/강제 로그아웃 전략 보강
 3. Vector DB 또는 pgvector 도입 검토
 4. RAG 평가 케이스 확장
 5. MCP 도구 추가

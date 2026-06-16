@@ -41,8 +41,24 @@ export async function signUp(username, password) {
 export async function getCurrentUser() {
   const response = await fetch(`${apiBaseUrl}/api/auth/me`, withCredentials());
 
+  if (response.status === 401) {
+    return refreshSession();
+  }
+
   if (!response.ok) {
     throw new Error('Failed to load current user.');
+  }
+
+  return normalizeUser(await response.json());
+}
+
+export async function refreshSession() {
+  const response = await fetch(`${apiBaseUrl}/api/auth/refresh`, await withCsrf({
+    method: 'POST',
+  }));
+
+  if (!response.ok) {
+    throw new Error('Failed to refresh session.');
   }
 
   return normalizeUser(await response.json());

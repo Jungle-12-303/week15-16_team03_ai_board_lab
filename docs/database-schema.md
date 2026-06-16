@@ -10,6 +10,7 @@ erDiagram
     users ||--o{ posts : writes
     users ||--o{ comments : writes
     users ||--o{ post_reads : reads
+    users ||--o{ refresh_tokens : owns
     posts ||--o{ comments : has
     posts ||--o{ post_tags : has
     posts ||--o| post_embeddings : has
@@ -91,6 +92,16 @@ erDiagram
         datetime read_at
         datetime created_at
     }
+
+    refresh_tokens {
+        bigint id PK
+        bigint user_id FK
+        varchar token_hash UK
+        datetime expires_at
+        datetime revoked_at
+        datetime created_at
+        datetime updated_at
+    }
 ```
 
 ## 기능별 테이블
@@ -98,6 +109,7 @@ erDiagram
 | 기능 | 테이블 | Entity | 역할 |
 | --- | --- | --- | --- |
 | 회원가입/로그인 | `users` | `User` | 사용자 계정, 비밀번호 해시, 권한 저장 |
+| Refresh token rotation | `refresh_tokens` | `RefreshToken` | refresh token 해시, 만료, 폐기 상태 저장 |
 | 게시글 CRUD | `posts` | `Post` | 게시글 제목, 본문, 카테고리, 상태, 조회수 저장 |
 | 댓글 | `comments` | `Comment` | 게시글별 댓글과 댓글 작성자 저장 |
 | 태그 | `tags` | `Tag` | 태그 이름 저장 |
@@ -121,6 +133,20 @@ erDiagram
 | `role` | `VARCHAR(20)` | NOT NULL | `USER`, `ADMIN` |
 | `created_at` | `DATETIME` | NOT NULL | 가입 시간 |
 | `updated_at` | `DATETIME` | NOT NULL | 수정 시간 |
+
+### refresh_tokens
+
+access token 재발급을 위한 refresh token 저장 테이블이다. 브라우저에는 refresh token 원문을 httpOnly cookie로 내려주고, DB에는 SHA-256 해시만 저장한다. 재발급이 일어나면 기존 row는 `revoked_at`으로 폐기하고 새 refresh token row를 만든다.
+
+| 컬럼 | 타입 | 제약 | 설명 |
+| --- | --- | --- | --- |
+| `id` | `BIGINT` | PK, AUTO_INCREMENT | refresh token 식별자 |
+| `user_id` | `BIGINT` | FK, NOT NULL | token 소유 사용자. `users.id` 참조 |
+| `token_hash` | `VARCHAR(64)` | NOT NULL, UNIQUE | refresh token 원문의 SHA-256 해시 |
+| `expires_at` | `DATETIME` | NOT NULL | refresh token 만료 시각 |
+| `revoked_at` | `DATETIME` | NULL | rotation 또는 logout으로 폐기된 시각 |
+| `created_at` | `DATETIME` | NOT NULL | 생성 시각 |
+| `updated_at` | `DATETIME` | NOT NULL | 수정 시각 |
 
 ### posts
 
@@ -233,7 +259,7 @@ Agent의 놓친 글 추천 기능을 위한 읽음 기록 테이블이다.
 | API | 현재 상태 |
 | --- | --- |
 | `POST /api/auth/signup` | `users` 테이블에 사용자 저장, 비밀번호는 해시로 저장 |
-| `POST /api/auth/login` | `users` 조회 후 JWT 발급 |
+| `POST /api/auth/login` | `users` 조회 후 access token cookie와 refresh token cookie 발급 |
 | `GET /api/posts` | `posts`, `post_tags`, `comments`를 조회해 목록 응답 생성 |
 | `GET /api/posts/{postId}` | 게시글 상세 조회 후 `post_reads`에 읽음 기록 저장 |
 | `POST /api/posts` | `posts` 저장, `post_tags` 갱신, `embedding_jobs` 예약 |
