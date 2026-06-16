@@ -1,0 +1,6 @@
+node_modules
+dist
+design-options
+*.log
+.env
+.env.local

@@ -332,6 +332,7 @@ npm run build
 - [코드 맵](docs/code-map.md)
 - [DB 스키마](docs/database-schema.md)
 - [AWS 워크숍 적용 계획](docs/aws-workshop-application-plan.md)
+- [AWS EC2 배포 가이드](docs/aws-ec2-deployment.md)
 - [RAG 검색 성능 보고서](docs/rag-performance-report.md)
 - [RAG 측정 로그 인벤토리](docs/rag-measurement-inventory.md)
 - [RAG 시나리오 입출력 평가](docs/rag-scenario-evaluation.md)
