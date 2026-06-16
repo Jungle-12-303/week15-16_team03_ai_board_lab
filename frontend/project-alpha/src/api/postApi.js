@@ -1,4 +1,4 @@
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+import { apiBaseUrl, withCredentials } from './config';
 
 export async function fetchPosts({
   keyword = '',
@@ -14,7 +14,10 @@ export async function fetchPosts({
     page: String(page),
     size: String(size),
   });
-  const response = await fetch(`${apiBaseUrl}/api/posts?${searchParams.toString()}`);
+  const response = await fetch(
+    `${apiBaseUrl}/api/posts?${searchParams.toString()}`,
+    withCredentials(),
+  );
 
   if (!response.ok) {
     throw new Error('Failed to load posts.');
@@ -37,10 +40,8 @@ export async function fetchPosts({
   };
 }
 
-export async function fetchPost(postId, token) {
-  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}`, {
-    headers: authHeaders(token),
-  });
+export async function fetchPost(postId) {
+  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}`, withCredentials());
 
   if (!response.ok) {
     throw new Error('Failed to load post.');
@@ -49,17 +50,17 @@ export async function fetchPost(postId, token) {
   return normalizePost(await response.json());
 }
 
-export async function createPost({ title, content, category, tags, token }) {
-  const response = await fetch(`${apiBaseUrl}/api/posts`, {
+export async function createPost({ title, content, category, tags }) {
+  const response = await fetch(`${apiBaseUrl}/api/posts`, withCredentials({
     method: 'POST',
-    headers: jsonHeaders(token),
+    headers: jsonHeaders(),
     body: JSON.stringify({
       title,
       content,
       category,
       tags,
     }),
-  });
+  }));
 
   if (!response.ok) {
     throw new Error('Failed to create post.');
@@ -68,17 +69,17 @@ export async function createPost({ title, content, category, tags, token }) {
   return normalizePost(await response.json());
 }
 
-export async function updatePost(postId, { title, content, category, tags, token }) {
-  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}`, {
+export async function updatePost(postId, { title, content, category, tags }) {
+  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}`, withCredentials({
     method: 'PATCH',
-    headers: jsonHeaders(token),
+    headers: jsonHeaders(),
     body: JSON.stringify({
       title,
       content,
       category,
       tags,
     }),
-  });
+  }));
 
   if (!response.ok) {
     throw new Error('Failed to update post.');
@@ -87,25 +88,24 @@ export async function updatePost(postId, { title, content, category, tags, token
   return normalizePost(await response.json());
 }
 
-export async function deletePost(postId, token) {
-  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}`, {
+export async function deletePost(postId) {
+  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}`, withCredentials({
     method: 'DELETE',
-    headers: authHeaders(token),
-  });
+  }));
 
   if (!response.ok) {
     throw new Error('Failed to delete post.');
   }
 }
 
-export async function addComment(postId, { content, token }) {
-  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}/comments`, {
+export async function addComment(postId, { content }) {
+  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}/comments`, withCredentials({
     method: 'POST',
-    headers: jsonHeaders(token),
+    headers: jsonHeaders(),
     body: JSON.stringify({
       content,
     }),
-  });
+  }));
 
   if (!response.ok) {
     throw new Error('Failed to add comment.');
@@ -114,31 +114,22 @@ export async function addComment(postId, { content, token }) {
   return normalizeComment(await response.json());
 }
 
-export async function deleteComment(postId, commentId, token) {
-  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}/comments/${commentId}`, {
-    method: 'DELETE',
-    headers: authHeaders(token),
-  });
+export async function deleteComment(postId, commentId) {
+  const response = await fetch(
+    `${apiBaseUrl}/api/posts/${postId}/comments/${commentId}`,
+    withCredentials({
+      method: 'DELETE',
+    }),
+  );
 
   if (!response.ok) {
     throw new Error('Failed to delete comment.');
   }
 }
 
-function jsonHeaders(token) {
+function jsonHeaders() {
   return {
     'Content-Type': 'application/json',
-    ...authHeaders(token),
-  };
-}
-
-function authHeaders(token) {
-  if (!token) {
-    return {};
-  }
-
-  return {
-    Authorization: `Bearer ${token}`,
   };
 }
 

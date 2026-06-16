@@ -11,7 +11,7 @@ component
 
 | 파일 | 역할 |
 | --- | --- |
-| `authApi.js` | 회원가입, 로그인 |
+| `authApi.js` | 회원가입, 로그인, 현재 사용자 조회, 로그아웃 |
 | `postApi.js` | 게시글, 댓글 CRUD |
 | `ragApi.js` | 유사 게시글 검색, RAG 초안 생성 |
 | `mcpApi.js` | MCP fact check |
@@ -20,7 +20,7 @@ component
 ## 읽을 때 볼 점
 
 - 어떤 endpoint로 요청을 보내는가
-- JWT token을 header에 넣는가
+- 쿠키 기반 인증 요청에 `credentials: 'include'`가 들어가는가
 - 실패 응답을 어디서 error로 바꾸는가
 - 서버 응답을 화면에서 쓰기 좋게 normalize하는가
 

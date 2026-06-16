@@ -323,6 +323,7 @@ npm run build
 - [데모 시나리오와 스크린샷](docs/demo-scenario.md)
 - [전체 기능 QA 체크리스트](docs/qa-checklist.md)
 - [7분 발표 흐름](docs/presentation-flow.md)
+- [면접 질문 대비](docs/interview-qa.md)
 - [RAGAS 평가 안내](eval/ragas/README.md)
 
 ## 한계점과 개선 아이디어

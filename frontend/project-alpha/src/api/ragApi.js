@@ -1,4 +1,4 @@
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+import { apiBaseUrl, withCredentials } from './config';
 
 export async function findSimilarPosts({
   category,
@@ -7,11 +7,10 @@ export async function findSimilarPosts({
   tags,
   excludedPostId,
   limit = 5,
-  token,
 }) {
-  const response = await fetch(`${apiBaseUrl}/api/ai/similar-posts`, {
+  const response = await fetch(`${apiBaseUrl}/api/ai/similar-posts`, withCredentials({
     method: 'POST',
-    headers: jsonHeaders(token),
+    headers: jsonHeaders(),
     body: JSON.stringify({
       category,
       title,
@@ -20,7 +19,7 @@ export async function findSimilarPosts({
       excludedPostId,
       limit,
     }),
-  });
+  }));
 
   if (!response.ok) {
     throw new Error('Failed to find similar posts.');
@@ -43,11 +42,10 @@ export async function createDraftFromSources({
   tags,
   excludedPostId,
   limit = 5,
-  token,
 }) {
-  const response = await fetch(`${apiBaseUrl}/api/ai/draft`, {
+  const response = await fetch(`${apiBaseUrl}/api/ai/draft`, withCredentials({
     method: 'POST',
-    headers: jsonHeaders(token),
+    headers: jsonHeaders(),
     body: JSON.stringify({
       category,
       title,
@@ -56,7 +54,7 @@ export async function createDraftFromSources({
       excludedPostId,
       limit,
     }),
-  });
+  }));
 
   if (!response.ok) {
     throw new Error('Failed to create draft from sources.');
@@ -72,20 +70,9 @@ export async function createDraftFromSources({
   };
 }
 
-function jsonHeaders(token) {
+function jsonHeaders() {
   return {
     'Content-Type': 'application/json',
-    ...authHeaders(token),
-  };
-}
-
-function authHeaders(token) {
-  if (!token) {
-    return {};
-  }
-
-  return {
-    Authorization: `Bearer ${token}`,
   };
 }
 

@@ -1,13 +1,13 @@
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+import { apiBaseUrl, withCredentials } from './config';
 
-export async function recommendMissedPosts({ limit = 5, token }) {
-  const response = await fetch(`${apiBaseUrl}/api/agent/missed-posts`, {
+export async function recommendMissedPosts({ limit = 5 }) {
+  const response = await fetch(`${apiBaseUrl}/api/agent/missed-posts`, withCredentials({
     method: 'POST',
-    headers: jsonHeaders(token),
+    headers: jsonHeaders(),
     body: JSON.stringify({
       limit,
     }),
-  });
+  }));
 
   if (!response.ok) {
     throw new Error('Failed to load missed post recommendations.');
@@ -27,20 +27,9 @@ export async function recommendMissedPosts({ limit = 5, token }) {
   };
 }
 
-function jsonHeaders(token) {
+function jsonHeaders() {
   return {
     'Content-Type': 'application/json',
-    ...authHeaders(token),
-  };
-}
-
-function authHeaders(token) {
-  if (!token) {
-    return {};
-  }
-
-  return {
-    Authorization: `Bearer ${token}`,
   };
 }
 

@@ -1,10 +1,9 @@
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+import { apiBaseUrl, withCredentials } from './config';
 
-export async function checkFact(postId, token) {
-  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}/fact-check`, {
+export async function checkFact(postId) {
+  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}/fact-check`, withCredentials({
     method: 'POST',
-    headers: authHeaders(token),
-  });
+  }));
 
   if (!response.ok) {
     throw new Error('Failed to check facts.');
@@ -13,11 +12,10 @@ export async function checkFact(postId, token) {
   return normalizeFactCheck(await response.json());
 }
 
-export async function checkWeatherFact(postId, token) {
-  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}/fact-check/weather`, {
+export async function checkWeatherFact(postId) {
+  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}/fact-check/weather`, withCredentials({
     method: 'POST',
-    headers: authHeaders(token),
-  });
+  }));
 
   if (!response.ok) {
     throw new Error('Failed to check weather facts.');
@@ -26,27 +24,16 @@ export async function checkWeatherFact(postId, token) {
   return normalizeFactCheck(await response.json());
 }
 
-export async function checkGitHubFact(postId, token) {
-  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}/fact-check/github`, {
+export async function checkGitHubFact(postId) {
+  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}/fact-check/github`, withCredentials({
     method: 'POST',
-    headers: authHeaders(token),
-  });
+  }));
 
   if (!response.ok) {
     throw new Error('Failed to check GitHub facts.');
   }
 
   return normalizeFactCheck(await response.json());
-}
-
-function authHeaders(token) {
-  if (!token) {
-    return {};
-  }
-
-  return {
-    Authorization: `Bearer ${token}`,
-  };
 }
 
 function normalizeFactCheck(result) {

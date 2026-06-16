@@ -2,6 +2,7 @@ package com.jungle_choi.namanmu.security;
 
 import com.jungle_choi.namanmu.domain.user.User;
 import com.jungle_choi.namanmu.domain.user.UserRepository;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,6 +21,8 @@ import org.springframework.web.server.ResponseStatusException;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    public static final String ACCESS_TOKEN_COOKIE_NAME = "project_alpha_access_token";
+
     private final JwtTokenService jwtTokenService;
     private final UserRepository userRepository;
 
@@ -35,15 +38,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             HttpServletRequest request,
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
-        String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+        String token = resolveToken(request);
 
-        if (authorizationHeader == null || authorizationHeader.isBlank()) {
+        if (token == null || token.isBlank()) {
             filterChain.doFilter(request, response);
             return;
         }
 
         try {
-            authenticate(authorizationHeader);
+            authenticate(token);
         } catch (ResponseStatusException exception) {
             writeUnauthorizedResponse(response);
             return;
@@ -52,18 +55,40 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private void authenticate(String authorizationHeader) {
+    private void authenticate(String token) {
         if (SecurityContextHolder.getContext().getAuthentication() != null) {
             return;
         }
 
-        String email = jwtTokenService.readEmailFromAuthorizationHeader(authorizationHeader);
+        String email = jwtTokenService.readEmailFromToken(token);
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(user, null, List.of());
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
+    }
+
+    private static String resolveToken(HttpServletRequest request) {
+        String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            return authorizationHeader.substring("Bearer ".length());
+        }
+
+        Cookie[] cookies = request.getCookies();
+
+        if (cookies == null) {
+            return null;
+        }
+
+        for (Cookie cookie : cookies) {
+            if (ACCESS_TOKEN_COOKIE_NAME.equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+
+        return null;
     }
 
     private static void writeUnauthorizedResponse(HttpServletResponse response) throws IOException {

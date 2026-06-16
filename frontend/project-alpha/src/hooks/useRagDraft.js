@@ -19,10 +19,7 @@ export default function useRagDraft(currentUser) {
       setIsLoadingSimilarPosts(true);
       setSimilarPostsError('');
 
-      const nextSimilarPosts = await findSimilarPosts({
-        ...input,
-        token: currentUser.token,
-      });
+      const nextSimilarPosts = await findSimilarPosts(input);
 
       setSimilarPosts(nextSimilarPosts);
       setHasSearchedSimilarPosts(true);
@@ -46,10 +43,7 @@ export default function useRagDraft(currentUser) {
       setDraftMessage('');
       setSimilarPostsError('');
 
-      const draftResult = await createDraftFromSources({
-        ...input,
-        token: currentUser.token,
-      });
+      const draftResult = await createDraftFromSources(input);
 
       setSimilarPosts(draftResult.sources);
       setDraftMessage(draftResult.message);

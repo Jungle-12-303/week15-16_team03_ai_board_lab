@@ -53,12 +53,12 @@ public class JwtTokenService {
                         "exp", expiresAt));
     }
 
-    public String readEmailFromAuthorizationHeader(String authorizationHeader) {
-        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+    public String readEmailFromToken(String token) {
+        if (token == null || token.isBlank()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
 
-        return readEmail(authorizationHeader.substring("Bearer ".length()));
+        return readEmail(token);
     }
 
     private String readEmail(String token) {

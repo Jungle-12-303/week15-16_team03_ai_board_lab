@@ -1,13 +1,42 @@
 import { useEffect, useState } from 'react';
-import { login as loginRequest, signUp as signUpRequest } from '../api/authApi';
-import { loadStoredCurrentUser, saveStoredCurrentUser } from '../storage/authStorage';
+import {
+  getCurrentUser,
+  login as loginRequest,
+  logout as logoutRequest,
+  signUp as signUpRequest,
+} from '../api/authApi';
 
 export default function useAuth() {
-  const [currentUser, setCurrentUser] = useState(loadStoredCurrentUser);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
   useEffect(() => {
-    saveStoredCurrentUser(currentUser);
-  }, [currentUser]);
+    let ignore = false;
+
+    async function loadCurrentUser() {
+      try {
+        const user = await getCurrentUser();
+
+        if (!ignore) {
+          setCurrentUser(user);
+        }
+      } catch {
+        if (!ignore) {
+          setCurrentUser(null);
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoadingAuth(false);
+        }
+      }
+    }
+
+    loadCurrentUser();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   async function login(username, password) {
     const trimmedUsername = username.trim();
@@ -32,12 +61,17 @@ export default function useAuth() {
     }
   }
 
-  function logout() {
-    setCurrentUser(null);
+  async function logout() {
+    try {
+      await logoutRequest();
+    } finally {
+      setCurrentUser(null);
+    }
   }
 
   return {
     currentUser,
+    isLoadingAuth,
     login,
     signUp,
     logout,

@@ -10,7 +10,7 @@
 | `components` | 재사용 가능한 화면 조각 |
 | `hooks` | 상태 관리와 기능 흐름 |
 | `api` | 백엔드 HTTP 요청 |
-| `storage` | localStorage 같은 브라우저 저장소 |
+| `api` | Spring Boot 서버와 통신하는 fetch 함수 |
 | `constants` | 카테고리 같은 고정 값 |
 
 ## 코드로 바로 이동
@@ -22,7 +22,7 @@
 | 게시판 메인/상세 화면 | [BoardPage.jsx](../../frontend/project-alpha/src/pages/BoardPage.jsx), [PostDetailPage.jsx](../../frontend/project-alpha/src/pages/PostDetailPage.jsx) |
 | 글 목록과 카드 | [PostList.jsx](../../frontend/project-alpha/src/components/PostList.jsx), [PostCard.jsx](../../frontend/project-alpha/src/components/PostCard.jsx) |
 | 글 작성 모달 | [ComposerModal.jsx](../../frontend/project-alpha/src/components/ComposerModal.jsx), [PostForm.jsx](../../frontend/project-alpha/src/components/PostForm.jsx) |
-| 인증 상태 | [useAuth.js](../../frontend/project-alpha/src/hooks/useAuth.js), [authStorage.js](../../frontend/project-alpha/src/storage/authStorage.js) |
+| 인증 상태 | [useAuth.js](../../frontend/project-alpha/src/hooks/useAuth.js), [authApi.js](../../frontend/project-alpha/src/api/authApi.js) |
 | 게시글 상태 | [usePosts.js](../../frontend/project-alpha/src/hooks/usePosts.js), [usePostComposer.js](../../frontend/project-alpha/src/hooks/usePostComposer.js) |
 | RAG 상태 | [useRagDraft.js](../../frontend/project-alpha/src/hooks/useRagDraft.js), [ragApi.js](../../frontend/project-alpha/src/api/ragApi.js) |
 | MCP/Agent 화면 | [FactCheckPanel.jsx](../../frontend/project-alpha/src/components/FactCheckPanel.jsx), [AgentRecommendationsPanel.jsx](../../frontend/project-alpha/src/components/AgentRecommendationsPanel.jsx) |
@@ -33,7 +33,7 @@ React 컴포넌트 안에 API 호출, loading 상태, error 상태, form 상태�
 
 | Hook | 책임 |
 | --- | --- |
-| `useAuth` | 로그인, 회원가입, 로그아웃, token 저장 |
+| `useAuth` | 로그인, 회원가입, 로그아웃, 현재 사용자 복원 |
 | `usePosts` | 게시글 목록, CRUD, 댓글 상태 |
 | `usePostComposer` | 글 작성/수정 모달의 입력 상태 |
 | `useRagDraft` | 유사글 검색, RAG 초안 생성 상태 |
@@ -65,7 +65,7 @@ PostForm.jsx
 
 ## 인증 상태
 
-로그인 성공 후 JWT는 `authStorage.js`를 통해 localStorage에 저장됩니다. 이후 API 요청은 token을 `Authorization: Bearer ...` header에 넣습니다.
+로그인 성공 후 JWT는 JavaScript에서 읽을 수 없는 httpOnly cookie로 저장됩니다. 이후 API 요청은 token 값을 직접 들고 다니지 않고 `credentials: 'include'` 옵션으로 쿠키를 함께 보냅니다.
 
 이 방식은 SPA에서 토큰 전달 흐름이 명확합니다. 보안을 강화하려면 XSS 방어, refresh token, httpOnly cookie, token 만료 처리를 함께 설계해야 합니다.
 

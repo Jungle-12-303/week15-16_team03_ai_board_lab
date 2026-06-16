@@ -6,7 +6,7 @@
 
 | 파일 | 책임 |
 | --- | --- |
-| `useAuth.js` | 로그인, 회원가입, 로그아웃, token 저장 |
+| `useAuth.js` | 로그인, 회원가입, 로그아웃, 현재 사용자 복원 |
 | `usePosts.js` | 게시글 목록, CRUD, 댓글 상태 |
 | `usePostComposer.js` | 글 작성/수정 모달 입력 상태 |
 | `useRagDraft.js` | 유사글 검색, 초안 생성 상태 |

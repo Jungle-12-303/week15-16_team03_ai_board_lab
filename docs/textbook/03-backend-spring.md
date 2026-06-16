@@ -76,7 +76,7 @@ POST /api/auth/login
 이후 요청은 다음 흐름을 탑니다.
 
 ```text
-Authorization: Bearer token
+Cookie: project_alpha_access_token=<JWT>
 -> JwtAuthenticationFilter
 -> JwtTokenService 검증
 -> SecurityContext에 User 저장

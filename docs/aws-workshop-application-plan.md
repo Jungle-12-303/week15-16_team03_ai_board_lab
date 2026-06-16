@@ -103,7 +103,7 @@ flowchart LR
 
 ```http
 POST /api/ai/draft
-Authorization: Bearer <JWT>
+Cookie: project_alpha_access_token=<JWT>
 Content-Type: application/json
 ```
 

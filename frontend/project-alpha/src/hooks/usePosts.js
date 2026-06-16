@@ -86,7 +86,6 @@ export default function usePosts(currentUser, postQuery = {}) {
         content: content,
         category: category,
         tags: tags,
-        token: currentUser.token,
       });
 
       setPosts((currentPosts) => [savedPost, ...currentPosts]);
@@ -104,10 +103,7 @@ export default function usePosts(currentUser, postQuery = {}) {
     }
 
     try {
-      const updatedPost = await updateServerPost(postId, {
-        ...nextPostFields,
-        token: currentUser.token,
-      });
+      const updatedPost = await updateServerPost(postId, nextPostFields);
 
       setPosts((currentPosts) =>
         currentPosts.map((post) => (post.id === postId ? updatedPost : post)),
@@ -126,7 +122,7 @@ export default function usePosts(currentUser, postQuery = {}) {
     }
 
     try {
-      await deleteServerPost(postId, currentUser.token);
+      await deleteServerPost(postId);
 
       setPosts((currentPosts) => currentPosts.filter((post) => post.id !== postId));
       setPostsError('');
@@ -147,7 +143,6 @@ export default function usePosts(currentUser, postQuery = {}) {
     try {
       const newComment = await addServerComment(postId, {
         content: trimmedContent,
-        token: currentUser.token,
       });
 
       setPosts((currentPosts) =>
@@ -174,7 +169,7 @@ export default function usePosts(currentUser, postQuery = {}) {
     }
 
     try {
-      await deleteServerComment(postId, commentId, currentUser.token);
+      await deleteServerComment(postId, commentId);
 
       setPosts((currentPosts) =>
         currentPosts.map((post) =>

@@ -23,7 +23,6 @@ export default function useAgentRecommendations(currentUser) {
       setIsLoadingAgentRecommendations(true);
       const nextAgentResult = await recommendMissedPosts({
         limit: 5,
-        token: currentUser.token,
       });
 
       setAgentResult(nextAgentResult);

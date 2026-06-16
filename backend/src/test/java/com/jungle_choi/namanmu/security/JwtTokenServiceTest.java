@@ -24,12 +24,12 @@ class JwtTokenServiceTest {
             new JwtTokenService(objectMapper, SECRET, 3600);
 
     @Test
-    void createTokenCanBeReadFromAuthorizationHeader() {
+    void createTokenCanBeReadFromRawToken() {
         User user = User.createRegisteredUser("cedis", "hashed-password");
 
         String token = jwtTokenService.createToken(user);
 
-        assertThat(jwtTokenService.readEmailFromAuthorizationHeader("Bearer " + token))
+        assertThat(jwtTokenService.readEmailFromToken(token))
                 .isEqualTo(user.getEmail());
     }
 
@@ -42,7 +42,7 @@ class JwtTokenServiceTest {
                         "iat", Instant.now().getEpochSecond(),
                         "exp", Instant.now().plusSeconds(3600).getEpochSecond()));
 
-        assertThatThrownBy(() -> jwtTokenService.readEmailFromAuthorizationHeader("Bearer " + token))
+        assertThatThrownBy(() -> jwtTokenService.readEmailFromToken(token))
                 .isInstanceOf(ResponseStatusException.class);
     }
 
@@ -55,7 +55,7 @@ class JwtTokenServiceTest {
                 + tokenParts[2].substring(1);
         String tamperedToken = tokenParts[0] + "." + tokenParts[1] + "." + tamperedSignature;
 
-        assertThatThrownBy(() -> jwtTokenService.readEmailFromAuthorizationHeader("Bearer " + tamperedToken))
+        assertThatThrownBy(() -> jwtTokenService.readEmailFromToken(tamperedToken))
                 .isInstanceOf(ResponseStatusException.class);
     }
 

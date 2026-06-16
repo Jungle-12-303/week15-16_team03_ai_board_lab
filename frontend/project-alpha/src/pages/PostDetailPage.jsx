@@ -34,7 +34,7 @@ export default function PostDetailPage({
         setFactCheckError('');
         setIsCheckingFact(false);
 
-        const nextPost = await fetchPost(postId, currentUser.token);
+        const nextPost = await fetchPost(postId);
 
         if (!ignore) {
           setPost(nextPost);
@@ -60,11 +60,11 @@ export default function PostDetailPage({
         activePostIdRef.current = null;
       }
     };
-  }, [postId, currentUser.token]);
+  }, [postId]);
 
   async function reloadPost() {
     try {
-      const nextPost = await fetchPost(postId, currentUser.token);
+      const nextPost = await fetchPost(postId);
       setPost(nextPost);
       setPostError('');
     } catch {
@@ -83,7 +83,7 @@ export default function PostDetailPage({
       setIsCheckingFact(true);
       setFactCheckError('');
 
-      const result = await checkFact(post.id, currentUser.token);
+      const result = await checkFact(post.id);
       if (activePostIdRef.current === checkedPostId) {
         setFactCheck(result);
       }

@@ -51,6 +51,7 @@ export default function SignupPage({ currentUser, onSignUp }) {
         <label>
           Username
           <input
+            autoComplete="username"
             value={username}
             onChange={(event) => {
               setUsername(event.target.value);
@@ -62,6 +63,7 @@ export default function SignupPage({ currentUser, onSignUp }) {
         <label>
           Password
           <input
+            autoComplete="new-password"
             type="password"
             value={password}
             onChange={(event) => {
@@ -74,6 +76,7 @@ export default function SignupPage({ currentUser, onSignUp }) {
         <label>
           Confirm password
           <input
+            autoComplete="new-password"
             type="password"
             value={confirmPassword}
             onChange={(event) => {

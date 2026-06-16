@@ -19,7 +19,7 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedTag, setSelectedTag] = useState('');
-  const { currentUser, login, signUp, logout } = useAuth();
+  const { currentUser, isLoadingAuth, login, signUp, logout } = useAuth();
   const composer = usePostComposer();
   const ragDraft = useRagDraft(currentUser);
   const agentRecommendations = useAgentRecommendations(currentUser);
@@ -131,8 +131,8 @@ export default function App() {
     setCurrentPage(1);
   }
 
-  function handleLogout() {
-    logout();
+  async function handleLogout() {
+    await logout();
     cancelEditPost();
     agentRecommendations.resetAgentRecommendations();
   }
@@ -163,6 +163,17 @@ export default function App() {
       excludedPostId: composer.editingPostId,
       limit: 5,
     };
+  }
+
+  if (isLoadingAuth) {
+    return (
+      <main className="auth-page">
+        <h1>Project Alpha</h1>
+        <section className="auth-card">
+          <h2>Loading session...</h2>
+        </section>
+      </main>
+    );
   }
 
   if (currentUser === null) {
