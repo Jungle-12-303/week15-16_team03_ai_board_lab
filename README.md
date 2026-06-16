@@ -3,6 +3,29 @@
 Project Alpha는 개발, 학습, 프로젝트, 일상 기록을 남기는 LinkedIn 스타일의 AI 게시판입니다.
 일반 게시판 CRUD 위에 RAG, MCP, AI Agent 기능을 붙여서 사용자가 글을 더 잘 쓰고, 이미 쓴 글을 검증하고, 놓친 글을 추천받을 수 있게 만드는 것이 목표입니다.
 
+## 3줄 요약
+
+- Project Alpha는 React와 Spring Boot로 만든 AI 게시판이며, 기본 게시판 기능 위에 RAG, MCP, AI Agent를 실제 서비스 흐름으로 연결했습니다.
+- RAG는 기존 게시글을 검색해 AI 초안의 근거로 쓰고, MCP는 GitHub/날씨 같은 외부 데이터를 불러와 작성된 글을 검증합니다.
+- Agent는 사용자별 읽음 기록을 바탕으로 이미 본 글을 제외하고 놓쳤을 법한 게시글 5개를 추천합니다.
+
+## 과제 요구사항 대응
+
+| 요구사항 | Project Alpha 구현 |
+| --- | --- |
+| Frontend | React, Vite, React Router |
+| Backend | Spring Boot 3.5, Java 25 |
+| Database | MySQL 8.4 |
+| 회원가입/로그인 | Spring Security + JWT |
+| 게시글 CRUD | 목록, 상세, 생성, 수정, 삭제 |
+| 댓글 | 게시글 상세 댓글 생성/삭제 |
+| 태그 | 태그 저장, 태그 검색, 게시글 태그 표시 |
+| 페이징 | 서버 API 기반 페이지네이션 |
+| 검색 | 키워드, 카테고리, 태그 검색 |
+| RAG | 유사 게시글 검색, 근거 기반 AI 초안 생성 |
+| MCP | 내부 JSON-RPC MCP server + GitHub/날씨 외부 도구 |
+| AI Agent | 사용자 읽음 기록 기반 놓친 글 5개 추천 |
+
 ## 핵심 기능
 
 ### 기본 게시판
@@ -51,8 +74,9 @@ Project Alpha는 개발, 학습, 프로젝트, 일상 기록을 남기는 Linked
 | Auth | Spring Security, JWT |
 | LLM | OpenAI Chat API |
 | Embedding | OpenAI Embedding API |
-| RAG 저장소 | MySQL `post_embeddings`, `post_embedding_chunks` |
-| Retrieval | Vector similarity, BM25, metadata/category/tag signals |
+| Vector DB | Qdrant |
+| RAG 원본 저장소 | MySQL `posts`, `post_embeddings`, `post_embedding_chunks` |
+| Retrieval | Qdrant vector search, BM25, RRF, metadata/category/tag signals, chunk evidence |
 | MCP | Spring Boot 내부 JSON-RPC endpoint |
 | Agent state | MySQL `post_reads` |
 | Evaluation | RAGAS, custom retrieval evaluation script |
@@ -68,11 +92,13 @@ flowchart LR
     React --> Api["Spring Boot REST API"]
     Api --> Auth["Spring Security / JWT"]
     Api --> MySQL["MySQL"]
+    Api --> Qdrant["Qdrant Vector DB"]
     Api --> OpenAI["OpenAI API"]
     Api --> MCP["Internal MCP Server"]
     MCP --> GitHub["GitHub REST API"]
     MCP --> Weather["Weather API"]
     MySQL --> RAG["Embeddings / Chunks / Read Logs"]
+    RAG --> Qdrant
     RAG --> Api
 ```
 
@@ -88,14 +114,16 @@ sequenceDiagram
     participant Search as SimilarPostSearchService
     participant Draft as RagDraftService
     participant DB as MySQL
+    participant VectorDB as Qdrant
     participant OpenAI
 
     User->>React: 제목/본문/태그 입력
     React->>AI: similar posts 요청
     AI->>OpenAI: 입력 글 임베딩
     AI->>Search: 유사 게시글 검색
-    Search->>DB: 임베딩 청크, 게시글, 태그 조회
-    Search-->>AI: Vector + BM25 + 키워드 점수 결과
+    Search->>VectorDB: 유사 벡터 후보 postId 조회
+    Search->>DB: 후보 게시글, 태그, 청크 원본 조회
+    Search-->>AI: Vector + BM25 + RRF + 키워드 점수 결과
     AI-->>React: 유사 게시글 목록
     React->>AI: 초안 생성 요청
     AI->>Draft: 강한 근거 게시글만 선별
@@ -156,16 +184,22 @@ OPENAI_API_KEY=...
 OPENAI_CHAT_MODEL=gpt-4.1-mini
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 APP_JWT_SECRET=...
+QDRANT_ENABLED=true
+QDRANT_BASE_URL=http://localhost:6333
+QDRANT_POST_COLLECTION=project_alpha_posts
+QDRANT_CHUNK_COLLECTION=project_alpha_chunks
 ```
 
 Backend는 `backend/.env` 파일을 선택적으로 읽습니다. API key와 비밀번호는 Git에 커밋하지 않습니다.
 
-### 2. MySQL 실행
+### 2. MySQL, Qdrant 실행
 
 ```powershell
 cd C:\Users\cedis\week15_project
-docker compose up -d mysql
+docker compose up -d mysql qdrant
 ```
+
+MySQL은 게시글과 원본 데이터를 저장하고, Qdrant는 임베딩 벡터 후보 검색을 담당합니다.
 
 ### 3. Backend 실행
 
@@ -206,12 +240,27 @@ cd C:\Users\cedis\week15_project\backend
 
 평소 서버 실행에서는 `app.corpus-import.enabled=false`가 기본값이므로 자동 import가 돌지 않습니다.
 
+기존 MySQL 임베딩을 Qdrant에 다시 동기화해야 할 때는 백엔드 서버 실행 후 다음 API를 호출합니다.
+
+```powershell
+curl -X POST "http://127.0.0.1:8080/api/ai/vector-store/sync?limit=2000"
+```
+
 ## RAG 평가
 
-간단한 retrieval 평가는 Node script로 실행합니다.
+현재 운영 설정의 retrieval 평가는 Node script로 실행합니다.
 
 ```powershell
 node scripts\evaluate-rag-retrieval.mjs
+```
+
+후보 조합과 오프라인 ablation은 아래 스크립트로 재현할 수 있습니다.
+
+```powershell
+node scripts\evaluate-rag-online-candidates.mjs
+node scripts\evaluate-rag-offline-ablation.mjs
+node scripts\evaluate-chunk-size-variants.mjs
+node scripts\evaluate-rag-scenarios.mjs
 ```
 
 RAGAS 평가는 별도 Python 환경에서 실행합니다.
@@ -268,13 +317,18 @@ npm run build
 - [코드 맵](docs/code-map.md)
 - [DB 스키마](docs/database-schema.md)
 - [AWS 워크숍 적용 계획](docs/aws-workshop-application-plan.md)
+- [RAG 검색 성능 보고서](docs/rag-performance-report.md)
+- [RAG 측정 로그 인벤토리](docs/rag-measurement-inventory.md)
+- [RAG 시나리오 입출력 평가](docs/rag-scenario-evaluation.md)
+- [데모 시나리오와 스크린샷](docs/demo-scenario.md)
+- [전체 기능 QA 체크리스트](docs/qa-checklist.md)
+- [7분 발표 흐름](docs/presentation-flow.md)
 - [RAGAS 평가 안내](eval/ragas/README.md)
 
 ## 한계점과 개선 아이디어
 
-- MySQL에 JSON 형태로 벡터를 저장하고 서버에서 유사도를 계산하므로 데이터가 커지면 검색 비용이 커질 수 있습니다.
-- 대규모 검색으로 확장하려면 pgvector, OpenSearch, Chroma, Pinecone 같은 전용 Vector DB를 검토할 수 있습니다.
-- 현재 RAG reranker는 직접 구현한 점수 조합에 가깝습니다. Cross-encoder reranker 또는 LLM reranker를 붙이면 더 정교해질 수 있습니다.
+- 현재는 Qdrant가 1차 벡터 후보 검색을 담당하고, Spring Boot가 BM25/RRF/metadata/chunk evidence 재정렬을 수행합니다. 더 큰 규모에서는 Qdrant 검색 파라미터와 reranker 구조를 별도로 튜닝해야 합니다.
+- 현재 RAG reranker는 직접 구현한 점수 조합입니다. Cross-encoder reranker 또는 LLM reranker를 붙이면 더 정교해질 수 있습니다.
 - MCP 도구는 GitHub와 날씨 중심입니다. 공공데이터, Jira, Slack, 뉴스 API 등으로 확장할 수 있습니다.
 - Agent는 읽음 기록과 태그 기반 추천입니다. 클릭, 댓글, 작성 이력, 체류 시간까지 반영하면 개인화 품질을 높일 수 있습니다.
 - 로컬 개발은 `ddl-auto=update`를 사용합니다. 배포 단계에서는 Flyway 또는 Liquibase 기반 migration이 필요합니다.
