@@ -92,7 +92,7 @@ Cookie: project_alpha_access_token=<JWT>
 -> Controller에서 @AuthenticationPrincipal User 사용
 ```
 
-JWT는 프론트와 백엔드가 분리된 구조에서 API 요청마다 인증 정보를 전달하는 방식입니다. access token은 JWT로 짧게 검증하고, refresh token은 DB에 해시로 저장해 재발급 때마다 회전시킵니다.
+JWT는 프론트와 백엔드가 분리된 구조에서 API 요청마다 인증 정보를 전달하는 방식입니다. access token은 기본 15분으로 짧게 두고, refresh token은 DB에 해시로 저장해 재발급 때마다 회전시킵니다.
 
 쿠키 인증은 브라우저가 자동으로 인증 정보를 붙인다는 장점이 있지만, 그만큼 CSRF 방어가 필요합니다. Project Alpha는 Spring Security의 `CookieCsrfTokenRepository`를 사용하고, React는 `/api/auth/csrf`로 받은 token을 변경 요청 header에 넣습니다.
 

@@ -185,6 +185,7 @@ OPENAI_API_KEY=...
 OPENAI_CHAT_MODEL=gpt-4.1-mini
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 APP_JWT_SECRET=...
+APP_JWT_EXPIRATION_SECONDS=900
 APP_REFRESH_TOKEN_EXPIRATION_SECONDS=604800
 APP_LOGIN_RATE_LIMIT_MAX_FAILURES=5
 APP_LOGIN_RATE_LIMIT_WINDOW_SECONDS=600
@@ -200,7 +201,7 @@ QDRANT_POST_COLLECTION=project_alpha_posts
 QDRANT_CHUNK_COLLECTION=project_alpha_chunks
 ```
 
-Backend는 `backend/.env` 파일을 선택적으로 읽습니다. API key와 비밀번호는 Git에 커밋하지 않습니다. 운영 배포에서는 `APP_SECURITY_PRODUCTION_MODE=true`, `APP_SECURITY_COOKIE_SECURE=true`, `SPRING_JPA_HIBERNATE_DDL_AUTO=validate`, `SPRING_FLYWAY_ENABLED=true`를 사용합니다. production mode에서 기본 JWT secret을 그대로 쓰면 서버가 시작되지 않습니다. 로그인 실패 rate limit은 기본 10분 창에서 5회 실패 시 5분 동안 잠급니다.
+Backend는 `backend/.env` 파일을 선택적으로 읽습니다. API key와 비밀번호는 Git에 커밋하지 않습니다. 운영 배포에서는 `APP_SECURITY_PRODUCTION_MODE=true`, `APP_SECURITY_COOKIE_SECURE=true`, `SPRING_JPA_HIBERNATE_DDL_AUTO=validate`, `SPRING_FLYWAY_ENABLED=true`를 사용합니다. production mode에서 기본 JWT secret을 그대로 쓰면 서버가 시작되지 않습니다. access token 기본 만료시간은 15분이고, refresh token은 7일 동안 유지되며 재발급 때마다 rotation됩니다. 로그인 실패 rate limit은 기본 10분 창에서 5회 실패 시 5분 동안 잠급니다.
 
 ### 2. MySQL, Qdrant 실행
 
