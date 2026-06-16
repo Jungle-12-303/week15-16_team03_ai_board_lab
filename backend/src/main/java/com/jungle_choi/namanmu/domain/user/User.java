@@ -80,6 +80,10 @@ public class User {
         this.updatedAt = LocalDateTime.now();
     }
 
+    public void promoteToAdmin() {
+        this.role = UserRole.ADMIN;
+    }
+
     public Long getId() {
         return id;
     }

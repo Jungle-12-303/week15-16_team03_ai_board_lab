@@ -33,6 +33,7 @@ npm run dev
 | `APP_JWT_SECRET` | JWT 서명 |
 | `APP_LOGIN_RATE_LIMIT_*` | 로그인 실패 제한 |
 | `APP_AI_RATE_LIMIT_*` | 유사글 검색과 RAG 초안 생성 요청 제한 |
+| `APP_ADMIN_USERNAMES` | 이미 가입된 계정의 ADMIN 승격 |
 | `SPRING_DATASOURCE_*` | DB 접속 정보 |
 
 `.env.example`은 필요한 변수 목록을 알려주는 템플릿이고, 실제 `.env`는 커밋하지 않습니다.
@@ -122,7 +123,7 @@ RAG를 AWS 서비스 중심으로 바꾸면 Bedrock Knowledge Bases, OpenSearch,
 - Flyway 초기 migration은 적용했지만, 이후 변경마다 V2/V3 migration을 계속 작성해야 함
 - 전체 refresh token 로그아웃은 적용했지만 세션 목록/기기 관리 화면은 없음
 - Qdrant는 도입했지만 운영 백업/복구 전략은 별도 필요
-- 관리자 role은 있지만 관리자 계정 생성/관리 페이지는 없음
+- `APP_ADMIN_USERNAMES` bootstrap은 있지만 관리자 계정 생성/관리 페이지는 없음
 - 모니터링/알림 없음
 - 사용자-facing AI 요청 rate limit은 적용했지만 전체 API rate limit은 없음
 - RAG 평가 케이스 수 부족

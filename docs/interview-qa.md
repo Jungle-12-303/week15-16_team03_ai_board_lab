@@ -264,6 +264,7 @@ Spring Boot 기본 구조와 JPA 설계를 설명하는 질문이다.
 | CORS는 왜 필요하나요? | Vite dev server와 Spring Boot API origin이 다르기 때문 |
 | 권한 체크는 어디서 하나요? | Spring Security filter와 API/service owner 검증 |
 | 임베딩 job 처리나 Qdrant sync API는 아무나 호출할 수 있나요? | 아니요. `/api/ai/embedding-jobs/**`, `/api/ai/vector-store/**`, `/api/ai/evaluation/**`는 `ADMIN` role만 접근하도록 제한했습니다. 일반 로그인 사용자는 403을 받습니다. |
+| ADMIN 계정은 어떻게 만드나요? | 먼저 일반 회원가입으로 계정을 만든 뒤 `APP_ADMIN_USERNAMES`에 사용자명을 넣으면 서버 시작 시 해당 계정을 ADMIN으로 승격합니다. 자동으로 비밀번호를 가진 관리자 계정을 만들지는 않습니다. |
 | 다른 사용자의 게시글을 수정할 수 있나요? | owner 검증 필요, 발표 전 실제 동작 확인 포인트 |
 | API key가 노출되면 어떻게 되나요? | 즉시 폐기/재발급, secret manager 사용 |
 
