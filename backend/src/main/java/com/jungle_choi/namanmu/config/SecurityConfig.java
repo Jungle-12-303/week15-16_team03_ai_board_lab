@@ -12,6 +12,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -27,7 +28,8 @@ public class SecurityConfig {
             AppSecurityProperties appSecurityProperties) throws Exception {
         return http
                 .cors((cors) -> cors.configurationSource(corsConfigurationSource(appSecurityProperties)))
-                .csrf((csrf) -> csrf.disable())
+                .csrf((csrf) -> csrf
+                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
                 .sessionManagement((session) ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests((auth) -> auth
@@ -60,7 +62,11 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(appSecurityProperties.normalizedCorsAllowedOrigins());
         configuration.setAllowedMethods(List.of("GET", "POST", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Content-Type", "Authorization"));
+        configuration.setAllowedHeaders(List.of(
+                "Content-Type",
+                "Authorization",
+                "X-CSRF-TOKEN",
+                "X-XSRF-TOKEN"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

@@ -70,7 +70,7 @@ POST /api/auth/login
 -> AuthController
 -> UserRepository
 -> JwtTokenService
--> JWT 반환
+-> httpOnly JWT cookie 발급
 ```
 
 이후 요청은 다음 흐름을 탑니다.
@@ -84,6 +84,8 @@ Cookie: project_alpha_access_token=<JWT>
 ```
 
 JWT는 프론트와 백엔드가 분리된 구조에서 API 요청마다 인증 정보를 전달하는 방식입니다. 현재 구현 범위에는 refresh token과 token rotation이 포함되지 않습니다.
+
+쿠키 인증은 브라우저가 자동으로 인증 정보를 붙인다는 장점이 있지만, 그만큼 CSRF 방어가 필요합니다. Project Alpha는 Spring Security의 `CookieCsrfTokenRepository`를 사용하고, React는 `/api/auth/csrf`로 받은 token을 변경 요청 header에 넣습니다.
 
 ## 트랜잭션
 

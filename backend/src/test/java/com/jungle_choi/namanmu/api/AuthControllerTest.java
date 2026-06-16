@@ -3,6 +3,7 @@ package com.jungle_choi.namanmu.api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -30,6 +31,7 @@ class AuthControllerTest {
         String password = "password123";
 
         mockMvc.perform(post("/api/auth/signup")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"username":"%s","password":"%s"}
@@ -38,6 +40,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.name").value(username));
 
         MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"username":"%s","password":"%s"}
@@ -62,10 +65,26 @@ class AuthControllerTest {
 
     @Test
     void logoutClearsAccessTokenCookie() throws Exception {
-        mockMvc.perform(post("/api/auth/logout"))
+        mockMvc.perform(post("/api/auth/logout")
+                        .with(csrf()))
                 .andExpect(status().isNoContent())
                 .andExpect(cookie().maxAge(
                         JwtAuthenticationFilter.ACCESS_TOKEN_COOKIE_NAME,
                         0));
+    }
+
+    @Test
+    void csrfEndpointReturnsTokenForBrowserRequests() throws Exception {
+        mockMvc.perform(get("/api/auth/csrf"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.headerName").value("X-XSRF-TOKEN"))
+                .andExpect(jsonPath("$.token").isString())
+                .andExpect(cookie().exists("XSRF-TOKEN"));
+    }
+
+    @Test
+    void mutatingRequestWithoutCsrfTokenIsRejected() throws Exception {
+        mockMvc.perform(post("/api/auth/logout"))
+                .andExpect(status().isForbidden());
     }
 }

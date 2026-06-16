@@ -218,7 +218,7 @@ Spring Boot 기본 구조와 JPA 설계를 설명하는 질문이다.
 | Agent라고 부를 수 있나요? | 자율적으로 행동하지 않는데요? | 완전 자율형 agent는 아니다. 상태 관찰, 추론, 후보 검색, 랭킹 단계를 명시한 제한형 추천 agent로 보는 것이 정확하다. |
 | MCP가 꼭 필요한가요? | 그냥 service에서 API 호출하면 안 되나요? | 구현만 보면 가능하다. 하지만 과제 요구는 MCP였고, 외부 도구 호출을 JSON-RPC/tool 단위로 분리해 AI 기능과 외부 시스템 사이의 경계를 만들었다. |
 | JPA로 테이블을 만들었다고요? | 운영에서도 그렇게 하나요? | 로컬 개발은 `ddl-auto=update`를 사용했다. 운영에서는 Flyway/Liquibase migration이 맞다. |
-| JWT는 안전한가요? | localStorage면 XSS에 취약하지 않나요? | 현재는 localStorage가 아니라 httpOnly cookie를 쓴다. 다만 운영 수준에서는 secure cookie, refresh token rotation, CSRF 토큰, CSP/XSS 대응까지 함께 봐야 한다. |
+| JWT는 안전한가요? | localStorage면 XSS에 취약하지 않나요? | 현재는 localStorage가 아니라 httpOnly cookie를 쓴다. 쿠키 인증으로 바꾼 뒤에는 Spring Security CSRF token도 함께 적용했다. 운영 수준에서는 secure cookie, refresh token rotation, CSP/XSS 대응까지 더 봐야 한다. |
 | 크롤링 데이터는 합법인가요? | 실제 서비스라면요? | 학습/로컬 평가용으로 사용했다. 실제 서비스는 robots.txt, 저작권, 출처, 저장 범위, 삭제 정책을 설계해야 한다. |
 | 평가 점수가 좋은데 믿을 수 있나요? | 6케이스 아닌가요? | 일반화 점수가 아니라 현재 데이터셋 기준선이다. 그래서 한계로 명시했고 holdout 확장이 다음 개선이다. |
 
@@ -424,7 +424,7 @@ Spring Boot 기본 구조와 JPA 설계를 설명하는 질문이다.
 | JWT 인증 흐름을 설명해보세요. | 로그인 성공 시 서버가 JWT를 발급하고, 프론트는 이후 요청에 Authorization header로 토큰을 보냅니다. 서버는 filter에서 토큰을 검증해 인증 객체를 만듭니다. |
 | 세션 방식 대신 JWT를 쓴 이유는요? | 프론트와 백엔드가 분리된 구조에서 stateless API 인증을 연습하기 적합했습니다. |
 | JWT의 단점은요? | 탈취되면 만료 전까지 위험하고, 서버에서 즉시 무효화하기 어렵습니다. 운영에서는 짧은 access token, refresh token, blocklist 전략이 필요합니다. |
-| localStorage 저장은 안전한가요? | 인증 token은 localStorage에 저장하지 않도록 개선했습니다. 현재는 httpOnly cookie를 사용하고, 운영 배포에서는 HTTPS 기반 secure cookie와 CSRF 방어까지 묶어야 합니다. |
+| localStorage 저장은 안전한가요? | 인증 token은 localStorage에 저장하지 않도록 개선했습니다. 현재는 httpOnly cookie와 CSRF token을 함께 사용하고, 운영 배포에서는 HTTPS 기반 secure cookie와 refresh token rotation까지 묶어야 합니다. |
 | 인가와 인증 차이는요? | 인증은 사용자가 누구인지 확인하는 것이고, 인가는 그 사용자가 특정 작업을 할 권한이 있는지 확인하는 것입니다. |
 | CORS는 Spring Security와 왜 같이 설정하나요? | 브라우저가 다른 origin의 API 호출을 제한하기 때문에, frontend dev server에서 backend API를 호출하려면 CORS 허용이 필요합니다. |
 
@@ -455,7 +455,7 @@ Spring Boot 기본 구조와 JPA 설계를 설명하는 질문이다.
 | Agent 맞나요? | 네, 그냥 Agent입니다. | 완전 자율형은 아니고, 상태 관찰과 추론 단계를 명시한 제한형 추천 agent입니다. |
 | MCP 맞나요? | API 호출이긴 한데요. | 외부 API 호출을 JSON-RPC/tool 인터페이스로 분리해 MCP 형태로 구현했습니다. |
 | 평가가 충분한가요? | 점수 좋게 나왔습니다. | 현재 케이스 규모는 작아 한계가 있습니다. 그래서 online/offline을 분리했고 holdout 확장이 다음 개선입니다. |
-| 보안 괜찮나요? | 로컬이라 괜찮습니다. | 학습용으로 단순화한 부분이 있고, 운영에서는 httpOnly cookie, refresh token, migration, secret manager가 필요합니다. |
+| 보안 괜찮나요? | 로컬이라 괜찮습니다. | 인증은 httpOnly cookie와 CSRF token까지 보강했다. 그래도 운영에서는 HTTPS secure cookie, refresh token rotation, migration, secret manager가 추가로 필요합니다. |
 | 왜 이 기술을 썼나요? | 그냥 많이 쓴다길래요. | 과제 조건, 학습 목표, 현재 DB 선택, 기능 요구를 기준으로 선택했습니다. |
 
 ## 16. 강도별 답변 길이

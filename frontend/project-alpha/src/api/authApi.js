@@ -1,7 +1,7 @@
-import { apiBaseUrl, withCredentials } from './config';
+import { apiBaseUrl, clearCsrfToken, withCredentials, withCsrf } from './config';
 
 export async function login(username, password) {
-  const response = await fetch(`${apiBaseUrl}/api/auth/login`, withCredentials({
+  const response = await fetch(`${apiBaseUrl}/api/auth/login`, await withCsrf({
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -20,7 +20,7 @@ export async function login(username, password) {
 }
 
 export async function signUp(username, password) {
-  const response = await fetch(`${apiBaseUrl}/api/auth/signup`, withCredentials({
+  const response = await fetch(`${apiBaseUrl}/api/auth/signup`, await withCsrf({
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -49,13 +49,15 @@ export async function getCurrentUser() {
 }
 
 export async function logout() {
-  const response = await fetch(`${apiBaseUrl}/api/auth/logout`, withCredentials({
+  const response = await fetch(`${apiBaseUrl}/api/auth/logout`, await withCsrf({
     method: 'POST',
   }));
 
   if (!response.ok) {
     throw new Error('Failed to logout.');
   }
+
+  clearCsrfToken();
 }
 
 function normalizeUser(user) {

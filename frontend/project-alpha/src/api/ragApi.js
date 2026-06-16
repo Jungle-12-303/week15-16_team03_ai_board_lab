@@ -1,4 +1,4 @@
-import { apiBaseUrl, withCredentials } from './config';
+import { apiBaseUrl, withCsrf } from './config';
 
 export async function findSimilarPosts({
   category,
@@ -8,7 +8,7 @@ export async function findSimilarPosts({
   excludedPostId,
   limit = 5,
 }) {
-  const response = await fetch(`${apiBaseUrl}/api/ai/similar-posts`, withCredentials({
+  const response = await fetch(`${apiBaseUrl}/api/ai/similar-posts`, await withCsrf({
     method: 'POST',
     headers: jsonHeaders(),
     body: JSON.stringify({
@@ -43,7 +43,7 @@ export async function createDraftFromSources({
   excludedPostId,
   limit = 5,
 }) {
-  const response = await fetch(`${apiBaseUrl}/api/ai/draft`, withCredentials({
+  const response = await fetch(`${apiBaseUrl}/api/ai/draft`, await withCsrf({
     method: 'POST',
     headers: jsonHeaders(),
     body: JSON.stringify({

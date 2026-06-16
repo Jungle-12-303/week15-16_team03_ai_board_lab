@@ -16,6 +16,7 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -99,6 +100,11 @@ public class AuthController {
         return toResponse(user);
     }
 
+    @GetMapping("/csrf")
+    public CsrfResponse csrf(CsrfToken csrfToken) {
+        return new CsrfResponse(csrfToken.getHeaderName(), csrfToken.getToken());
+    }
+
     private AuthResponse toResponse(User user) {
         return new AuthResponse(user.getName());
     }
@@ -134,5 +140,8 @@ public class AuthController {
     }
 
     public record AuthResponse(String name) {
+    }
+
+    public record CsrfResponse(String headerName, String token) {
     }
 }

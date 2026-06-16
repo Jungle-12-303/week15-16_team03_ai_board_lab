@@ -1,4 +1,4 @@
-import { apiBaseUrl, withCredentials } from './config';
+import { apiBaseUrl, withCredentials, withCsrf } from './config';
 
 export async function fetchPosts({
   keyword = '',
@@ -51,7 +51,7 @@ export async function fetchPost(postId) {
 }
 
 export async function createPost({ title, content, category, tags }) {
-  const response = await fetch(`${apiBaseUrl}/api/posts`, withCredentials({
+  const response = await fetch(`${apiBaseUrl}/api/posts`, await withCsrf({
     method: 'POST',
     headers: jsonHeaders(),
     body: JSON.stringify({
@@ -70,7 +70,7 @@ export async function createPost({ title, content, category, tags }) {
 }
 
 export async function updatePost(postId, { title, content, category, tags }) {
-  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}`, withCredentials({
+  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}`, await withCsrf({
     method: 'PATCH',
     headers: jsonHeaders(),
     body: JSON.stringify({
@@ -89,7 +89,7 @@ export async function updatePost(postId, { title, content, category, tags }) {
 }
 
 export async function deletePost(postId) {
-  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}`, withCredentials({
+  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}`, await withCsrf({
     method: 'DELETE',
   }));
 
@@ -99,7 +99,7 @@ export async function deletePost(postId) {
 }
 
 export async function addComment(postId, { content }) {
-  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}/comments`, withCredentials({
+  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}/comments`, await withCsrf({
     method: 'POST',
     headers: jsonHeaders(),
     body: JSON.stringify({
@@ -117,7 +117,7 @@ export async function addComment(postId, { content }) {
 export async function deleteComment(postId, commentId) {
   const response = await fetch(
     `${apiBaseUrl}/api/posts/${postId}/comments/${commentId}`,
-    withCredentials({
+    await withCsrf({
       method: 'DELETE',
     }),
   );

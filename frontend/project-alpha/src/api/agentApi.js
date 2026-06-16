@@ -1,7 +1,7 @@
-import { apiBaseUrl, withCredentials } from './config';
+import { apiBaseUrl, withCsrf } from './config';
 
 export async function recommendMissedPosts({ limit = 5 }) {
-  const response = await fetch(`${apiBaseUrl}/api/agent/missed-posts`, withCredentials({
+  const response = await fetch(`${apiBaseUrl}/api/agent/missed-posts`, await withCsrf({
     method: 'POST',
     headers: jsonHeaders(),
     body: JSON.stringify({

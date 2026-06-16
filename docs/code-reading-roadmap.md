@@ -102,7 +102,7 @@ React가 백엔드와 만나는 지점입니다.
 
 핵심 질문:
 
-- JWT는 httpOnly cookie로 내려가고, 프론트 요청에는 `credentials: 'include'`가 들어가는가
+- JWT는 httpOnly cookie로 내려가고, 변경 요청에는 CSRF header가 들어가는가
 - `fetch` 결과가 실패했을 때 어디서 `throw new Error`를 하는가
 - 프론트에서 쓰기 좋게 응답을 normalize하는 코드는 어디에 있는가
 
@@ -230,7 +230,7 @@ PostDetailPage.jsx 또는 BoardPage.jsx
 | 파일 | 역할 |
 | --- | --- |
 | `frontend/project-alpha/src/hooks/useAuth.js` | 로그인, 로그아웃, `/api/auth/me` 기반 사용자 복원 |
-| `frontend/project-alpha/src/api/config.js` | 쿠키 인증 요청에 공통 `credentials: 'include'` 적용 |
+| `frontend/project-alpha/src/api/config.js` | 쿠키 인증 요청에 공통 `credentials: 'include'`, CSRF header 적용 |
 | `frontend/project-alpha/src/api/*.js` | Authorization header 추가 |
 | `backend/src/main/java/com/jungle_choi/namanmu/config/SecurityConfig.java` | 인증/인가 설정 |
 | `backend/src/main/java/com/jungle_choi/namanmu/security/JwtTokenService.java` | JWT 생성/검증 |
