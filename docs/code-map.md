@@ -46,6 +46,7 @@ flowchart LR
 | 경로 | 역할 | 먼저 볼 때 |
 | --- | --- | --- |
 | `backend/src/main/java/com/jungle_choi/namanmu/api/AuthController.java` | 회원가입/로그인 API | access/refresh cookie 발급 흐름 |
+| `backend/src/main/java/com/jungle_choi/namanmu/security/LoginAttemptService.java` | 로그인 실패 횟수 제한 | brute force 방어 흐름 |
 | `backend/src/main/java/com/jungle_choi/namanmu/api/PostController.java` | 게시글 목록/상세/생성/수정/삭제 API | 게시글 API 진입점 |
 | `backend/src/main/java/com/jungle_choi/namanmu/api/CommentController.java` | 댓글 생성/삭제 API | 댓글 API 진입점 |
 | `backend/src/main/java/com/jungle_choi/namanmu/api/AiController.java` | 유사 게시글 검색, RAG 초안, 임베딩 작업 API | RAG API 진입점 |

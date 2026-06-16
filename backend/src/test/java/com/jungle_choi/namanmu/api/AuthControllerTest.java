@@ -70,6 +70,39 @@ class AuthControllerTest {
     }
 
     @Test
+    void loginIsLockedAfterRepeatedFailures() throws Exception {
+        String username = "locked-user";
+        String password = "password123";
+
+        mockMvc.perform(post("/api/auth/signup")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"username":"%s","password":"%s"}
+                                """.formatted(username, password)))
+                .andExpect(status().isOk());
+
+        for (int i = 0; i < 5; i++) {
+            mockMvc.perform(post("/api/auth/login")
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"username":"%s","password":"wrong-password"}
+                                    """.formatted(username)))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        mockMvc.perform(post("/api/auth/login")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"username":"%s","password":"%s"}
+                                """.formatted(username, password)))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.code").value("TOO_MANY_REQUESTS"));
+    }
+
+    @Test
     void logoutClearsAccessTokenCookie() throws Exception {
         mockMvc.perform(post("/api/auth/logout")
                         .with(csrf()))

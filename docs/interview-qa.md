@@ -258,7 +258,8 @@ Spring Boot 기본 구조와 JPA 설계를 설명하는 질문이다.
 | 비밀번호는 어떻게 저장하나요? | 평문 저장 금지, password encoder 사용 |
 | JWT secret은 어디에 있나요? | 환경 변수, `.env.example`에는 예시만 |
 | 기본 secret으로 운영 서버가 뜨면 위험하지 않나요? | `APP_SECURITY_PRODUCTION_MODE=true`일 때 기본 JWT secret을 쓰면 서버가 시작되지 않게 막았습니다. 운영에서는 secret manager나 배포 환경변수로 별도 secret을 주입해야 합니다. |
-| 토큰 만료는 어떻게 처리하나요? | 현재는 단순화, 운영에서는 access/refresh 분리 |
+| 토큰 만료는 어떻게 처리하나요? | access token과 refresh token을 분리했고, refresh token은 DB에 해시로 저장한 뒤 재발급 때마다 rotation합니다. |
+| 로그인 비밀번호를 계속 틀리면 어떻게 되나요? | `LoginAttemptService`가 계정 기준 실패 횟수를 기록합니다. 기본값은 10분 안에 5회 실패 시 5분 잠금입니다. 현재는 단일 서버 인메모리라 다중 서버 운영에서는 Redis 같은 공유 저장소로 옮겨야 합니다. |
 | CORS는 왜 필요하나요? | Vite dev server와 Spring Boot API origin이 다르기 때문 |
 | 권한 체크는 어디서 하나요? | Spring Security filter와 API/service owner 검증 |
 | 다른 사용자의 게시글을 수정할 수 있나요? | owner 검증 필요, 발표 전 실제 동작 확인 포인트 |

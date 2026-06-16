@@ -31,7 +31,8 @@ Project Alpha는 개발, 학습, 프로젝트, 일상 기록을 남기는 Linked
 ### 기본 게시판
 
 - 회원가입, 로그인, 로그아웃
-- JWT 기반 인증 요청
+- httpOnly cookie 기반 JWT 인증 요청
+- CSRF token, refresh token rotation, 로그인 실패 rate limit
 - 게시글 목록, 상세, 생성, 수정, 삭제
 - 댓글 생성, 삭제
 - 카테고리 필터, 태그 검색, 키워드 검색
@@ -185,6 +186,9 @@ OPENAI_CHAT_MODEL=gpt-4.1-mini
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 APP_JWT_SECRET=...
 APP_REFRESH_TOKEN_EXPIRATION_SECONDS=604800
+APP_LOGIN_RATE_LIMIT_MAX_FAILURES=5
+APP_LOGIN_RATE_LIMIT_WINDOW_SECONDS=600
+APP_LOGIN_RATE_LIMIT_LOCK_SECONDS=300
 APP_SECURITY_PRODUCTION_MODE=false
 APP_SECURITY_COOKIE_SECURE=false
 SPRING_JPA_HIBERNATE_DDL_AUTO=update
@@ -196,7 +200,7 @@ QDRANT_POST_COLLECTION=project_alpha_posts
 QDRANT_CHUNK_COLLECTION=project_alpha_chunks
 ```
 
-Backend는 `backend/.env` 파일을 선택적으로 읽습니다. API key와 비밀번호는 Git에 커밋하지 않습니다. 운영 배포에서는 `APP_SECURITY_PRODUCTION_MODE=true`, `APP_SECURITY_COOKIE_SECURE=true`, `SPRING_JPA_HIBERNATE_DDL_AUTO=validate`, `SPRING_FLYWAY_ENABLED=true`를 사용합니다. production mode에서 기본 JWT secret을 그대로 쓰면 서버가 시작되지 않습니다.
+Backend는 `backend/.env` 파일을 선택적으로 읽습니다. API key와 비밀번호는 Git에 커밋하지 않습니다. 운영 배포에서는 `APP_SECURITY_PRODUCTION_MODE=true`, `APP_SECURITY_COOKIE_SECURE=true`, `SPRING_JPA_HIBERNATE_DDL_AUTO=validate`, `SPRING_FLYWAY_ENABLED=true`를 사용합니다. production mode에서 기본 JWT secret을 그대로 쓰면 서버가 시작되지 않습니다. 로그인 실패 rate limit은 기본 10분 창에서 5회 실패 시 5분 동안 잠급니다.
 
 ### 2. MySQL, Qdrant 실행
 
@@ -339,3 +343,4 @@ npm run build
 - MCP 도구는 GitHub와 날씨 중심입니다. 공공데이터, Jira, Slack, 뉴스 API 등으로 확장할 수 있습니다.
 - Agent는 읽음 기록과 태그 기반 추천입니다. 클릭, 댓글, 작성 이력, 체류 시간까지 반영하면 개인화 품질을 높일 수 있습니다.
 - 초기 DB 스키마는 Flyway migration 파일 `backend/src/main/resources/db/migration/V1__create_project_alpha_schema.sql`에 기록했습니다. 로컬 개발은 `ddl-auto=update`를 병행하고, 배포 단계에서는 `ddl-auto=validate`와 Flyway migration을 기준으로 운영합니다.
+- 로그인 실패 rate limit은 현재 단일 서버 인메모리 방식입니다. 여러 서버로 배포할 때는 Redis 같은 공유 저장소 기반으로 바꾸는 것이 맞습니다.

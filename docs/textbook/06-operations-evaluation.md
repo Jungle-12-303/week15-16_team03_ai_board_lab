@@ -31,6 +31,7 @@ npm run dev
 | `OPENAI_API_KEY` | OpenAI API 호출 |
 | `GITHUB_TOKEN` | GitHub rate limit 완화 |
 | `APP_JWT_SECRET` | JWT 서명 |
+| `APP_LOGIN_RATE_LIMIT_*` | 로그인 실패 제한 |
 | `SPRING_DATASOURCE_*` | DB 접속 정보 |
 
 `.env.example`은 필요한 변수 목록을 알려주는 템플릿이고, 실제 `.env`는 커밋하지 않습니다.
@@ -108,6 +109,7 @@ RAG를 AWS 서비스 중심으로 바꾸면 Bedrock Knowledge Bases, OpenSearch,
 - JWT secret 커밋 금지
 - CORS 허용 origin 제한
 - 회원 비밀번호 hash 저장
+- 로그인 실패 rate limit
 - 관리자 기능이 생기면 권한 분리 필요
 
 ## 현재 범위 밖의 운영 기능
@@ -116,18 +118,17 @@ RAG를 AWS 서비스 중심으로 바꾸면 Bedrock Knowledge Bases, OpenSearch,
 
 - Flyway 초기 migration은 적용했지만, 이후 변경마다 V2/V3 migration을 계속 작성해야 함
 - refresh token rotation은 적용했지만 운영용 전체 세션 관리 화면은 없음
-- Vector DB 없음
-- 검색 index 없음
+- Qdrant는 도입했지만 운영 백업/복구 전략은 별도 필요
 - 관리자 페이지 없음
 - 모니터링/알림 없음
-- API rate limit 없음
+- 로그인 외 API rate limit 없음
 - RAG 평가 케이스 수 부족
 
 ## 다음 개선 우선순위
 
-1. Flyway로 DB migration 도입
-2. 관리자용 세션 조회/강제 로그아웃 전략 보강
-3. Vector DB 또는 pgvector 도입 검토
+1. 관리자용 세션 조회/강제 로그아웃 전략 보강
+2. 로그인 외 API rate limit 확장
+3. Qdrant 백업/복구와 운영 모니터링 정리
 4. RAG 평가 케이스 확장
 5. MCP 도구 추가
 6. AWS 배포 자동화

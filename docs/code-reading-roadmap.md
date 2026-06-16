@@ -235,6 +235,7 @@ PostDetailPage.jsx 또는 BoardPage.jsx
 | `backend/src/main/java/com/jungle_choi/namanmu/config/SecurityConfig.java` | 인증/인가 설정 |
 | `backend/src/main/java/com/jungle_choi/namanmu/security/JwtTokenService.java` | JWT 생성/검증 |
 | `backend/src/main/java/com/jungle_choi/namanmu/security/JwtAuthenticationFilter.java` | access token cookie에서 JWT 읽기 |
+| `backend/src/main/java/com/jungle_choi/namanmu/security/LoginAttemptService.java` | 로그인 실패 횟수와 잠금 상태 관리 |
 | `backend/src/main/java/com/jungle_choi/namanmu/api/AuthController.java` | 회원가입/로그인 API |
 
 핵심 질문:
@@ -242,6 +243,7 @@ PostDetailPage.jsx 또는 BoardPage.jsx
 - 로그인 성공 후 token은 어디에 저장되는가
 - 새로고침 후에도 로그인 상태가 유지되는 이유는 무엇인가
 - 백엔드는 어떤 filter에서 JWT를 읽고 인증 객체를 만드는가
+- 비밀번호를 반복해서 틀리면 어느 단계에서 요청을 막는가
 
 ## 8단계: RAG 구현 흐름
 

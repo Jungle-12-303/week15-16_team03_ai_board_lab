@@ -5,6 +5,7 @@ import com.jungle_choi.namanmu.domain.user.User;
 import com.jungle_choi.namanmu.domain.user.UserRepository;
 import com.jungle_choi.namanmu.security.JwtAuthenticationFilter;
 import com.jungle_choi.namanmu.security.JwtTokenService;
+import com.jungle_choi.namanmu.security.LoginAttemptService;
 import com.jungle_choi.namanmu.security.RefreshTokenService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,6 +40,7 @@ public class AuthController {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenService jwtTokenService;
+    private final LoginAttemptService loginAttemptService;
     private final RefreshTokenService refreshTokenService;
     private final CookieCsrfTokenRepository csrfTokenRepository;
     private final AppSecurityProperties appSecurityProperties;
@@ -48,6 +50,7 @@ public class AuthController {
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
             JwtTokenService jwtTokenService,
+            LoginAttemptService loginAttemptService,
             RefreshTokenService refreshTokenService,
             CookieCsrfTokenRepository csrfTokenRepository,
             AppSecurityProperties appSecurityProperties,
@@ -55,6 +58,7 @@ public class AuthController {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenService = jwtTokenService;
+        this.loginAttemptService = loginAttemptService;
         this.refreshTokenService = refreshTokenService;
         this.csrfTokenRepository = csrfTokenRepository;
         this.appSecurityProperties = appSecurityProperties;
@@ -84,13 +88,21 @@ public class AuthController {
         String username = request.username().trim();
         String password = request.password();
         String accountEmail = User.accountEmail(username);
-        User user = userRepository.findByEmail(accountEmail)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+        loginAttemptService.assertLoginAllowed(accountEmail);
 
-        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+        User user = userRepository.findByEmail(accountEmail).orElse(null);
+
+        if (user == null) {
+            loginAttemptService.recordFailure(accountEmail);
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
 
+        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+            loginAttemptService.recordFailure(accountEmail);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        loginAttemptService.recordSuccess(accountEmail);
         RefreshTokenService.IssuedRefreshToken refreshToken = refreshTokenService.issue(user);
 
         return ResponseEntity.ok()
