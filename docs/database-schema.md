@@ -1,7 +1,7 @@
 # Project Alpha Database Schema
 
 이 문서는 Project Alpha 게시판의 기능별 테이블 설계도를 정리한다.
-현재 기준은 Spring Boot JPA Entity이며, 로컬 MySQL 실행 시 `spring.jpa.hibernate.ddl-auto=update` 설정에 의해 테이블이 생성된다.
+현재 기준은 Spring Boot JPA Entity이며, 로컬 MySQL 실행 시 기본값인 `SPRING_JPA_HIBERNATE_DDL_AUTO=update`로 테이블이 생성된다. 운영 배포에서는 이 값을 `validate`로 바꾸거나 Flyway/Liquibase 같은 migration 도구로 스키마 변경 이력을 관리해야 한다.
 
 ## 전체 관계도
 
@@ -289,5 +289,5 @@ AI 기능과 개인화 기능 중 일부는 아직 테이블로 만들지 않았
 
 - 기능 하나를 추가할 때 먼저 어떤 테이블이 필요한지 이 문서에 기록한다.
 - Entity 필드명을 바꾸면 DB 컬럼명도 함께 바뀔 수 있으므로 API와 프론트 응답을 같이 확인한다.
-- 로컬 개발에서는 `ddl-auto=update`를 사용하지만, 배포 단계에서는 Flyway 또는 Liquibase 같은 migration 도구를 검토한다.
+- 로컬 개발에서는 `SPRING_JPA_HIBERNATE_DDL_AUTO=update`를 사용하지만, 배포 단계에서는 `validate`와 Flyway 또는 Liquibase 같은 migration 도구를 사용한다.
 - 비밀번호, DB 주소, API key는 `.env` 또는 배포 환경변수로 관리하고 Git에 커밋하지 않는다.

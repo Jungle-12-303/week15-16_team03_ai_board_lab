@@ -185,13 +185,14 @@ OPENAI_CHAT_MODEL=gpt-4.1-mini
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 APP_JWT_SECRET=...
 APP_REFRESH_TOKEN_EXPIRATION_SECONDS=604800
+SPRING_JPA_HIBERNATE_DDL_AUTO=update
 QDRANT_ENABLED=true
 QDRANT_BASE_URL=http://localhost:6333
 QDRANT_POST_COLLECTION=project_alpha_posts
 QDRANT_CHUNK_COLLECTION=project_alpha_chunks
 ```
 
-Backend는 `backend/.env` 파일을 선택적으로 읽습니다. API key와 비밀번호는 Git에 커밋하지 않습니다.
+Backend는 `backend/.env` 파일을 선택적으로 읽습니다. API key와 비밀번호는 Git에 커밋하지 않습니다. 운영 배포에서는 `SPRING_JPA_HIBERNATE_DDL_AUTO=validate` 또는 migration 도구를 사용해 Hibernate가 임의로 테이블을 변경하지 않게 해야 합니다.
 
 ### 2. MySQL, Qdrant 실행
 
