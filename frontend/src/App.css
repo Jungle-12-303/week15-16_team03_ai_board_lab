@@ -288,6 +288,14 @@
   align-items: stretch;
 }
 
+.mcp-input-row {
+  flex-wrap: wrap;
+}
+
+.mcp-days-input {
+  max-width: 120px;
+}
+
 .rag-error {
   margin: 0;
   color: #b91c1c;

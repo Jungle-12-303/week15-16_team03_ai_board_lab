@@ -1,6 +1,6 @@
 import type { KeyboardEvent } from 'react'
 import { Link } from 'react-router-dom'
-import type { Comment, Post, RagAnswerResponse, RagStatusResponse } from '../types'
+import type { Comment, McpWeatherDraftResponse, Post, RagAnswerResponse, RagStatusResponse } from '../types'
 
 type BoardPageProps = {
   posts: Post[]
@@ -21,6 +21,11 @@ type BoardPageProps = {
   isLoggedIn: boolean
   currentNickname: string
   currentLoginId: string
+  mcpCity: string
+  mcpForecastDays: string
+  mcpResult: McpWeatherDraftResponse | null
+  mcpError: string
+  isMcpLoading: boolean
   ragQuestion: string
   ragResult: RagAnswerResponse | null
   ragError: string
@@ -33,6 +38,8 @@ type BoardPageProps = {
   onCommentContentChange: (value: string) => void
   onTagInputChange: (value: string) => void
   onSearchKeywordChange: (value: string) => void
+  onMcpCityChange: (value: string) => void
+  onMcpForecastDaysChange: (value: string) => void
   onRagQuestionChange: (value: string) => void
   onSelectPost: (id: number) => void
   onStartEditPost: (post: Post) => void
@@ -42,6 +49,7 @@ type BoardPageProps = {
   onTagKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void
   onRemoveTag: (tag: string) => void
   onSearch: () => void
+  onAskMcpWeatherDraft: () => void
   onAskRag: () => void
   onReindexPosts: () => void
   onPageChange: (page: number) => void
@@ -53,6 +61,7 @@ type BoardPageProps = {
   onBackToList: () => void
   onOpenCreatePost: () => void
   onClosePostEditor: () => void
+  onUseMcpDraft: () => void
 }
 
 function formatDate(createdAt: string) {
@@ -78,6 +87,11 @@ function BoardPage({
   isLoggedIn,
   currentNickname,
   currentLoginId,
+  mcpCity,
+  mcpForecastDays,
+  mcpResult,
+  mcpError,
+  isMcpLoading,
   ragQuestion,
   ragResult,
   ragError,
@@ -90,6 +104,8 @@ function BoardPage({
   onCommentContentChange,
   onTagInputChange,
   onSearchKeywordChange,
+  onMcpCityChange,
+  onMcpForecastDaysChange,
   onRagQuestionChange,
   onSelectPost,
   onStartEditPost,
@@ -99,6 +115,7 @@ function BoardPage({
   onTagKeyDown,
   onRemoveTag,
   onSearch,
+  onAskMcpWeatherDraft,
   onAskRag,
   onReindexPosts,
   onPageChange,
@@ -110,6 +127,7 @@ function BoardPage({
   onBackToList,
   onOpenCreatePost,
   onClosePostEditor,
+  onUseMcpDraft,
 }: BoardPageProps) {
   const safeTotalPages = totalPages === 0 ? 1 : totalPages
   const isDetailMode = selectedPostId !== null
@@ -431,6 +449,95 @@ function BoardPage({
                         </ul>
                       </div>
                     )}
+
+                    <div className="rag-result-card">
+                      <div className="section-header compact">
+                        <p className="section-kicker">MCP Tool</p>
+                        <h3>날씨 브리핑 초안 생성</h3>
+                      </div>
+
+                      <div className="search-row rag-search-row mcp-input-row">
+                        <input
+                          className="text-input"
+                          type="text"
+                          placeholder="도시 이름 예: Seoul, Busan, Tokyo"
+                          value={mcpCity}
+                          onChange={(event) => onMcpCityChange(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter') {
+                              onAskMcpWeatherDraft()
+                            }
+                          }}
+                        />
+                        <input
+                          className="text-input mcp-days-input"
+                          type="number"
+                          min="1"
+                          max="3"
+                          value={mcpForecastDays}
+                          onChange={(event) => onMcpForecastDaysChange(event.target.value)}
+                        />
+                        <button
+                          className="primary-button"
+                          onClick={onAskMcpWeatherDraft}
+                          type="button"
+                          disabled={isMcpLoading}
+                        >
+                          {isMcpLoading ? '초안 생성 중...' : '날씨 초안 생성'}
+                        </button>
+                      </div>
+
+                      <p className="helper-text">
+                        MCP 도구가 외부 날씨 데이터를 조회해서 게시글 제목, 본문, 태그 초안을 만들어줍니다.
+                      </p>
+
+                      {mcpError !== '' && <p className="rag-error">{mcpError}</p>}
+
+                      {mcpResult !== null && (
+                        <>
+                          <div className="section-header compact">
+                            <p className="section-kicker">Draft</p>
+                            <h3>MCP 생성 결과</h3>
+                          </div>
+
+                          <p className="meta-text">
+                            요청자: {mcpResult.requestedBy} · 도시: {mcpResult.city} · 예보 일수: {mcpResult.forecastDays}
+                          </p>
+
+                          <div>
+                            <p className="comment-author">{mcpResult.title}</p>
+                            <p className="detail-content">{mcpResult.content}</p>
+                          </div>
+
+                          <div className="tag-list">
+                            {mcpResult.tags.map((tag) => (
+                              <span className="tag-chip" key={tag}>
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+
+                          <div className="section-header compact">
+                            <p className="section-kicker">Source</p>
+                            <h3>참고 데이터</h3>
+                          </div>
+
+                          <ul className="rag-reference-list">
+                            {mcpResult.sourceSummary.map((line) => (
+                              <li className="rag-reference-item" key={line}>
+                                <p className="comment-content">{line}</p>
+                              </li>
+                            ))}
+                          </ul>
+
+                          <div className="rag-actions">
+                            <button className="secondary-button" onClick={onUseMcpDraft} type="button">
+                              이 초안으로 게시글 작성하기
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <p className="helper-text">AI 검색은 로그인 후 사용할 수 있습니다.</p>

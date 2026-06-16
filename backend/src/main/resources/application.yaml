@@ -23,3 +23,7 @@ openai:
   embedding-model: ${OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
   embedding-dimensions: ${OPENAI_EMBEDDING_DIMENSIONS:1536}
   chat-model: ${OPENAI_CHAT_MODEL:gpt-4.1-mini}
+
+mcp:
+  node-command: ${MCP_NODE_COMMAND:node}
+  server-dir: ${MCP_SERVER_DIR:../mcp-server}

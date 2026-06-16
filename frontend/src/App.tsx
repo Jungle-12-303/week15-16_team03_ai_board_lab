@@ -4,7 +4,14 @@ import './App.css'
 import BoardPage from './pages/BoardPage'
 import LoginPage from './pages/LoginPage'
 import SignUpPage from './pages/SignUpPage'
-import type { Comment, Post, RagAnswerResponse, RagReindexResponse, RagStatusResponse } from './types'
+import type {
+  Comment,
+  McpWeatherDraftResponse,
+  Post,
+  RagAnswerResponse,
+  RagReindexResponse,
+  RagStatusResponse,
+} from './types'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 const AUTH_STORAGE_KEY = 'ai-board-auth'
@@ -82,6 +89,11 @@ function App() {
   const [isRagReindexing, setIsRagReindexing] = useState(false)
   const [ragStatusMessage, setRagStatusMessage] = useState('')
   const [ragSystemStatus, setRagSystemStatus] = useState<RagStatusResponse | null>(null)
+  const [mcpCity, setMcpCity] = useState('Seoul')
+  const [mcpForecastDays, setMcpForecastDays] = useState('2')
+  const [mcpResult, setMcpResult] = useState<McpWeatherDraftResponse | null>(null)
+  const [mcpError, setMcpError] = useState('')
+  const [isMcpLoading, setIsMcpLoading] = useState(false)
 
   const token = auth.token
   const currentNickname = auth.currentNickname
@@ -112,6 +124,20 @@ function App() {
   const openCreatePostEditor = () => {
     clearSelectedPost()
     resetPostEditor()
+    setIsPostEditorOpen(true)
+  }
+
+  const handleUseMcpDraft = () => {
+    if (mcpResult === null) {
+      return
+    }
+
+    clearSelectedPost()
+    setEditingPostId(null)
+    setTitle(mcpResult.title)
+    setContent(mcpResult.content)
+    setTagNames(mcpResult.tags)
+    setTagInput('')
     setIsPostEditorOpen(true)
   }
 
@@ -487,6 +513,8 @@ function App() {
     setRagError('')
     setRagStatusMessage('')
     setRagSystemStatus(null)
+    setMcpResult(null)
+    setMcpError('')
     navigate('/login')
   }
 
@@ -575,6 +603,55 @@ function App() {
     }
   }
 
+  const handleAskMcpWeatherDraft = async () => {
+    if (token === '') {
+      setMcpError('MCP 기능은 로그인 후 사용할 수 있습니다.')
+      return
+    }
+
+    const trimmedCity = mcpCity.trim()
+
+    if (trimmedCity === '') {
+      setMcpError('도시 이름을 입력해주세요.')
+      return
+    }
+
+    const parsedForecastDays = Number(mcpForecastDays)
+
+    if (Number.isNaN(parsedForecastDays) || parsedForecastDays < 1 || parsedForecastDays > 3) {
+      setMcpError('예보 일수는 1에서 3 사이로 입력해주세요.')
+      return
+    }
+
+    setIsMcpLoading(true)
+    setMcpError('')
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/mcp/weather-draft`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          city: trimmedCity,
+          forecastDays: parsedForecastDays,
+        }),
+      })
+
+      if (!response.ok) {
+        setMcpResult(null)
+        setMcpError(await readErrorMessage(response))
+        return
+      }
+
+      const data = (await response.json()) as McpWeatherDraftResponse
+      setMcpResult(data)
+    } finally {
+      setIsMcpLoading(false)
+    }
+  }
+
   return (
     <Routes>
       <Route path="/" element={<Navigate replace to="/posts" />} />
@@ -626,8 +703,11 @@ function App() {
               clearSelectedPost()
               setPage(nextPage)
             }}
+            onAskMcpWeatherDraft={handleAskMcpWeatherDraft}
             onAskRag={handleAskRag}
             onReindexPosts={handleReindexPosts}
+            onMcpCityChange={setMcpCity}
+            onMcpForecastDaysChange={setMcpForecastDays}
             onRagQuestionChange={setRagQuestion}
             onRemoveTag={handleRemoveTag}
             onSearch={handleSearchPosts}
@@ -644,8 +724,14 @@ function App() {
             onTitleChange={setTitle}
             onUpdateComment={handleUpdateComment}
             onUpdatePost={handleUpdatePost}
+            onUseMcpDraft={handleUseMcpDraft}
+            isMcpLoading={isMcpLoading}
             page={page}
             posts={posts}
+            mcpCity={mcpCity}
+            mcpError={mcpError}
+            mcpForecastDays={mcpForecastDays}
+            mcpResult={mcpResult}
             ragError={ragError}
             ragQuestion={ragQuestion}
             ragResult={ragResult}

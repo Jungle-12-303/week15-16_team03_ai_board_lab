@@ -58,3 +58,13 @@ export type RagStatusResponse = {
   indexedPostCount: number
   embeddingRowCount: number
 }
+
+export type McpWeatherDraftResponse = {
+  requestedBy: string
+  city: string
+  forecastDays: number
+  title: string
+  content: string
+  tags: string[]
+  sourceSummary: string[]
+}
