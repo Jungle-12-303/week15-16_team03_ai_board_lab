@@ -263,7 +263,8 @@ npm run build
 
 ## 주요 문서
 
-- [초보자를 위한 코드 읽기 로드맵](docs/code-reading-roadmap.md)
+- [Project Alpha 교재형 학습 문서](docs/textbook/README.md)
+- [코드 읽기 로드맵](docs/code-reading-roadmap.md)
 - [코드 맵](docs/code-map.md)
 - [DB 스키마](docs/database-schema.md)
 - [AWS 워크숍 적용 계획](docs/aws-workshop-application-plan.md)
