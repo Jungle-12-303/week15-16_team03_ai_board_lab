@@ -52,4 +52,8 @@ public class PostTag {
     public Tag getTag() {
         return tag;
     }
+
+    public Post getPost() {
+        return post;
+    }
 }

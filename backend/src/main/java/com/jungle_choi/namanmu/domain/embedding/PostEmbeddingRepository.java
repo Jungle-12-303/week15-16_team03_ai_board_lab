@@ -1,5 +1,6 @@
 package com.jungle_choi.namanmu.domain.embedding;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,4 +12,8 @@ public interface PostEmbeddingRepository extends JpaRepository<PostEmbedding, Lo
     boolean existsByPost_IdAndSourceHash(Long postId, String sourceHash);
 
     List<PostEmbedding> findAllByEmbeddingModel(String embeddingModel);
+
+    List<PostEmbedding> findAllByEmbeddingModelAndPost_IdIn(
+            String embeddingModel,
+            Collection<Long> postIds);
 }

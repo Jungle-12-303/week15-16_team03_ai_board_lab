@@ -4,6 +4,7 @@ import com.jungle_choi.namanmu.service.rag.EmbeddingJobProcessor;
 import com.jungle_choi.namanmu.service.rag.EmbeddingJobService;
 import com.jungle_choi.namanmu.service.rag.OpenAiEmbeddingClient;
 import com.jungle_choi.namanmu.service.rag.PostEmbeddingTextBuilder;
+import com.jungle_choi.namanmu.service.rag.QdrantVectorSyncService;
 import com.jungle_choi.namanmu.service.rag.RagDraftService;
 import com.jungle_choi.namanmu.service.rag.SimilarPostSearchService;
 import jakarta.validation.Valid;
@@ -29,6 +30,7 @@ public class AiController {
     private final EmbeddingJobProcessor embeddingJobProcessor;
     private final EmbeddingJobService embeddingJobService;
     private final RagDraftService ragDraftService;
+    private final QdrantVectorSyncService qdrantVectorSyncService;
 
     public AiController(
             PostEmbeddingTextBuilder postEmbeddingTextBuilder,
@@ -36,13 +38,15 @@ public class AiController {
             SimilarPostSearchService similarPostSearchService,
             EmbeddingJobProcessor embeddingJobProcessor,
             EmbeddingJobService embeddingJobService,
-            RagDraftService ragDraftService) {
+            RagDraftService ragDraftService,
+            QdrantVectorSyncService qdrantVectorSyncService) {
         this.postEmbeddingTextBuilder = postEmbeddingTextBuilder;
         this.openAiEmbeddingClient = openAiEmbeddingClient;
         this.similarPostSearchService = similarPostSearchService;
         this.embeddingJobProcessor = embeddingJobProcessor;
         this.embeddingJobService = embeddingJobService;
         this.ragDraftService = ragDraftService;
+        this.qdrantVectorSyncService = qdrantVectorSyncService;
     }
 
     @PostMapping("/similar-posts")
@@ -103,6 +107,12 @@ public class AiController {
     @GetMapping("/embedding-jobs/status")
     public EmbeddingJobProcessor.EmbeddingJobStatusSummary getEmbeddingJobStatus() {
         return embeddingJobProcessor.summarizeStatus();
+    }
+
+    @PostMapping("/vector-store/sync")
+    public QdrantVectorSyncService.SyncResult syncVectorStore(
+            @RequestParam(defaultValue = "2000") int limit) {
+        return qdrantVectorSyncService.syncExistingEmbeddings(limit);
     }
 
     public record SimilarPostsRequest(

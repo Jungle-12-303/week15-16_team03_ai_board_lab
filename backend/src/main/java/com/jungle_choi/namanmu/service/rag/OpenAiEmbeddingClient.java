@@ -3,6 +3,7 @@ package com.jungle_choi.namanmu.service.rag;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.jungle_choi.namanmu.config.OpenAiProperties;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -14,7 +15,7 @@ public class OpenAiEmbeddingClient {
     private final OpenAiProperties openAiProperties;
 
     public OpenAiEmbeddingClient(
-            RestClient openAiRestClient,
+            @Qualifier("openAiRestClient") RestClient openAiRestClient,
             OpenAiProperties openAiProperties) {
         this.openAiRestClient = openAiRestClient;
         this.openAiProperties = openAiProperties;

@@ -1,5 +1,6 @@
 package com.jungle_choi.namanmu.service.rag;
 
+import com.jungle_choi.namanmu.config.RagSearchProperties;
 import com.jungle_choi.namanmu.domain.post.Post;
 import com.jungle_choi.namanmu.domain.post.PostRepository;
 import com.jungle_choi.namanmu.domain.post.PostTagRepository;
@@ -18,14 +19,17 @@ public class PostEmbeddingTextBuilder {
     private final PostRepository postRepository;
     private final PostTagRepository postTagRepository;
     private final PostChunkTextSplitter postChunkTextSplitter;
+    private final RagSearchProperties ragSearchProperties;
 
     public PostEmbeddingTextBuilder(
             PostRepository postRepository,
             PostTagRepository postTagRepository,
-            PostChunkTextSplitter postChunkTextSplitter) {
+            PostChunkTextSplitter postChunkTextSplitter,
+            RagSearchProperties ragSearchProperties) {
         this.postRepository = postRepository;
         this.postTagRepository = postTagRepository;
         this.postChunkTextSplitter = postChunkTextSplitter;
+        this.ragSearchProperties = ragSearchProperties;
     }
 
     @Transactional(readOnly = true)
@@ -81,6 +85,16 @@ public class PostEmbeddingTextBuilder {
     }
 
     public String buildQuery(String category, String title, String content, List<String> tags) {
+        if (ragSearchProperties.normalizedQueryMode() == RagSearchProperties.QueryMode.TITLE_CONTENT) {
+            return """
+                    Title: %s
+                    Content:
+                    %s
+                    """.formatted(
+                    normalizeQuery(title),
+                    normalizeQuery(content));
+        }
+
         return """
                 Search Query:
                 Category: %s

@@ -1,10 +1,14 @@
 package com.jungle_choi.namanmu.service.rag;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jungle_choi.namanmu.config.OpenAiProperties;
+import com.jungle_choi.namanmu.config.QdrantProperties;
+import com.jungle_choi.namanmu.config.RagSearchProperties;
 import com.jungle_choi.namanmu.domain.embedding.PostEmbedding;
 import com.jungle_choi.namanmu.domain.embedding.PostEmbeddingChunk;
 import com.jungle_choi.namanmu.domain.embedding.PostEmbeddingChunkRepository;
@@ -15,9 +19,11 @@ import com.jungle_choi.namanmu.domain.post.PostTagRepository;
 import com.jungle_choi.namanmu.domain.tag.Tag;
 import com.jungle_choi.namanmu.domain.user.User;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.client.RestClient;
 
 class SimilarPostSearchServiceTest {
 
@@ -29,6 +35,16 @@ class SimilarPostSearchServiceTest {
             Mockito.mock(PostEmbeddingChunkRepository.class);
     private final PostTagRepository postTagRepository =
             Mockito.mock(PostTagRepository.class);
+    private final QdrantVectorStoreClient qdrantVectorStoreClient =
+            new QdrantVectorStoreClient(
+                    RestClient.builder().baseUrl("http://localhost:6333").build(),
+                    new QdrantProperties(
+                            false,
+                            "http://localhost:6333",
+                            "project_alpha_posts",
+                            "project_alpha_chunks",
+                            5,
+                            500));
     private final SimilarPostSearchService similarPostSearchService =
             new SimilarPostSearchService(
                     postEmbeddingRepository,
@@ -40,7 +56,10 @@ class SimilarPostSearchServiceTest {
                             "gpt-4.1-mini",
                             EMBEDDING_MODEL,
                             30),
-                    new ObjectMapper());
+                    new ObjectMapper(),
+                    new KoreanTextAnalyzer(),
+                    qdrantVectorStoreClient,
+                    testRagSearchProperties());
 
     @Test
     void searchSimilarPostsReturnsHighScoreFirst() {
@@ -478,6 +497,55 @@ class SimilarPostSearchServiceTest {
     }
 
     @Test
+    void searchSimilarPostsUsesQdrantPostIdsAsCandidateFilter() {
+        QdrantVectorStoreClient qdrantCandidateClient =
+                Mockito.mock(QdrantVectorStoreClient.class);
+        SimilarPostSearchService service = new SimilarPostSearchService(
+                postEmbeddingRepository,
+                postEmbeddingChunkRepository,
+                postTagRepository,
+                new OpenAiProperties(
+                        "test-key",
+                        "https://api.openai.com/v1",
+                        "gpt-4.1-mini",
+                        EMBEDDING_MODEL,
+                        30),
+                new ObjectMapper(),
+                new KoreanTextAnalyzer(),
+                qdrantCandidateClient,
+                testRagSearchProperties());
+
+        List<Double> queryEmbedding = List.of(1.0, 0.0);
+        when(qdrantCandidateClient.searchChunkPostIds(queryEmbedding, EMBEDDING_MODEL))
+                .thenReturn(Optional.of(List.of()));
+        when(qdrantCandidateClient.searchPostIds(queryEmbedding, EMBEDDING_MODEL))
+                .thenReturn(Optional.of(List.of(2L)));
+        when(postEmbeddingRepository.findAllByEmbeddingModelAndPost_IdIn(
+                EMBEDDING_MODEL,
+                List.of(2L)))
+                .thenReturn(List.of(embedding(
+                        2L,
+                        "GitHub Actions 배포",
+                        "github actions workflow 배포를 정리한다.",
+                        "[1.0,0.0]")));
+
+        List<SimilarPostSearchService.SimilarPostResult> results =
+                service.searchSimilarPosts(
+                        queryEmbedding,
+                        null,
+                        5,
+                        "All",
+                        "github actions",
+                        "github actions 배포를 정리한다.",
+                        List.of());
+
+        assertThat(results)
+                .extracting(SimilarPostSearchService.SimilarPostResult::postId)
+                .containsExactly(2L);
+        verify(postEmbeddingRepository, never()).findAllByEmbeddingModel(EMBEDDING_MODEL);
+    }
+
+    @Test
     void cosineSimilarityReturnsZeroForZeroVector() {
         double score = SimilarPostSearchService.cosineSimilarity(
                 List.of(0.0, 0.0),
@@ -545,5 +613,25 @@ class SimilarPostSearchServiceTest {
 
     private static PostTag postTag(Post post, String tagName) {
         return PostTag.create(post, Tag.create(tagName));
+    }
+
+    private static RagSearchProperties testRagSearchProperties() {
+        return new RagSearchProperties(
+                10,
+                0.45,
+                0.38,
+                0.60,
+                2.0,
+                0.25,
+                0.35,
+                0.65,
+                0.25,
+                0.03,
+                60.0,
+                12,
+                6,
+                RagSearchProperties.QueryMode.TITLE_CONTENT,
+                RagSearchProperties.FusionMode.RRF,
+                true);
     }
 }

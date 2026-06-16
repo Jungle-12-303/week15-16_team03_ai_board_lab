@@ -10,6 +10,7 @@ import com.jungle_choi.namanmu.domain.post.Post;
 import com.jungle_choi.namanmu.domain.post.PostRepository;
 import com.jungle_choi.namanmu.service.rag.OpenAiEmbeddingClient.EmbeddingResult;
 import com.jungle_choi.namanmu.service.rag.PostEmbeddingTextBuilder.ChunkSourceText;
+import com.jungle_choi.namanmu.service.rag.QdrantVectorStoreClient.ChunkVectorPoint;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -26,16 +27,19 @@ public class PostEmbeddingService {
     private final PostEmbeddingChunkRepository postEmbeddingChunkRepository;
     private final PostRepository postRepository;
     private final ObjectMapper objectMapper;
+    private final QdrantVectorStoreClient qdrantVectorStoreClient;
 
     public PostEmbeddingService(
             PostEmbeddingRepository postEmbeddingRepository,
             PostEmbeddingChunkRepository postEmbeddingChunkRepository,
             PostRepository postRepository,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            QdrantVectorStoreClient qdrantVectorStoreClient) {
         this.postEmbeddingRepository = postEmbeddingRepository;
         this.postEmbeddingChunkRepository = postEmbeddingChunkRepository;
         this.postRepository = postRepository;
         this.objectMapper = objectMapper;
+        this.qdrantVectorStoreClient = qdrantVectorStoreClient;
     }
 
     @Transactional
@@ -57,6 +61,10 @@ public class PostEmbeddingService {
                                 embeddingResult.dimensions(),
                                 embeddingJson,
                                 sourceHash)));
+        qdrantVectorStoreClient.upsertPost(
+                postId,
+                embeddingResult.model(),
+                embeddingResult.embedding());
     }
 
     @Transactional
@@ -76,6 +84,14 @@ public class PostEmbeddingService {
                 .toList();
 
         postEmbeddingChunkRepository.saveAll(chunks);
+        qdrantVectorStoreClient.replacePostChunks(
+                postId,
+                chunkEmbeddings.stream()
+                        .map((chunkEmbedding) -> new ChunkVectorPoint(
+                                chunkEmbedding.chunkIndex(),
+                                chunkEmbedding.embeddingResult().model(),
+                                chunkEmbedding.embeddingResult().embedding()))
+                        .toList());
     }
 
     public boolean chunksAreUpToDate(
