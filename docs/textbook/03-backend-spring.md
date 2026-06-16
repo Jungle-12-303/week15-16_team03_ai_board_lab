@@ -60,7 +60,13 @@ JPA는 Java 객체를 DB 테이블과 연결해줍니다.
 spring.jpa.hibernate.ddl-auto=update
 ```
 
-이 설정은 Entity 변경을 빠르게 DB에 반영합니다. 운영 환경에서는 예측하지 못한 스키마 변경을 막기 위해 Flyway나 Liquibase 같은 migration 도구를 사용합니다.
+이 설정은 Entity 변경을 빠르게 DB에 반영합니다. 동시에 초기 스키마는 Flyway migration 파일로 기록했습니다.
+
+```text
+backend/src/main/resources/db/migration/V1__create_project_alpha_schema.sql
+```
+
+운영 환경에서는 `ddl-auto=validate`로 바꾸고 Flyway migration을 기준으로 DB 변경 이력을 관리합니다.
 
 ## 인증과 Spring Security
 

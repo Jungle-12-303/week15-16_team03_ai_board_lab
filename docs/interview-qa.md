@@ -65,7 +65,7 @@
 | RAGAS 점수가 낮은 항목도 있던데요? | Answer relevancy가 낮은 실행이 있었습니다. 그래서 RAGAS를 검색 조합 선택의 주 지표로 쓰지 않고 생성 품질 보조 지표로 사용했습니다. 검색 품질은 MRR/NDCG/Precision을 보고, 생성 품질은 RAGAS와 시나리오 입출력으로 따로 봤습니다. |
 | 크롤링 데이터는 괜찮나요? | 제출/학습용 로컬 데이터로 사용했습니다. 상업 서비스라면 저작권, robots.txt, 출처 표시, 원문 저장 범위 제한, 요약 저장 정책을 별도로 설계해야 합니다. 이 부분은 현재 한계로 명확히 인정합니다. |
 | JWT를 localStorage에 저장하면 위험하지 않나요? | 위험합니다. 그래서 현재 구현은 access token을 localStorage에 두지 않고 httpOnly cookie로 내려보냅니다. 프론트는 token 값을 직접 읽지 않고 `credentials: include`로 인증 요청을 보냅니다. |
-| `ddl-auto=update`는 실서비스에서 쓰면 안 되지 않나요? | 맞습니다. 로컬 기본값은 개발 속도를 위해 `update`지만, 설정값을 환경변수로 분리했습니다. 배포 환경에서는 `SPRING_JPA_HIBERNATE_DDL_AUTO=validate`와 Flyway/Liquibase migration을 쓰는 게 맞습니다. |
+| `ddl-auto=update`는 실서비스에서 쓰면 안 되지 않나요? | 맞습니다. 로컬 기본값은 개발 속도를 위해 `update`지만, 설정값을 환경변수로 분리했고 Flyway 초기 migration을 추가했습니다. 배포 환경에서는 `SPRING_JPA_HIBERNATE_DDL_AUTO=validate`와 Flyway migration을 기준으로 운영하는 게 맞습니다. |
 
 ## 4. RAG 깊이 질문
 
@@ -217,7 +217,7 @@ Spring Boot 기본 구조와 JPA 설계를 설명하는 질문이다.
 | RAGAS는 왜 썼나요? | 그럼 RAGAS 점수가 최종 품질인가요? | 아니다. RAGAS는 생성 답변의 근거성과 관련성을 보는 보조 지표이고, 검색 랭킹은 MRR/NDCG/Precision으로 따로 평가했다. |
 | Agent라고 부를 수 있나요? | 자율적으로 행동하지 않는데요? | 완전 자율형 agent는 아니다. 상태 관찰, 추론, 후보 검색, 랭킹 단계를 명시한 제한형 추천 agent로 보는 것이 정확하다. |
 | MCP가 꼭 필요한가요? | 그냥 service에서 API 호출하면 안 되나요? | 구현만 보면 가능하다. 하지만 과제 요구는 MCP였고, 외부 도구 호출을 JSON-RPC/tool 단위로 분리해 AI 기능과 외부 시스템 사이의 경계를 만들었다. |
-| JPA로 테이블을 만들었다고요? | 운영에서도 그렇게 하나요? | 로컬 개발은 `ddl-auto=update`를 사용했다. 다만 설정값을 환경변수로 뺐고, 운영에서는 `validate`와 Flyway/Liquibase migration이 맞다. |
+| JPA로 테이블을 만들었다고요? | 운영에서도 그렇게 하나요? | 로컬 개발은 `ddl-auto=update`를 병행했다. 다만 설정값을 환경변수로 뺐고, 초기 스키마는 Flyway migration 파일로 기록했다. 운영에서는 `validate`와 Flyway migration이 맞다. |
 | JWT는 안전한가요? | localStorage면 XSS에 취약하지 않나요? | 현재는 localStorage가 아니라 httpOnly cookie를 쓴다. 쿠키 인증으로 바꾼 뒤에는 Spring Security CSRF token과 refresh token rotation도 함께 적용했다. 운영 수준에서는 secure cookie, CSP/XSS 대응, 관리자용 세션 관리까지 더 봐야 한다. |
 | 크롤링 데이터는 합법인가요? | 실제 서비스라면요? | 학습/로컬 평가용으로 사용했다. 실제 서비스는 robots.txt, 저작권, 출처, 저장 범위, 삭제 정책을 설계해야 한다. |
 | 평가 점수가 좋은데 믿을 수 있나요? | 6케이스 아닌가요? | 일반화 점수가 아니라 현재 데이터셋 기준선이다. 그래서 한계로 명시했고 holdout 확장이 다음 개선이다. |
@@ -414,7 +414,7 @@ Spring Boot 기본 구조와 JPA 설계를 설명하는 질문이다.
 | Dirty checking이 뭔가요? | 영속 상태의 entity 값이 바뀌면 transaction commit 시 변경 내용을 감지해 update SQL을 생성하는 기능입니다. |
 | Lazy loading은 무엇인가요? | 연관 객체를 즉시 가져오지 않고 실제 접근 시점에 조회하는 방식입니다. N+1 문제와 연결될 수 있습니다. |
 | N+1 문제는 무엇인가요? | 목록 1번 조회 후 각 row의 연관 데이터를 추가로 N번 조회하는 문제입니다. fetch join, entity graph, batch size로 개선할 수 있습니다. |
-| `ddl-auto=update`는 왜 썼나요? | 로컬 개발 속도를 위해 사용했습니다. 지금은 환경변수로 분리해 운영에서 `validate`로 바꿀 수 있고, 실제 운영에서는 Flyway/Liquibase로 migration을 관리하는 것이 맞습니다. |
+| `ddl-auto=update`는 왜 썼나요? | 로컬 개발 속도를 위해 사용했습니다. 지금은 환경변수로 분리해 운영에서 `validate`로 바꿀 수 있고, 초기 스키마는 Flyway migration으로 기록했습니다. |
 | DTO를 쓰는 이유는요? | Entity를 API 응답에 직접 노출하지 않고, 화면에 필요한 데이터와 API 계약을 분리하기 위해서입니다. |
 
 ### Spring Security / JWT 질문

@@ -188,13 +188,15 @@ APP_REFRESH_TOKEN_EXPIRATION_SECONDS=604800
 APP_SECURITY_PRODUCTION_MODE=false
 APP_SECURITY_COOKIE_SECURE=false
 SPRING_JPA_HIBERNATE_DDL_AUTO=update
+SPRING_FLYWAY_ENABLED=true
+SPRING_FLYWAY_BASELINE_ON_MIGRATE=true
 QDRANT_ENABLED=true
 QDRANT_BASE_URL=http://localhost:6333
 QDRANT_POST_COLLECTION=project_alpha_posts
 QDRANT_CHUNK_COLLECTION=project_alpha_chunks
 ```
 
-Backend는 `backend/.env` 파일을 선택적으로 읽습니다. API key와 비밀번호는 Git에 커밋하지 않습니다. 운영 배포에서는 `APP_SECURITY_PRODUCTION_MODE=true`, `APP_SECURITY_COOKIE_SECURE=true`, `SPRING_JPA_HIBERNATE_DDL_AUTO=validate` 또는 migration 도구를 사용해야 합니다. production mode에서 기본 JWT secret을 그대로 쓰면 서버가 시작되지 않습니다.
+Backend는 `backend/.env` 파일을 선택적으로 읽습니다. API key와 비밀번호는 Git에 커밋하지 않습니다. 운영 배포에서는 `APP_SECURITY_PRODUCTION_MODE=true`, `APP_SECURITY_COOKIE_SECURE=true`, `SPRING_JPA_HIBERNATE_DDL_AUTO=validate`, `SPRING_FLYWAY_ENABLED=true`를 사용합니다. production mode에서 기본 JWT secret을 그대로 쓰면 서버가 시작되지 않습니다.
 
 ### 2. MySQL, Qdrant 실행
 
@@ -336,4 +338,4 @@ npm run build
 - 현재 RAG reranker는 직접 구현한 점수 조합입니다. Cross-encoder reranker 또는 LLM reranker를 붙이면 더 정교해질 수 있습니다.
 - MCP 도구는 GitHub와 날씨 중심입니다. 공공데이터, Jira, Slack, 뉴스 API 등으로 확장할 수 있습니다.
 - Agent는 읽음 기록과 태그 기반 추천입니다. 클릭, 댓글, 작성 이력, 체류 시간까지 반영하면 개인화 품질을 높일 수 있습니다.
-- 로컬 개발은 `ddl-auto=update`를 사용합니다. 배포 단계에서는 Flyway 또는 Liquibase 기반 migration이 필요합니다.
+- 초기 DB 스키마는 Flyway migration 파일 `backend/src/main/resources/db/migration/V1__create_project_alpha_schema.sql`에 기록했습니다. 로컬 개발은 `ddl-auto=update`를 병행하고, 배포 단계에서는 `ddl-auto=validate`와 Flyway migration을 기준으로 운영합니다.

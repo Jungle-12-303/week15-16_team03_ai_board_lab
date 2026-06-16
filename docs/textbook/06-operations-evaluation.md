@@ -114,7 +114,7 @@ RAG를 AWS 서비스 중심으로 바꾸면 Bedrock Knowledge Bases, OpenSearch,
 
 다음 항목은 현재 구현 범위에 포함되지 않습니다.
 
-- DB migration 도구 없음
+- Flyway 초기 migration은 적용했지만, 이후 변경마다 V2/V3 migration을 계속 작성해야 함
 - refresh token rotation은 적용했지만 운영용 전체 세션 관리 화면은 없음
 - Vector DB 없음
 - 검색 index 없음
