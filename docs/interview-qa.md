@@ -79,7 +79,7 @@ RAG는 이 프로젝트에서 가장 질문이 많이 나올 수 있는 영역�
 | cosine 외에 어떤 방식이 있나요? | dot product, euclidean distance, BM25 같은 lexical retrieval, hybrid retrieval, cross-encoder reranker, HNSW 기반 ANN 검색이 있습니다. |
 | Qdrant는 정확히 무슨 일을 하나요? | OpenAI embedding으로 만든 벡터를 저장하고, query embedding과 가까운 postId/chunk postId 후보를 빠르게 찾아줍니다. |
 | Qdrant와 MySQL의 데이터 정합성은 어떻게 맞추나요? | 게시글 저장 후 embedding job을 만들고, embedding 생성 시 MySQL에 저장한 뒤 Qdrant에 upsert합니다. 기존 임베딩은 sync API로 Qdrant에 재동기화할 수 있습니다. |
-| 임베딩 실패하면 어떻게 되나요? | `embedding_jobs` 테이블로 작업 상태를 관리하고, 실패 상태를 남길 수 있습니다. 현재는 로컬 테스트 중심이라 재시도/백오프는 보완 대상입니다. |
+| 임베딩 실패하면 어떻게 되나요? | `embedding_jobs`의 `attempt_count`로 최대 3회까지 재시도합니다. 마지막 실패에서만 `FAILED`로 고정하고 에러 메시지를 남깁니다. 아직 지수 백오프나 dead-letter queue는 없습니다. |
 | 왜 pgvector가 아니라 Qdrant인가요? | 과제 DB로 MySQL을 유지하면서 벡터 검색만 분리하기 위해 Qdrant를 선택했습니다. Postgres를 썼다면 pgvector도 좋은 선택이었을 겁니다. |
 | 왜 1200자 청크였나요? | 너무 작으면 문맥이 깨지고, 너무 크면 세부 근거가 희석됩니다. 750/900/1200/1350 등 후보를 비교했고, 현재는 전체글 primary + chunk evidence 보조 방식으로 사용했습니다. |
 | 왜 청크 검색을 primary로 쓰지 않았나요? | 청크만 primary로 쓰면 세부 단락은 잘 잡지만 게시글 전체 주제가 약해질 수 있습니다. 그래서 전체글 임베딩을 주 검색기로 쓰고, 청크는 근거 보강용으로 약하게 반영했습니다. |
@@ -152,7 +152,7 @@ Spring Boot 기본 구조와 JPA 설계를 설명하는 질문이다.
 
 | 질문 | 좋은 답변 방향 |
 |---|---|
-| 다시 만든다면 뭐부터 고칠 건가요? | 평가셋 확장, 세션 목록/기기별 로그아웃 화면, embedding job retry, cross-encoder reranker 도입을 우선하겠습니다. |
+| 다시 만든다면 뭐부터 고칠 건가요? | 평가셋 확장, 세션 목록/기기별 로그아웃 화면, embedding job 지수 백오프/dead-letter queue, cross-encoder reranker 도입을 우선하겠습니다. |
 | 가장 어려웠던 점은요? | RAG가 embedding 하나로 끝나지 않는다는 점이었습니다. 실제로는 검색 후보 생성, BM25, RRF, 형태소 분석, 청크 근거, 평가 방식이 함께 맞물렸습니다. |
 | 본인이 직접 이해한 부분은 어디까지인가요? | React 상태 관리부터 Spring Boot API, JPA 테이블 설계, JWT 인증, RAG 검색 파이프라인, Qdrant 동기화, MCP 도구 호출, Agent 추천 로직까지 전체 흐름을 직접 따라가며 구현했습니다. |
 | 이 프로젝트의 가장 큰 한계는요? | 평가셋 규모와 실서비스 운영 안정성입니다. 기능은 end-to-end로 구현했지만, 실제 서비스 수준으로 가려면 대규모 평가셋, 배포 migration, 보안 강화, 장애 대응이 필요합니다. |
@@ -201,7 +201,7 @@ Spring Boot 기본 구조와 JPA 설계를 설명하는 질문이다.
 |---|---|
 | 이번 프로젝트에서 설계를 바꾼 가장 좋은 결정은요? | MCP를 글 생성 기능에서 분리해 fact check로 바꾼 것입니다. RAG와 역할이 겹치지 않게 되었고 외부 도구 사용 이유가 더 명확해졌습니다. |
 | 가장 아쉬운 결정은요? | 초기에 평가셋을 더 일찍 설계하지 못한 점입니다. 검색 품질을 체감으로만 보면 방향이 흔들려서, 지표와 시나리오 평가를 나중에 보강했습니다. |
-| 다음 주에 하루 더 있다면 무엇을 하겠습니까? | RAG 결과 캡처 추가, holdout 평가셋 확장, MCP 도구 추가, 세션 목록 UI, embedding job 재시도 중 하나를 우선하겠습니다. |
+| 다음 주에 하루 더 있다면 무엇을 하겠습니까? | RAG 결과 캡처 추가, holdout 평가셋 확장, MCP 도구 추가, 세션 목록 UI, embedding job 백오프 중 하나를 우선하겠습니다. |
 | 팀 프로젝트라면 어떻게 나누겠습니까? | frontend/UI, Spring API/JPA, RAG/search, MCP/external tools, Agent/evaluation으로 역할을 나눌 수 있습니다. |
 | 본인이 이 프로젝트에서 가장 많이 성장한 부분은요? | 단일 기능 구현보다 기능을 끝까지 연결하고 평가/문서/발표까지 준비하는 흐름을 배운 점입니다. |
 

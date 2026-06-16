@@ -10,6 +10,7 @@ import com.jungle_choi.namanmu.service.rag.PostEmbeddingTextBuilder.ChunkSourceT
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -25,6 +26,7 @@ public class EmbeddingJobProcessor {
     private final OpenAiEmbeddingClient openAiEmbeddingClient;
     private final PostEmbeddingService postEmbeddingService;
     private final TransactionTemplate transactionTemplate;
+    private final int maxAttempts;
 
     public EmbeddingJobProcessor(
             EmbeddingJobRepository embeddingJobRepository,
@@ -32,13 +34,15 @@ public class EmbeddingJobProcessor {
             PostEmbeddingTextBuilder postEmbeddingTextBuilder,
             OpenAiEmbeddingClient openAiEmbeddingClient,
             PostEmbeddingService postEmbeddingService,
-            TransactionTemplate transactionTemplate) {
+            TransactionTemplate transactionTemplate,
+            @Value("${app.embedding-worker.max-attempts:3}") int maxAttempts) {
         this.embeddingJobRepository = embeddingJobRepository;
         this.postEmbeddingRepository = postEmbeddingRepository;
         this.postEmbeddingTextBuilder = postEmbeddingTextBuilder;
         this.openAiEmbeddingClient = openAiEmbeddingClient;
         this.postEmbeddingService = postEmbeddingService;
         this.transactionTemplate = transactionTemplate;
+        this.maxAttempts = Math.max(1, maxAttempts);
     }
 
     public ProcessEmbeddingJobResult processOnePendingJob() {
@@ -104,7 +108,8 @@ public class EmbeddingJobProcessor {
                             embeddingJob.markProcessing();
                             return new ClaimedEmbeddingJob(
                                     embeddingJob.getId(),
-                                    embeddingJob.getPost().getId());
+                                    embeddingJob.getPost().getId(),
+                                    embeddingJob.getAttemptCount());
                         }));
     }
 
@@ -145,12 +150,12 @@ public class EmbeddingJobProcessor {
                     claimedJob.postId(),
                     "Embedding was created. chunkCount=%d".formatted(chunkSources.size()));
         } catch (Exception exception) {
-            markFailed(claimedJob.jobId(), exception);
+            boolean willRetry = markFailedOrRetry(claimedJob.jobId(), exception);
 
             return ProcessEmbeddingJobResult.failed(
                     claimedJob.jobId(),
                     claimedJob.postId(),
-                    toErrorMessage(exception));
+                    toFailureMessage(exception, claimedJob.attemptCount(), willRetry));
         }
     }
 
@@ -180,11 +185,13 @@ public class EmbeddingJobProcessor {
                         .ifPresent(EmbeddingJob::markCompleted));
     }
 
-    private void markFailed(Long jobId, Exception exception) {
-        transactionTemplate.executeWithoutResult((status) ->
+    private boolean markFailedOrRetry(Long jobId, Exception exception) {
+        return Boolean.TRUE.equals(transactionTemplate.execute((status) ->
                 embeddingJobRepository.findById(jobId)
-                        .ifPresent((embeddingJob) ->
-                                embeddingJob.markFailed(toErrorMessage(exception))));
+                        .map((embeddingJob) -> embeddingJob.markFailedOrRetry(
+                                toErrorMessage(exception),
+                                maxAttempts))
+                        .orElse(false)));
     }
 
     private static String toErrorMessage(Exception exception) {
@@ -201,11 +208,26 @@ public class EmbeddingJobProcessor {
         return message.substring(0, MAX_ERROR_MESSAGE_LENGTH);
     }
 
+    private String toFailureMessage(
+            Exception exception,
+            int attemptCount,
+            boolean willRetry) {
+        String retryState = willRetry
+                ? "Will retry."
+                : "Attempts exhausted.";
+
+        return "%s %s attempt=%d/%d".formatted(
+                toErrorMessage(exception),
+                retryState,
+                attemptCount,
+                maxAttempts);
+    }
+
     private static int normalizeBatchLimit(int requestedLimit) {
         return Math.min(Math.max(requestedLimit, 1), MAX_BATCH_SIZE);
     }
 
-    private record ClaimedEmbeddingJob(Long jobId, Long postId) {
+    private record ClaimedEmbeddingJob(Long jobId, Long postId, int attemptCount) {
     }
 
     public record ProcessEmbeddingJobResult(

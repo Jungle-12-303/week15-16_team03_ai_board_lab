@@ -78,6 +78,8 @@ PostService.createPost
 -> PostEmbeddingService
 ```
 
+작업 처리 중 OpenAI API 오류나 일시 장애가 발생하면 `attempt_count`를 올리고 최대 3회까지 다시 `PENDING` 상태로 돌립니다. 마지막 실패에서만 `FAILED`로 고정해 운영자가 실패 원인을 확인할 수 있게 했습니다.
+
 ## 4. Retrieval
 
 Retrieval은 사용자가 쓴 글과 관련 있는 기존 게시글을 찾는 과정입니다.

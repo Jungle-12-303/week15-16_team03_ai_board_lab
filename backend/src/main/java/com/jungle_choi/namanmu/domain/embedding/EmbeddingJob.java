@@ -76,6 +76,18 @@ public class EmbeddingJob {
         this.completedAt = LocalDateTime.now();
     }
 
+    public boolean markFailedOrRetry(String errorMessage, int maxAttempts) {
+        if (attemptCount < maxAttempts) {
+            this.status = EmbeddingJobStatus.PENDING;
+            this.errorMessage = errorMessage;
+            this.completedAt = null;
+            return true;
+        }
+
+        markFailed(errorMessage);
+        return false;
+    }
+
     @PrePersist
     void onCreate() {
         LocalDateTime now = LocalDateTime.now();

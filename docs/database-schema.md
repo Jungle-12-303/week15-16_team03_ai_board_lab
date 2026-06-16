@@ -223,14 +223,14 @@ RAG 유사 게시글 검색을 위한 게시글 임베딩 저장 테이블이다
 
 게시글 저장과 OpenAI Embedding API 호출을 분리하기 위한 작업 큐 테이블이다.
 게시글 생성/수정 트랜잭션에서는 이 테이블에 `PENDING` 작업만 예약하고, 실제 외부 API 호출은 별도 수동 실행 API 또는 Scheduler가 처리한다.
-현재 구현은 게시글 생성/수정이 완료될 때 `EmbeddingJobService`가 중복 `PENDING` 작업을 확인한 뒤 새 작업을 예약한다.
+현재 구현은 게시글 생성/수정이 완료될 때 `EmbeddingJobService`가 중복 `PENDING` 또는 `PROCESSING` 작업을 확인한 뒤 새 작업을 예약한다. 작업 처리 중 일시 오류가 발생하면 `attempt_count`를 기준으로 최대 3회까지 다시 `PENDING` 상태로 되돌리고, 마지막 실패에서만 `FAILED`로 고정한다.
 
 | 컬럼 | 타입 | 제약 | 설명 |
 | --- | --- | --- | --- |
 | `id` | `BIGINT` | PK, AUTO_INCREMENT | 임베딩 작업 식별자 |
 | `post_id` | `BIGINT` | FK, NOT NULL | 임베딩을 생성할 게시글. `posts.id` 참조 |
 | `status` | `VARCHAR(20)` | NOT NULL | `PENDING`, `PROCESSING`, `COMPLETED`, `FAILED` |
-| `attempt_count` | `INT` | NOT NULL | 처리 시도 횟수 |
+| `attempt_count` | `INT` | NOT NULL | 처리 시도 횟수. 기본 최대 3회 |
 | `error_message` | `VARCHAR(1000)` | NULL | 마지막 실패 사유 |
 | `started_at` | `DATETIME` | NULL | 마지막 처리 시작 시간 |
 | `completed_at` | `DATETIME` | NULL | 성공 또는 실패로 처리 종료된 시간 |
