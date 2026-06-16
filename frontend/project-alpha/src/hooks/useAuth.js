@@ -5,7 +5,8 @@ import {
   login as loginRequest,
   logout as logoutRequest,
   signUp as signUpRequest,
-} from '../api/authApi';
+} from '../api/auth/authApi';
+import { authExpiredEventName } from '../api/http/config';
 
 export default function useAuth() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -39,6 +40,18 @@ export default function useAuth() {
     };
   }, []);
 
+  useEffect(() => {
+    function handleAuthExpired() {
+      setCurrentUser(null);
+    }
+
+    window.addEventListener(authExpiredEventName, handleAuthExpired);
+
+    return () => {
+      window.removeEventListener(authExpiredEventName, handleAuthExpired);
+    };
+  }, []);
+
   async function login(username, password) {
     const trimmedUsername = username.trim();
 
@@ -55,7 +68,8 @@ export default function useAuth() {
     const trimmedUsername = username.trim();
 
     try {
-      await signUpRequest(trimmedUsername, password);
+      const user = await signUpRequest(trimmedUsername, password);
+      setCurrentUser(user);
       return true;
     } catch {
       return false;

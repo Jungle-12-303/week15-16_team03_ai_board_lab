@@ -1,5 +1,5 @@
-import AgentRecommendationsPanel from './AgentRecommendationsPanel';
-import { categories } from '../constants/board';
+import AgentRecommendationsPanel from '../ai/AgentRecommendationsPanel';
+import { categories } from '../../constants/board';
 
 export default function BoardSidebar({
   posts,

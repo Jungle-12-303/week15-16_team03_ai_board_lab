@@ -36,13 +36,13 @@ PostDetailPage.jsx
 
 | 확인할 흐름 | 코드 위치 |
 | --- | --- |
-| 상세 화면 fact check UI | [PostDetailPage.jsx](../../frontend/project-alpha/src/pages/PostDetailPage.jsx), [FactCheckPanel.jsx](../../frontend/project-alpha/src/components/FactCheckPanel.jsx), [mcpApi.js](../../frontend/project-alpha/src/api/mcpApi.js) |
+| 상세 화면 fact check UI | [PostDetailPage.jsx](../../frontend/project-alpha/src/pages/PostDetailPage.jsx), [FactCheckPanel.jsx](../../frontend/project-alpha/src/components/ai/FactCheckPanel.jsx), [mcpApi.js](../../frontend/project-alpha/src/api/ai/mcpApi.js) |
 | MCP API 입구 | [PostFactCheckController.java](../../backend/src/main/java/com/jungle_choi/namanmu/api/PostFactCheckController.java), [McpController.java](../../backend/src/main/java/com/jungle_choi/namanmu/api/McpController.java) |
 | MCP JSON-RPC 처리 | [McpServerService.java](../../backend/src/main/java/com/jungle_choi/namanmu/service/mcp/McpServerService.java) |
 | Fact check 조합 | [McpFactCheckService.java](../../backend/src/main/java/com/jungle_choi/namanmu/service/mcp/McpFactCheckService.java) |
 | GitHub 도구 | [GitHubFactCheckService.java](../../backend/src/main/java/com/jungle_choi/namanmu/service/mcp/GitHubFactCheckService.java), [GitHubApiClient.java](../../backend/src/main/java/com/jungle_choi/namanmu/service/mcp/GitHubApiClient.java) |
 | Weather 도구 | [WeatherFactCheckService.java](../../backend/src/main/java/com/jungle_choi/namanmu/service/mcp/WeatherFactCheckService.java), [WeatherApiClient.java](../../backend/src/main/java/com/jungle_choi/namanmu/service/mcp/WeatherApiClient.java) |
-| Agent 추천 UI | [AgentRecommendationsPanel.jsx](../../frontend/project-alpha/src/components/AgentRecommendationsPanel.jsx), [useAgentRecommendations.js](../../frontend/project-alpha/src/hooks/useAgentRecommendations.js), [agentApi.js](../../frontend/project-alpha/src/api/agentApi.js) |
+| Agent 추천 UI | [AgentRecommendationsPanel.jsx](../../frontend/project-alpha/src/components/ai/AgentRecommendationsPanel.jsx), [useAgentRecommendations.js](../../frontend/project-alpha/src/hooks/useAgentRecommendations.js), [agentApi.js](../../frontend/project-alpha/src/api/ai/agentApi.js) |
 | Agent 추천 로직 | [AgentController.java](../../backend/src/main/java/com/jungle_choi/namanmu/api/AgentController.java), [AgentRecommendationService.java](../../backend/src/main/java/com/jungle_choi/namanmu/service/agent/AgentRecommendationService.java), [PostReadService.java](../../backend/src/main/java/com/jungle_choi/namanmu/service/post/PostReadService.java) |
 
 ## MCP 도구

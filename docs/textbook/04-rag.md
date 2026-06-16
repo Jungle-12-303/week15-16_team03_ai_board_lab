@@ -16,7 +16,7 @@ Project Alpha의 RAG 기능은 글쓰기 도우미입니다.
 
 | 확인할 흐름 | 코드 위치 |
 | --- | --- |
-| 프론트 RAG 버튼과 상태 | [PostForm.jsx](../../frontend/project-alpha/src/components/PostForm.jsx), [useRagDraft.js](../../frontend/project-alpha/src/hooks/useRagDraft.js), [ragApi.js](../../frontend/project-alpha/src/api/ragApi.js) |
+| 프론트 RAG 버튼과 상태 | [PostForm.jsx](../../frontend/project-alpha/src/components/posts/PostForm.jsx), [useRagDraft.js](../../frontend/project-alpha/src/hooks/useRagDraft.js), [ragApi.js](../../frontend/project-alpha/src/api/ai/ragApi.js) |
 | RAG API 입구 | [AiController.java](../../backend/src/main/java/com/jungle_choi/namanmu/api/AiController.java) |
 | 유사 게시글 검색 | [SimilarPostSearchService.java](../../backend/src/main/java/com/jungle_choi/namanmu/service/rag/SimilarPostSearchService.java) |
 | 초안 생성 | [RagDraftService.java](../../backend/src/main/java/com/jungle_choi/namanmu/service/rag/RagDraftService.java), [OpenAiTextClient.java](../../backend/src/main/java/com/jungle_choi/namanmu/service/rag/OpenAiTextClient.java) |

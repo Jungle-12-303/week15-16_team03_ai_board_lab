@@ -31,6 +31,50 @@ class AuthControllerTest {
     private MockMvc mockMvc;
 
     @Test
+    void signupSetsAuthCookiesAndCreatesSession() throws Exception {
+        String username = "signup-session-user";
+        String password = "password123";
+
+        MvcResult signupResult = mockMvc.perform(post("/api/auth/signup")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"username":"%s","password":"%s"}
+                                """.formatted(username, password)))
+                .andExpect(status().isOk())
+                .andExpect(cookie().httpOnly(
+                        JwtAuthenticationFilter.ACCESS_TOKEN_COOKIE_NAME,
+                        true))
+                .andExpect(cookie().httpOnly(REFRESH_TOKEN_COOKIE_NAME, true))
+                .andExpect(jsonPath("$.name").value(username))
+                .andReturn();
+
+        Cookie accessTokenCookie = signupResult.getResponse()
+                .getCookie(JwtAuthenticationFilter.ACCESS_TOKEN_COOKIE_NAME);
+
+        assertThat(accessTokenCookie).isNotNull();
+
+        mockMvc.perform(get("/api/auth/me")
+                        .cookie(accessTokenCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value(username));
+    }
+
+    @Test
+    void signupRejectsUsernameLongerThanDatabaseColumn() throws Exception {
+        String tooLongUsername = "u".repeat(31);
+
+        mockMvc.perform(post("/api/auth/signup")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"username":"%s","password":"password123"}
+                                """.formatted(tooLongUsername)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+    }
+
+    @Test
     void loginSetsHttpOnlyCookieAndCookieRestoresCurrentUser() throws Exception {
         String username = "cookie-user";
         String password = "password123";

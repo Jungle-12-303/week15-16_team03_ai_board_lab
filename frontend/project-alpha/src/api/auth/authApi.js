@@ -4,7 +4,7 @@ import {
   clearCsrfToken,
   refreshAuthCookies,
   withCsrf,
-} from './config';
+} from '../http/config';
 
 export async function login(username, password) {
   const response = await fetch(`${apiBaseUrl}/api/auth/login`, await withCsrf({
@@ -65,27 +65,31 @@ export async function refreshSession() {
 }
 
 export async function logout() {
-  const response = await fetch(`${apiBaseUrl}/api/auth/logout`, await withCsrf({
-    method: 'POST',
-  }));
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/auth/logout`, await withCsrf({
+      method: 'POST',
+    }));
 
-  if (!response.ok) {
-    throw new Error('Failed to logout.');
+    if (!response.ok) {
+      throw new Error('Failed to logout.');
+    }
+  } finally {
+    clearCsrfToken();
   }
-
-  clearCsrfToken();
 }
 
 export async function logoutAll() {
-  const response = await authFetch(`${apiBaseUrl}/api/auth/logout-all`, await withCsrf({
-    method: 'POST',
-  }));
+  try {
+    const response = await authFetch(`${apiBaseUrl}/api/auth/logout-all`, await withCsrf({
+      method: 'POST',
+    }));
 
-  if (!response.ok) {
-    throw new Error('Failed to logout all sessions.');
+    if (!response.ok) {
+      throw new Error('Failed to logout all sessions.');
+    }
+  } finally {
+    clearCsrfToken();
   }
-
-  clearCsrfToken();
 }
 
 function normalizeUser(user) {

@@ -1,4 +1,4 @@
-import AuthPanel from './AuthPanel';
+import AuthPanel from '../auth/AuthPanel';
 
 export default function Topbar({
   currentUser,

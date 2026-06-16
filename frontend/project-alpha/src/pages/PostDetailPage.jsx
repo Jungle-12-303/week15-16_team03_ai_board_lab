@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { checkFact } from '../api/mcpApi';
-import { fetchPost } from '../api/postApi';
-import FactCheckPanel from '../components/FactCheckPanel';
+import { checkFact } from '../api/ai/mcpApi';
+import { fetchPost } from '../api/posts/postApi';
+import FactCheckPanel from '../components/ai/FactCheckPanel';
 
 export default function PostDetailPage({
   currentUser,

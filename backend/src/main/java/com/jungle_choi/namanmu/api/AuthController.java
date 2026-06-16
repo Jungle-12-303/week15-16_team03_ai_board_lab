@@ -66,7 +66,7 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
-    public AuthResponse signUp(@Valid @RequestBody AuthRequest request) {
+    public ResponseEntity<AuthResponse> signUp(@Valid @RequestBody AuthRequest request) {
         String username = request.username().trim();
         String password = request.password();
         String accountEmail = User.accountEmail(username);
@@ -79,8 +79,11 @@ public class AuthController {
                 username,
                 passwordEncoder.encode(password));
         User savedUser = userRepository.save(user);
+        RefreshTokenService.IssuedRefreshToken refreshToken = refreshTokenService.issue(savedUser);
 
-        return toResponse(savedUser);
+        return ResponseEntity.ok()
+                .headers((headers) -> addAuthCookies(headers, savedUser, refreshToken.value()))
+                .body(toResponse(savedUser));
     }
 
     @PostMapping("/login")
@@ -245,6 +248,7 @@ public class AuthController {
 
     public record AuthRequest(
             @NotBlank(message = "username is required.")
+            @Size(max = 30, message = "username must be 30 characters or less.")
             String username,
             @NotBlank(message = "password is required.")
             @Size(min = 6, message = "password must be at least 6 characters.")

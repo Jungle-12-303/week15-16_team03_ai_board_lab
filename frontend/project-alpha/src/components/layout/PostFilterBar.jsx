@@ -1,4 +1,4 @@
-import { categories } from '../constants/board';
+import { categories } from '../../constants/board';
 
 export default function PostFilterBar({
   selectedCategory,

@@ -94,11 +94,11 @@ React가 백엔드와 만나는 지점입니다.
 
 | 파일 | 역할 |
 | --- | --- |
-| `frontend/project-alpha/src/api/authApi.js` | 회원가입, 로그인 요청 |
-| `frontend/project-alpha/src/api/postApi.js` | 게시글, 댓글 API 요청 |
-| `frontend/project-alpha/src/api/ragApi.js` | 유사 게시글 검색, RAG 초안 생성 요청 |
-| `frontend/project-alpha/src/api/mcpApi.js` | MCP fact check 요청 |
-| `frontend/project-alpha/src/api/agentApi.js` | Agent 추천 요청 |
+| `frontend/project-alpha/src/api/auth/authApi.js` | 회원가입, 로그인 요청 |
+| `frontend/project-alpha/src/api/posts/postApi.js` | 게시글, 댓글 API 요청 |
+| `frontend/project-alpha/src/api/ai/ragApi.js` | 유사 게시글 검색, RAG 초안 생성 요청 |
+| `frontend/project-alpha/src/api/ai/mcpApi.js` | MCP fact check 요청 |
+| `frontend/project-alpha/src/api/ai/agentApi.js` | Agent 추천 요청 |
 
 핵심 질문:
 
@@ -230,7 +230,7 @@ PostDetailPage.jsx 또는 BoardPage.jsx
 | 파일 | 역할 |
 | --- | --- |
 | `frontend/project-alpha/src/hooks/useAuth.js` | 로그인, 로그아웃, `/api/auth/me` 기반 사용자 복원 |
-| `frontend/project-alpha/src/api/config.js` | 쿠키 인증 요청에 공통 `credentials: 'include'`, CSRF header, 401 refresh 재시도 적용 |
+| `frontend/project-alpha/src/api/http/config.js` | 쿠키 인증 요청에 공통 `credentials: 'include'`, CSRF header, 401 refresh 재시도 적용 |
 | `frontend/project-alpha/src/api/*.js` | cookie 인증과 CSRF header를 붙여 API 호출 |
 | `backend/src/main/java/com/jungle_choi/namanmu/config/SecurityConfig.java` | 인증/인가 설정 |
 | `backend/src/main/java/com/jungle_choi/namanmu/security/JwtTokenService.java` | JWT 생성/검증 |

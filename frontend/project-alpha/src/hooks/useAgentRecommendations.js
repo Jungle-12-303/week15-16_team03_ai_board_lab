@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { recommendMissedPosts } from '../api/agentApi';
+import { recommendMissedPosts } from '../api/ai/agentApi';
 
 const emptyAgentResult = {
   message: '',

@@ -2,18 +2,19 @@
 
 이 폴더는 재사용 가능한 UI 조각을 모아둡니다.
 
-| 파일 | 역할 |
+| 폴더/파일 | 역할 |
 | --- | --- |
-| `Topbar.jsx` | 상단 사용자/로그아웃 영역 |
-| `BoardSidebar.jsx` | 카테고리와 게시판 보조 정보 |
-| `PostFilterBar.jsx` | 검색, 태그 필터 |
-| `PostList.jsx` | 게시글 목록 렌더링 |
-| `PostCard.jsx` | 게시글 카드 한 개 |
-| `ComposerModal.jsx` | 글 작성 modal |
-| `PostForm.jsx` | 글 작성/수정 폼과 RAG 버튼 |
-| `FactCheckPanel.jsx` | MCP fact check 결과 표시 |
-| `AgentRecommendationsPanel.jsx` | Agent 추천 결과 표시 |
-| `Pagination.jsx` | 페이지 이동 버튼 |
+| `layout/Topbar.jsx` | 상단 사용자/로그아웃/검색 영역 |
+| `layout/BoardSidebar.jsx` | 카테고리와 게시판 보조 정보 |
+| `layout/PostFilterBar.jsx` | 카테고리/태그 필터와 글쓰기 진입 |
+| `layout/Pagination.jsx` | 페이지 이동 버튼 |
+| `posts/PostList.jsx` | 게시글 목록 렌더링 |
+| `posts/PostCard.jsx` | 게시글 카드 한 개 |
+| `posts/ComposerModal.jsx` | 글 작성 modal |
+| `posts/PostForm.jsx` | 글 작성/수정 폼과 RAG 버튼 |
+| `ai/FactCheckPanel.jsx` | MCP fact check 결과 표시 |
+| `ai/AgentRecommendationsPanel.jsx` | Agent 추천 결과 표시 |
+| `auth/AuthPanel.jsx` | 로그인 사용자와 로그아웃 버튼 |
 
 ## 읽을 때 볼 점
 

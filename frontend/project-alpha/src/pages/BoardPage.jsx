@@ -1,9 +1,9 @@
-import BoardSidebar from '../components/BoardSidebar';
-import ComposerModal from '../components/ComposerModal';
-import Pagination from '../components/Pagination';
-import PostFilterBar from '../components/PostFilterBar';
-import PostList from '../components/PostList';
-import Topbar from '../components/Topbar';
+import BoardSidebar from '../components/layout/BoardSidebar';
+import Pagination from '../components/layout/Pagination';
+import PostFilterBar from '../components/layout/PostFilterBar';
+import Topbar from '../components/layout/Topbar';
+import ComposerModal from '../components/posts/ComposerModal';
+import PostList from '../components/posts/PostList';
 import { categories } from '../constants/board';
 
 export default function BoardPage({

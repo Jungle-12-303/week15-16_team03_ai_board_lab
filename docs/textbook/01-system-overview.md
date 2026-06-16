@@ -45,9 +45,9 @@ PostForm.jsx
 | --- | --- |
 | React 앱 시작점 | [main.jsx](../../frontend/project-alpha/src/main.jsx), [App.jsx](../../frontend/project-alpha/src/App.jsx) |
 | 게시판 메인 화면 | [BoardPage.jsx](../../frontend/project-alpha/src/pages/BoardPage.jsx) |
-| 글 작성 모달 | [ComposerModal.jsx](../../frontend/project-alpha/src/components/ComposerModal.jsx), [PostForm.jsx](../../frontend/project-alpha/src/components/PostForm.jsx) |
+| 글 작성 모달 | [ComposerModal.jsx](../../frontend/project-alpha/src/components/posts/ComposerModal.jsx), [PostForm.jsx](../../frontend/project-alpha/src/components/posts/PostForm.jsx) |
 | 프론트 게시글 상태 | [usePosts.js](../../frontend/project-alpha/src/hooks/usePosts.js), [usePostComposer.js](../../frontend/project-alpha/src/hooks/usePostComposer.js) |
-| 프론트 API 요청 | [postApi.js](../../frontend/project-alpha/src/api/postApi.js) |
+| 프론트 API 요청 | [postApi.js](../../frontend/project-alpha/src/api/posts/postApi.js) |
 | 백엔드 게시글 API | [PostController.java](../../backend/src/main/java/com/jungle_choi/namanmu/api/PostController.java) |
 | 게시글 저장 규칙 | [PostService.java](../../backend/src/main/java/com/jungle_choi/namanmu/service/post/PostService.java), [PostTagService.java](../../backend/src/main/java/com/jungle_choi/namanmu/service/post/PostTagService.java) |
 | 임베딩 작업 예약 | [EmbeddingJobService.java](../../backend/src/main/java/com/jungle_choi/namanmu/service/rag/EmbeddingJobService.java) |

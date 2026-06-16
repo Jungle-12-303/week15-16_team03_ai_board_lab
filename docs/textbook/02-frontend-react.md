@@ -20,12 +20,12 @@
 | 앱 진입과 페이지 선택 | [main.jsx](../../frontend/project-alpha/src/main.jsx), [App.jsx](../../frontend/project-alpha/src/App.jsx) |
 | 로그인/회원가입 화면 | [LoginPage.jsx](../../frontend/project-alpha/src/pages/LoginPage.jsx), [SignupPage.jsx](../../frontend/project-alpha/src/pages/SignupPage.jsx) |
 | 게시판 메인/상세 화면 | [BoardPage.jsx](../../frontend/project-alpha/src/pages/BoardPage.jsx), [PostDetailPage.jsx](../../frontend/project-alpha/src/pages/PostDetailPage.jsx) |
-| 글 목록과 카드 | [PostList.jsx](../../frontend/project-alpha/src/components/PostList.jsx), [PostCard.jsx](../../frontend/project-alpha/src/components/PostCard.jsx) |
-| 글 작성 모달 | [ComposerModal.jsx](../../frontend/project-alpha/src/components/ComposerModal.jsx), [PostForm.jsx](../../frontend/project-alpha/src/components/PostForm.jsx) |
-| 인증 상태 | [useAuth.js](../../frontend/project-alpha/src/hooks/useAuth.js), [authApi.js](../../frontend/project-alpha/src/api/authApi.js) |
+| 글 목록과 카드 | [PostList.jsx](../../frontend/project-alpha/src/components/posts/PostList.jsx), [PostCard.jsx](../../frontend/project-alpha/src/components/posts/PostCard.jsx) |
+| 글 작성 모달 | [ComposerModal.jsx](../../frontend/project-alpha/src/components/posts/ComposerModal.jsx), [PostForm.jsx](../../frontend/project-alpha/src/components/posts/PostForm.jsx) |
+| 인증 상태 | [useAuth.js](../../frontend/project-alpha/src/hooks/useAuth.js), [authApi.js](../../frontend/project-alpha/src/api/auth/authApi.js) |
 | 게시글 상태 | [usePosts.js](../../frontend/project-alpha/src/hooks/usePosts.js), [usePostComposer.js](../../frontend/project-alpha/src/hooks/usePostComposer.js) |
-| RAG 상태 | [useRagDraft.js](../../frontend/project-alpha/src/hooks/useRagDraft.js), [ragApi.js](../../frontend/project-alpha/src/api/ragApi.js) |
-| MCP/Agent 화면 | [FactCheckPanel.jsx](../../frontend/project-alpha/src/components/FactCheckPanel.jsx), [AgentRecommendationsPanel.jsx](../../frontend/project-alpha/src/components/AgentRecommendationsPanel.jsx) |
+| RAG 상태 | [useRagDraft.js](../../frontend/project-alpha/src/hooks/useRagDraft.js), [ragApi.js](../../frontend/project-alpha/src/api/ai/ragApi.js) |
+| MCP/Agent 화면 | [FactCheckPanel.jsx](../../frontend/project-alpha/src/components/ai/FactCheckPanel.jsx), [AgentRecommendationsPanel.jsx](../../frontend/project-alpha/src/components/ai/AgentRecommendationsPanel.jsx) |
 
 ## 왜 custom hook을 썼나
 
@@ -67,7 +67,7 @@ PostForm.jsx
 
 로그인 성공 후 JWT는 JavaScript에서 읽을 수 없는 httpOnly cookie로 저장됩니다. 이후 API 요청은 token 값을 직접 들고 다니지 않고 `credentials: 'include'` 옵션으로 쿠키를 함께 보냅니다.
 
-쿠키는 브라우저가 자동으로 보내기 때문에 POST/PATCH/DELETE 같은 변경 요청에는 CSRF token을 `X-XSRF-TOKEN` 계열 header로 함께 보냅니다. access token이 만료되면 `api/config.js`의 `authFetch`가 refresh token cookie로 `/api/auth/refresh`를 호출하고, 성공하면 원래 요청을 한 번 다시 보냅니다.
+쿠키는 브라우저가 자동으로 보내기 때문에 POST/PATCH/DELETE 같은 변경 요청에는 CSRF token을 `X-XSRF-TOKEN` 계열 header로 함께 보냅니다. access token이 만료되면 `api/http/config.js`의 `authFetch`가 refresh token cookie로 `/api/auth/refresh`를 호출하고, 성공하면 원래 요청을 한 번 다시 보냅니다.
 
 ## UI 설계 방향
 

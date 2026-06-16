@@ -23,6 +23,11 @@ export default function SignupPage({ currentUser, onSignUp }) {
       return;
     }
 
+    if (username.trim().length > 30) {
+      setErrorMessage('Username must be 30 characters or less.');
+      return;
+    }
+
     if (password.length < 6) {
       setErrorMessage('Password must be at least 6 characters.');
       return;
@@ -40,7 +45,7 @@ export default function SignupPage({ currentUser, onSignUp }) {
       return;
     }
 
-    navigate('/login');
+    navigate('/');
   }
 
   return (
@@ -52,6 +57,7 @@ export default function SignupPage({ currentUser, onSignUp }) {
           Username
           <input
             autoComplete="username"
+            maxLength={30}
             value={username}
             onChange={(event) => {
               setUsername(event.target.value);

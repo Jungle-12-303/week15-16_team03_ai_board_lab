@@ -6,7 +6,7 @@ import {
   deletePost as deleteServerPost,
   fetchPosts,
   updatePost as updateServerPost,
-} from '../api/postApi';
+} from '../api/posts/postApi';
 
 const defaultPostPageInfo = {
   page: 0,

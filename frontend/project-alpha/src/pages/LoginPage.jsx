@@ -42,6 +42,7 @@ export default function LoginPage({ currentUser, onLogin }) {
           Username
           <input
             autoComplete="username"
+            maxLength={30}
             value={username}
             onChange={(event) => {
               setUsername(event.target.value);

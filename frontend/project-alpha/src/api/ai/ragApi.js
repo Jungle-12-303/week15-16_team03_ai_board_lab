@@ -1,4 +1,4 @@
-import { apiBaseUrl, authFetch, withCsrf } from './config';
+import { apiBaseUrl, authFetch, withCsrf } from '../http/config';
 
 export async function findSimilarPosts({
   category,
@@ -22,7 +22,7 @@ export async function findSimilarPosts({
   }));
 
   if (!response.ok) {
-    throw new Error('Failed to find similar posts.');
+    throw new Error(await buildApiErrorMessage(response, 'Failed to find similar posts.'));
   }
 
   const similarPostsResponse = await response.json();
@@ -57,7 +57,7 @@ export async function createDraftFromSources({
   }));
 
   if (!response.ok) {
-    throw new Error('Failed to create draft from sources.');
+    throw new Error(await buildApiErrorMessage(response, 'Failed to create draft from sources.'));
   }
 
   const draftResponse = await response.json();
@@ -74,6 +74,17 @@ function jsonHeaders() {
   return {
     'Content-Type': 'application/json',
   };
+}
+
+async function buildApiErrorMessage(response, fallbackMessage) {
+  const detail = await response.text().catch(() => '');
+  const trimmedDetail = detail.trim();
+
+  if (trimmedDetail.length === 0) {
+    return `${fallbackMessage} (${response.status})`;
+  }
+
+  return `${fallbackMessage} (${response.status}): ${trimmedDetail.slice(0, 160)}`;
 }
 
 function normalizeSimilarPost(post) {

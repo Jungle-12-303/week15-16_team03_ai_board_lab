@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { createDraftFromSources, findSimilarPosts } from '../api/ragApi';
+import { createDraftFromSources, findSimilarPosts } from '../api/ai/ragApi';
 
 export default function useRagDraft(currentUser) {
   const [similarPosts, setSimilarPosts] = useState([]);
@@ -23,9 +23,9 @@ export default function useRagDraft(currentUser) {
 
       setSimilarPosts(nextSimilarPosts);
       setHasSearchedSimilarPosts(true);
-    } catch {
+    } catch (error) {
       setSimilarPosts([]);
-      setSimilarPostsError('Similar posts could not be loaded.');
+      setSimilarPostsError(error instanceof Error ? error.message : 'Similar posts could not be loaded.');
       setHasSearchedSimilarPosts(true);
     } finally {
       setIsLoadingSimilarPosts(false);
@@ -50,9 +50,9 @@ export default function useRagDraft(currentUser) {
       setHasSearchedSimilarPosts(true);
 
       return draftResult;
-    } catch {
+    } catch (error) {
       setDraftMessage('');
-      setDraftError('Draft could not be generated from related posts.');
+      setDraftError(error instanceof Error ? error.message : 'Draft could not be generated from related posts.');
       return null;
     } finally {
       setIsGeneratingDraft(false);

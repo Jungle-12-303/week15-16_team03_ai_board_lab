@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import './App.css';
-import Topbar from './components/Topbar';
+import Topbar from './components/layout/Topbar';
 import { postsPerPage } from './constants/board';
 import useAgentRecommendations from './hooks/useAgentRecommendations';
 import useAuth from './hooks/useAuth';

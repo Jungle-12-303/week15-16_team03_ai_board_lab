@@ -1,4 +1,4 @@
-import { apiBaseUrl, authFetch, withCredentials, withCsrf } from './config';
+import { apiBaseUrl, authFetch, withCredentials, withCsrf } from '../http/config';
 
 export async function fetchPosts({
   keyword = '',

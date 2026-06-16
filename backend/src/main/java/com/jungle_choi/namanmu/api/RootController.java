@@ -1,11 +1,11 @@
-package com.jungle_choi.namanmu;
+package com.jungle_choi.namanmu.api;
 
 import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-public class BasicController {
+public class RootController {
 
     @GetMapping("/")
     public Map<String, String> index() {

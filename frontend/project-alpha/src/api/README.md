@@ -9,13 +9,14 @@ component
 -> backend endpoint
 ```
 
-| 파일 | 역할 |
+| 폴더/파일 | 역할 |
 | --- | --- |
-| `authApi.js` | 회원가입, 로그인, 현재 사용자 조회, 로그아웃 |
-| `postApi.js` | 게시글, 댓글 CRUD |
-| `ragApi.js` | 유사 게시글 검색, RAG 초안 생성 |
-| `mcpApi.js` | MCP fact check |
-| `agentApi.js` | 놓친 글 추천 Agent |
+| `http/config.js` | API base URL, 쿠키 인증, CSRF 처리, auth retry |
+| `auth/authApi.js` | 회원가입, 로그인, 현재 사용자 조회, 로그아웃 |
+| `posts/postApi.js` | 게시글, 댓글 CRUD |
+| `ai/ragApi.js` | 유사 게시글 검색, RAG 초안 생성 |
+| `ai/mcpApi.js` | MCP fact check |
+| `ai/agentApi.js` | 놓친 글 추천 Agent |
 
 ## 읽을 때 볼 점
 

@@ -31,16 +31,16 @@ flowchart LR
 | `frontend/project-alpha/src/hooks/usePosts.js` | 서버 게시글/댓글 API 호출 결과를 React 상태로 관리 | DB 데이터가 화면에 반영되는 방식 |
 | `frontend/project-alpha/src/hooks/usePostComposer.js` | 글 작성/수정 폼 상태 관리 | 제목, 본문, 태그, 수정 모드 상태 |
 | `frontend/project-alpha/src/hooks/useRagDraft.js` | 유사 게시글 검색과 RAG 초안 생성 상태 관리 | RAG 버튼의 loading/error/result 상태 |
-| `frontend/project-alpha/src/api/postApi.js` | 게시글/댓글 HTTP 요청 함수 | 백엔드 게시판 API 주소 |
-| `frontend/project-alpha/src/api/config.js` | API base URL, cookie 인증, CSRF, 401 refresh 재시도 | 모든 API 요청의 공통 규칙 |
-| `frontend/project-alpha/src/api/authApi.js` | 로그인/회원가입 HTTP 요청 함수 | 백엔드 인증 API 주소 |
-| `frontend/project-alpha/src/api/ragApi.js` | 유사 게시글 검색과 RAG 초안 생성 요청 | RAG 프론트 진입점 |
-| `frontend/project-alpha/src/api/mcpApi.js` | MCP 팩트체크 요청 | MCP 프론트 진입점 |
-| `frontend/project-alpha/src/api/agentApi.js` | Agent 놓친 글 추천 요청 | Agent 프론트 진입점 |
-| `frontend/project-alpha/src/components/PostForm.jsx` | 글 작성 폼과 RAG 버튼 | 작성 모달 내부 |
-| `frontend/project-alpha/src/components/FactCheckPanel.jsx` | MCP 팩트체크 결과 표시 | 팩트체크 UI |
-| `frontend/project-alpha/src/components/AgentRecommendationsPanel.jsx` | 놓친 글 추천 결과 표시 | Agent 추천 UI |
-| `frontend/project-alpha/src/components/PostCard.jsx` | 목록의 게시글 카드 | 게시글 목록 아이템 |
+| `frontend/project-alpha/src/api/posts/postApi.js` | 게시글/댓글 HTTP 요청 함수 | 백엔드 게시판 API 주소 |
+| `frontend/project-alpha/src/api/http/config.js` | API base URL, cookie 인증, CSRF, 401 refresh 재시도 | 모든 API 요청의 공통 규칙 |
+| `frontend/project-alpha/src/api/auth/authApi.js` | 로그인/회원가입 HTTP 요청 함수 | 백엔드 인증 API 주소 |
+| `frontend/project-alpha/src/api/ai/ragApi.js` | 유사 게시글 검색과 RAG 초안 생성 요청 | RAG 프론트 진입점 |
+| `frontend/project-alpha/src/api/ai/mcpApi.js` | MCP 팩트체크 요청 | MCP 프론트 진입점 |
+| `frontend/project-alpha/src/api/ai/agentApi.js` | Agent 놓친 글 추천 요청 | Agent 프론트 진입점 |
+| `frontend/project-alpha/src/components/posts/PostForm.jsx` | 글 작성 폼과 RAG 버튼 | 작성 모달 내부 |
+| `frontend/project-alpha/src/components/ai/FactCheckPanel.jsx` | MCP 팩트체크 결과 표시 | 팩트체크 UI |
+| `frontend/project-alpha/src/components/ai/AgentRecommendationsPanel.jsx` | 놓친 글 추천 결과 표시 | Agent 추천 UI |
+| `frontend/project-alpha/src/components/posts/PostCard.jsx` | 목록의 게시글 카드 | 게시글 목록 아이템 |
 
 ## Backend
 

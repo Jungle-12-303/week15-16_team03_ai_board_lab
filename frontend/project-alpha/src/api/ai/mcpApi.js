@@ -1,4 +1,4 @@
-import { apiBaseUrl, authFetch, withCsrf } from './config';
+import { apiBaseUrl, authFetch, withCsrf } from '../http/config';
 
 export async function checkFact(postId) {
   const response = await authFetch(`${apiBaseUrl}/api/posts/${postId}/fact-check`, await withCsrf({
