@@ -142,7 +142,7 @@ Spring Boot 기본 구조와 JPA 설계를 설명하는 질문이다.
 |---|---|
 | API key는 어떻게 관리하나요? | `.env`나 환경 변수로 주입하고 Git에는 커밋하지 않습니다. `.env.example`에는 키 이름만 둡니다. |
 | AWS에 올리면 어떤 점을 바꿔야 하나요? | RDS/MySQL, ECS 또는 EC2, S3, CloudWatch 비용 알람, 보안 그룹, VPC, secret 관리, migration 전략을 추가해야 합니다. |
-| 비용은 어떻게 관리하나요? | OpenAI 호출은 embedding job과 draft generation에서 비용이 발생합니다. 대량 import/평가에는 limit와 캐시를 두고, 실서비스에서는 rate limit과 batch 처리가 필요합니다. |
+| 비용은 어떻게 관리하나요? | OpenAI 호출은 embedding job과 draft generation에서 비용이 발생합니다. 대량 import/평가에는 limit와 캐시를 두고, 사용자-facing AI 요청에는 rate limit을 적용했습니다. 실서비스에서는 계정/조직별 quota와 비용 알람까지 붙여야 합니다. |
 | 장애 대응은요? | 현재는 로컬 개발 기준입니다. 실서비스라면 OpenAI/Qdrant/GitHub API 장애에 대한 timeout, retry, fallback message, circuit breaker를 설계해야 합니다. |
 | 개인정보 이슈는요? | 게시글/읽음 기록이 개인화 추천에 쓰이므로, 실서비스에서는 보관 기간, 삭제 요청, 데이터 최소화, 접근 권한 관리가 필요합니다. |
 

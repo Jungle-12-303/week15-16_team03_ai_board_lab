@@ -1,5 +1,7 @@
 package com.jungle_choi.namanmu.api;
 
+import com.jungle_choi.namanmu.domain.user.User;
+import com.jungle_choi.namanmu.security.AiRequestRateLimitService;
 import com.jungle_choi.namanmu.service.rag.EmbeddingJobProcessor;
 import com.jungle_choi.namanmu.service.rag.EmbeddingJobService;
 import com.jungle_choi.namanmu.service.rag.OpenAiEmbeddingClient;
@@ -11,6 +13,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.util.List;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -29,6 +32,7 @@ public class AiController {
     private final EmbeddingJobService embeddingJobService;
     private final RagDraftService ragDraftService;
     private final QdrantVectorSyncService qdrantVectorSyncService;
+    private final AiRequestRateLimitService aiRequestRateLimitService;
 
     public AiController(
             PostEmbeddingTextBuilder postEmbeddingTextBuilder,
@@ -37,7 +41,8 @@ public class AiController {
             EmbeddingJobProcessor embeddingJobProcessor,
             EmbeddingJobService embeddingJobService,
             RagDraftService ragDraftService,
-            QdrantVectorSyncService qdrantVectorSyncService) {
+            QdrantVectorSyncService qdrantVectorSyncService,
+            AiRequestRateLimitService aiRequestRateLimitService) {
         this.postEmbeddingTextBuilder = postEmbeddingTextBuilder;
         this.openAiEmbeddingClient = openAiEmbeddingClient;
         this.similarPostSearchService = similarPostSearchService;
@@ -45,11 +50,15 @@ public class AiController {
         this.embeddingJobService = embeddingJobService;
         this.ragDraftService = ragDraftService;
         this.qdrantVectorSyncService = qdrantVectorSyncService;
+        this.aiRequestRateLimitService = aiRequestRateLimitService;
     }
 
     @PostMapping("/similar-posts")
     public SimilarPostsResponse findSimilarPosts(
+            @AuthenticationPrincipal User user,
             @Valid @RequestBody SimilarPostsRequest request) {
+        aiRequestRateLimitService.assertAllowed(user, "similar-posts");
+
         String sourceText = postEmbeddingTextBuilder.buildQuery(
                 request.category(),
                 request.title(),
@@ -75,7 +84,10 @@ public class AiController {
 
     @PostMapping("/draft")
     public RagDraftService.RagDraftResult createDraft(
+            @AuthenticationPrincipal User user,
             @Valid @RequestBody RagDraftRequest request) {
+        aiRequestRateLimitService.assertAllowed(user, "draft");
+
         return ragDraftService.createDraft(
                 request.category(),
                 request.title(),

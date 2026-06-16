@@ -32,6 +32,7 @@ npm run dev
 | `GITHUB_TOKEN` | GitHub rate limit 완화 |
 | `APP_JWT_SECRET` | JWT 서명 |
 | `APP_LOGIN_RATE_LIMIT_*` | 로그인 실패 제한 |
+| `APP_AI_RATE_LIMIT_*` | 유사글 검색과 RAG 초안 생성 요청 제한 |
 | `SPRING_DATASOURCE_*` | DB 접속 정보 |
 
 `.env.example`은 필요한 변수 목록을 알려주는 템플릿이고, 실제 `.env`는 커밋하지 않습니다.
@@ -102,6 +103,7 @@ RAG를 AWS 서비스 중심으로 바꾸면 Bedrock Knowledge Bases, OpenSearch,
 - OpenAI embedding/chat 호출
 - GitHub API 자체는 무료지만 token 관리 필요
 - AWS 배포 시 EC2/RDS/S3/CloudWatch 비용
+- 사용자-facing AI 요청은 rate limit으로 버튼 연타 비용을 제한
 
 주의할 보안:
 
@@ -121,13 +123,13 @@ RAG를 AWS 서비스 중심으로 바꾸면 Bedrock Knowledge Bases, OpenSearch,
 - Qdrant는 도입했지만 운영 백업/복구 전략은 별도 필요
 - 관리자 페이지 없음
 - 모니터링/알림 없음
-- 로그인 외 API rate limit 없음
+- 사용자-facing AI 요청 rate limit은 적용했지만 전체 API rate limit은 없음
 - RAG 평가 케이스 수 부족
 
 ## 다음 개선 우선순위
 
 1. 세션 목록/기기별 로그아웃 화면 보강
-2. 로그인 외 API rate limit 확장
+2. 전체 API rate limit과 관리자/maintenance endpoint 보호
 3. Qdrant 백업/복구와 운영 모니터링 정리
 4. RAG 평가 케이스 확장
 5. MCP 도구 추가
