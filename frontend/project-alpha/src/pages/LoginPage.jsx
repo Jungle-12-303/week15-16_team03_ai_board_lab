@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate } from 'react-router-dom';
 
 export default function LoginPage({ currentUser, onLogin }) {
   const navigate = useNavigate();
-  const [username, setUsername] = useState('cedis');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
