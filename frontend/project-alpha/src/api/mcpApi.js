@@ -1,7 +1,7 @@
-import { apiBaseUrl, withCsrf } from './config';
+import { apiBaseUrl, authFetch, withCsrf } from './config';
 
 export async function checkFact(postId) {
-  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}/fact-check`, await withCsrf({
+  const response = await authFetch(`${apiBaseUrl}/api/posts/${postId}/fact-check`, await withCsrf({
     method: 'POST',
   }));
 
@@ -13,7 +13,7 @@ export async function checkFact(postId) {
 }
 
 export async function checkWeatherFact(postId) {
-  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}/fact-check/weather`, await withCsrf({
+  const response = await authFetch(`${apiBaseUrl}/api/posts/${postId}/fact-check/weather`, await withCsrf({
     method: 'POST',
   }));
 
@@ -25,7 +25,7 @@ export async function checkWeatherFact(postId) {
 }
 
 export async function checkGitHubFact(postId) {
-  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}/fact-check/github`, await withCsrf({
+  const response = await authFetch(`${apiBaseUrl}/api/posts/${postId}/fact-check/github`, await withCsrf({
     method: 'POST',
   }));
 

@@ -1,4 +1,4 @@
-import { apiBaseUrl, withCredentials, withCsrf } from './config';
+import { apiBaseUrl, authFetch, withCredentials, withCsrf } from './config';
 
 export async function fetchPosts({
   keyword = '',
@@ -14,7 +14,7 @@ export async function fetchPosts({
     page: String(page),
     size: String(size),
   });
-  const response = await fetch(
+  const response = await authFetch(
     `${apiBaseUrl}/api/posts?${searchParams.toString()}`,
     withCredentials(),
   );
@@ -41,7 +41,7 @@ export async function fetchPosts({
 }
 
 export async function fetchPost(postId) {
-  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}`, withCredentials());
+  const response = await authFetch(`${apiBaseUrl}/api/posts/${postId}`, withCredentials());
 
   if (!response.ok) {
     throw new Error('Failed to load post.');
@@ -51,7 +51,7 @@ export async function fetchPost(postId) {
 }
 
 export async function createPost({ title, content, category, tags }) {
-  const response = await fetch(`${apiBaseUrl}/api/posts`, await withCsrf({
+  const response = await authFetch(`${apiBaseUrl}/api/posts`, await withCsrf({
     method: 'POST',
     headers: jsonHeaders(),
     body: JSON.stringify({
@@ -70,7 +70,7 @@ export async function createPost({ title, content, category, tags }) {
 }
 
 export async function updatePost(postId, { title, content, category, tags }) {
-  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}`, await withCsrf({
+  const response = await authFetch(`${apiBaseUrl}/api/posts/${postId}`, await withCsrf({
     method: 'PATCH',
     headers: jsonHeaders(),
     body: JSON.stringify({
@@ -89,7 +89,7 @@ export async function updatePost(postId, { title, content, category, tags }) {
 }
 
 export async function deletePost(postId) {
-  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}`, await withCsrf({
+  const response = await authFetch(`${apiBaseUrl}/api/posts/${postId}`, await withCsrf({
     method: 'DELETE',
   }));
 
@@ -99,7 +99,7 @@ export async function deletePost(postId) {
 }
 
 export async function addComment(postId, { content }) {
-  const response = await fetch(`${apiBaseUrl}/api/posts/${postId}/comments`, await withCsrf({
+  const response = await authFetch(`${apiBaseUrl}/api/posts/${postId}/comments`, await withCsrf({
     method: 'POST',
     headers: jsonHeaders(),
     body: JSON.stringify({
@@ -115,7 +115,7 @@ export async function addComment(postId, { content }) {
 }
 
 export async function deleteComment(postId, commentId) {
-  const response = await fetch(
+  const response = await authFetch(
     `${apiBaseUrl}/api/posts/${postId}/comments/${commentId}`,
     await withCsrf({
       method: 'DELETE',

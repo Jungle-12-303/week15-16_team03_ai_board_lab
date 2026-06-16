@@ -1,4 +1,10 @@
-import { apiBaseUrl, clearCsrfToken, withCredentials, withCsrf } from './config';
+import {
+  apiBaseUrl,
+  authFetch,
+  clearCsrfToken,
+  refreshAuthCookies,
+  withCsrf,
+} from './config';
 
 export async function login(username, password) {
   const response = await fetch(`${apiBaseUrl}/api/auth/login`, await withCsrf({
@@ -39,11 +45,7 @@ export async function signUp(username, password) {
 }
 
 export async function getCurrentUser() {
-  const response = await fetch(`${apiBaseUrl}/api/auth/me`, withCredentials());
-
-  if (response.status === 401) {
-    return refreshSession();
-  }
+  const response = await authFetch(`${apiBaseUrl}/api/auth/me`);
 
   if (!response.ok) {
     throw new Error('Failed to load current user.');
@@ -53,9 +55,7 @@ export async function getCurrentUser() {
 }
 
 export async function refreshSession() {
-  const response = await fetch(`${apiBaseUrl}/api/auth/refresh`, await withCsrf({
-    method: 'POST',
-  }));
+  const response = await refreshAuthCookies();
 
   if (!response.ok) {
     throw new Error('Failed to refresh session.');

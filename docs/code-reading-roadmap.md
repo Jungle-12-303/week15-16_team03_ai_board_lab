@@ -230,7 +230,7 @@ PostDetailPage.jsx 또는 BoardPage.jsx
 | 파일 | 역할 |
 | --- | --- |
 | `frontend/project-alpha/src/hooks/useAuth.js` | 로그인, 로그아웃, `/api/auth/me` 기반 사용자 복원 |
-| `frontend/project-alpha/src/api/config.js` | 쿠키 인증 요청에 공통 `credentials: 'include'`, CSRF header 적용 |
+| `frontend/project-alpha/src/api/config.js` | 쿠키 인증 요청에 공통 `credentials: 'include'`, CSRF header, 401 refresh 재시도 적용 |
 | `frontend/project-alpha/src/api/*.js` | cookie 인증과 CSRF header를 붙여 API 호출 |
 | `backend/src/main/java/com/jungle_choi/namanmu/config/SecurityConfig.java` | 인증/인가 설정 |
 | `backend/src/main/java/com/jungle_choi/namanmu/security/JwtTokenService.java` | JWT 생성/검증 |
@@ -244,6 +244,7 @@ PostDetailPage.jsx 또는 BoardPage.jsx
 - 새로고침 후에도 로그인 상태가 유지되는 이유는 무엇인가
 - 백엔드는 어떤 filter에서 JWT를 읽고 인증 객체를 만드는가
 - 비밀번호를 반복해서 틀리면 어느 단계에서 요청을 막는가
+- access token이 만료된 일반 API 요청은 어떻게 복구되는가
 
 ## 8단계: RAG 구현 흐름
 

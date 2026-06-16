@@ -67,7 +67,7 @@ PostForm.jsx
 
 로그인 성공 후 JWT는 JavaScript에서 읽을 수 없는 httpOnly cookie로 저장됩니다. 이후 API 요청은 token 값을 직접 들고 다니지 않고 `credentials: 'include'` 옵션으로 쿠키를 함께 보냅니다.
 
-쿠키는 브라우저가 자동으로 보내기 때문에 POST/PATCH/DELETE 같은 변경 요청에는 CSRF token을 `X-XSRF-TOKEN` 계열 header로 함께 보냅니다. access token이 만료되면 refresh token cookie로 `/api/auth/refresh`를 호출해 새 access token과 refresh token을 재발급합니다.
+쿠키는 브라우저가 자동으로 보내기 때문에 POST/PATCH/DELETE 같은 변경 요청에는 CSRF token을 `X-XSRF-TOKEN` 계열 header로 함께 보냅니다. access token이 만료되면 `api/config.js`의 `authFetch`가 refresh token cookie로 `/api/auth/refresh`를 호출하고, 성공하면 원래 요청을 한 번 다시 보냅니다.
 
 ## UI 설계 방향
 

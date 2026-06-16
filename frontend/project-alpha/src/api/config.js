@@ -4,6 +4,7 @@ export const apiBaseUrl =
 let csrfToken = null;
 let csrfHeaderName = 'X-XSRF-TOKEN';
 let csrfTokenRequest = null;
+let refreshTokenRequest = null;
 
 export function withCredentials(options = {}) {
   return {
@@ -24,9 +25,41 @@ export async function withCsrf(options = {}) {
   });
 }
 
+export async function authFetch(input, options = {}) {
+  const requestOptions = withCredentials(options);
+  const response = await fetch(input, requestOptions);
+
+  if (response.status !== 401) {
+    return response;
+  }
+
+  const refreshResponse = await refreshAuthCookies();
+
+  if (!refreshResponse.ok) {
+    return response;
+  }
+
+  return fetch(input, requestOptions);
+}
+
+export async function refreshAuthCookies() {
+  if (refreshTokenRequest === null) {
+    refreshTokenRequest = withCsrf({
+      method: 'POST',
+    })
+      .then((options) => fetch(`${apiBaseUrl}/api/auth/refresh`, options))
+      .finally(() => {
+        refreshTokenRequest = null;
+      });
+  }
+
+  return refreshTokenRequest;
+}
+
 export function clearCsrfToken() {
   csrfToken = null;
   csrfTokenRequest = null;
+  refreshTokenRequest = null;
 }
 
 async function loadCsrfToken() {
