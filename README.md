@@ -83,6 +83,23 @@ Project Alpha는 개발, 학습, 프로젝트, 일상 기록을 남기는 Linked
 | Evaluation | RAGAS, custom retrieval evaluation script |
 | Local infra | Docker Compose |
 
+## AI 비용 관리
+
+Project Alpha에서 OpenAI 비용이 발생하는 지점은 게시글/청크 임베딩, RAG 유사글 검색용 query 임베딩, RAG 초안 생성, Agent 추천 요약이다. MCP fact check는 현재 GitHub/날씨 API를 직접 호출하고 deterministic 비교를 수행하므로 OpenAI 토큰 비용이 발생하지 않는다.
+
+현재 AWS 검증 기준으로 공개 게시글은 1303개, 게시글 전체 임베딩 벡터는 1312개, 청크 임베딩 벡터는 5422개다. `text-embedding-3-small` 공식 단가 기준으로 현재 코퍼스를 한 번 재임베딩하는 비용은 대략 `$0.08 ~ $0.20` 수준으로 추정했다. RAG 초안 생성 1회는 query 임베딩과 `gpt-4.1-mini` 생성 비용을 합쳐 대략 `$0.0016 ~ $0.0044` 범위로 잡았다.
+
+비용 통제는 다음 방식으로 설계했다.
+
+- RAG 초안에 넣는 근거 게시글을 최대 3개로 제한
+- 근거 본문 excerpt를 900자로 제한
+- 임베딩 job을 비동기 batch로 처리
+- Qdrant에 벡터를 저장해 매 검색마다 원문 전체를 다시 임베딩하지 않음
+- 사용자-facing AI 요청 rate limit 적용
+- Qdrant sync, embedding job 처리 같은 운영성 API는 관리자 권한으로 제한
+
+자세한 계산식과 공식 단가 출처는 [AI 비용 추정 문서](docs/ai-cost-estimate.md)에 정리했다.
+
 ## 전체 아키텍처
 
 ![Project Alpha Architecture](docs/project-alpha-architecture.png)
@@ -267,7 +284,7 @@ curl -X POST "http://127.0.0.1:8080/api/ai/vector-store/sync?limit=2000"
 
 AWS 최소 배포는 `docker-compose.aws.yml`로 EC2 한 대에서 MySQL, Qdrant, Spring Boot, React/Nginx를 함께 실행하는 방식입니다.
 
-현재 로컬 데이터 기준으로 게시글은 1309개, 전체글 임베딩은 1309개, 청크 임베딩은 5419개이며, MySQL dump gzip 압축본은 약 54MB입니다. 따라서 게시글 데이터 자체는 EC2/EBS에 올리는 데 부담이 크지 않습니다.
+현재 AWS 검증 기준으로 공개 게시글은 1303개, 전체 게시글 row는 1312개, 전체글 임베딩은 1312개, 청크 임베딩은 5422개입니다. 최초 이전에 사용한 MySQL dump gzip 압축본은 약 54MB였으므로 게시글 데이터 자체는 EC2/EBS에 올리는 데 부담이 크지 않았습니다.
 
 권장 이전 방식:
 
@@ -344,6 +361,7 @@ npm run build
 
 ## 주요 문서
 
+- [최종 제출 문서](docs/final-submission-report.md)
 - [Project Alpha 교재형 학습 문서](docs/textbook/README.md)
 - [코드 읽기 로드맵](docs/code-reading-roadmap.md)
 - [코드 맵](docs/code-map.md)
@@ -352,12 +370,13 @@ npm run build
 - [AWS 워크숍 적용 계획](docs/aws-workshop-application-plan.md)
 - [AWS EC2 배포 가이드](docs/aws-ec2-deployment.md)
 - [AWS 데이터 이전 가이드](docs/aws-data-migration.md)
+- [AI 비용 추정](docs/ai-cost-estimate.md)
 - [RAG 검색 성능 보고서](docs/rag-performance-report.md)
 - [RAG 측정 로그 인벤토리](docs/rag-measurement-inventory.md)
 - [RAG 시나리오 입출력 평가](docs/rag-scenario-evaluation.md)
 - [데모 시나리오와 스크린샷](docs/demo-scenario.md)
 - [전체 기능 QA 체크리스트](docs/qa-checklist.md)
-- [7분 발표 흐름](docs/presentation-flow.md)
+- [데모 설명 흐름](docs/presentation-flow.md)
 - [면접 질문 대비](docs/interview-qa.md)
 - [RAGAS 평가 안내](eval/ragas/README.md)
 

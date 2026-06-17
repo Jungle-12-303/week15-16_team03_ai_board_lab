@@ -1,15 +1,17 @@
 # Project Alpha 데모 시나리오
 
-이 문서는 발표와 제출용 데모 흐름을 정리한다. 목표는 기능을 많이 나열하는 것이 아니라, "기본 게시판 위에 RAG, MCP, Agent가 어떻게 붙어 있는가"를 5분 안에 보여주는 것이다.
+이 문서는 제출용 데모 흐름을 정리한다. 목표는 기능을 많이 나열하는 것이 아니라, "기본 게시판 위에 RAG, MCP, Agent가 어떻게 붙어 있는가"를 한 번에 이해할 수 있게 보여주는 것이다.
 
 ## 데모 계정
 
 | 항목 | 값 |
 |---|---|
-| URL | `http://127.0.0.1:5173` |
+| AWS URL | `http://3.37.55.77` |
+| Local URL | `http://127.0.0.1:5173` |
 | Username | `korean-seed` |
 | Password | `korean-seed-password` |
-| Backend | `http://127.0.0.1:8080` |
+| AWS Backend | `http://3.37.55.77:8080` |
+| Local Backend | `http://127.0.0.1:8080` |
 
 ## 실행 상태 확인
 
@@ -25,12 +27,13 @@
 | 항목 | 확인 결과 |
 |---|---|
 | 데모 계정 로그인 | `korean-seed / korean-seed-password`로 브라우저 로그인 성공 |
-| 메인 게시판 | published 기준 `1303`개 게시글과 카테고리별 개수 표시 확인. DB 전체 `posts` row는 `1309`개 |
+| 메인 게시판 | published 기준 `1303`개 게시글과 카테고리별 개수 표시 확인. AWS DB 전체 `posts` row는 `1312`개 |
 | 글쓰기 모달 | `Write post`, `Related posts`, `Draft from sources`, `Publish` 버튼 표시 확인 |
 | RAG API | 유사글 후보 `3`개, 초안 생성 정상 |
 | MCP API | GitHub fact check 결과 `supported` 반환 |
 | Agent API | 놓친 글 추천 `5`개와 reasoning step `4`개 반환 |
 | 빌드/테스트 | Backend test, Frontend build 통과 |
+| AWS 배포 | EC2에서 frontend/backend/mysql/qdrant 실행 확인. `embedding_jobs` 실패 0건 |
 
 ## 데모 흐름
 

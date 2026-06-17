@@ -2,7 +2,7 @@
 
 이 문서는 Project Alpha를 AWS에 처음 올려보기 위한 최소 배포 절차다. 목표는 운영급 완성형 인프라가 아니라, 발표와 학습을 위해 React, Spring Boot, MySQL, Qdrant가 EC2 한 대에서 함께 동작하는 상태를 만드는 것이다.
 
-현재 로컬 DB에는 게시글 1309개, 전체글 임베딩 1309개, 청크 임베딩 5419개가 들어 있다. 압축한 MySQL dump는 약 54MB라서 EC2로 옮기는 데 부담이 크지 않다. 데이터 이전 절차는 [AWS 데이터 이전 가이드](aws-data-migration.md)에 따로 정리했다.
+최초 AWS 이전에 사용한 로컬 DB dump에는 게시글 1309개, 전체글 임베딩 1309개, 청크 임베딩 5419개가 들어 있었다. 이후 AWS 검증과 QA 과정에서 테스트 게시글이 생성/삭제되어, 2026-06-17 최종 검증 기준으로는 전체 게시글 row 1312개, 공개 게시글 1303개, 전체글 임베딩 1312개, 청크 임베딩 5422개가 들어 있다. 압축한 MySQL dump는 약 54MB라서 EC2로 옮기는 데 부담이 크지 않다. 데이터 이전 절차는 [AWS 데이터 이전 가이드](aws-data-migration.md)에 따로 정리했다.
 
 ## 배포 방식 선택
 
@@ -172,9 +172,10 @@ POST /api/ai/vector-store/sync?limit=5000
 | 컨테이너 상태 | `docker compose --env-file .env.aws -f docker-compose.aws.yml ps` | `mysql`, `qdrant`, `backend`, `frontend` 실행 |
 | Backend health | `http://EC2_PUBLIC_IP:8080/actuator/health` | `UP` |
 | Posts API | `http://EC2_PUBLIC_IP:8080/api/posts?page=0&size=3` | 게시글 목록 반환 |
-| MySQL row count | `SELECT COUNT(*) FROM posts;` | 로컬 dump 기준 1309개 |
-| Qdrant post points | `/collections/project_alpha_posts` | 약 1309개 이상 |
-| Qdrant chunk points | `/collections/project_alpha_chunks` | 약 5419개 이상 |
+| MySQL row count | `SELECT COUNT(*) FROM posts;` | 최종 검증 기준 1312개 |
+| Published posts | `SELECT COUNT(*) FROM posts WHERE status='PUBLISHED';` | 최종 검증 기준 1303개 |
+| Qdrant post points | `/collections/project_alpha_posts` | 약 1312개 |
+| Qdrant chunk points | `/collections/project_alpha_chunks` | 약 5422개 |
 | RAG 유사글 | 프론트 작성 모달 `Related posts` | 관련 게시글 후보 반환 |
 
 ## 종료와 삭제

@@ -1,8 +1,8 @@
-# Project Alpha 7분 발표 흐름
+# Project Alpha 데모 설명 흐름
 
-이 문서는 팀 발표에서 한 명이 7분 안에 Project Alpha를 설명하고 시연하기 위한 흐름이다.
+이 문서는 Project Alpha를 제출 문서나 데모 화면으로 설명할 때 사용할 흐름이다. 실제 발표가 없더라도, 프로젝트를 처음 보는 사람이 기능과 구조를 빠르게 이해하도록 순서를 정리한다.
 
-## 발표 목표
+## 설명 목표
 
 | 목표 | 설명 |
 |---|---|
@@ -11,21 +11,21 @@
 | 실제 동작 증명 | 화면에서 글 작성, 유사글 검색, MCP 검증, Agent 추천이 동작하는 것을 보여준다. |
 | 회고 | 구현하면서 배운 점, 한계, 다음 개선 방향을 명확히 말한다. |
 
-## 7분 타임라인
+## 설명 순서
 
-| 시간 | 내용 | 화면/자료 | 말할 핵심 |
+| 순서 | 내용 | 화면/자료 | 말할 핵심 |
 |---:|---|---|---|
-| 0:00-0:40 | 프로젝트 소개 | README 첫 화면 | Project Alpha는 LinkedIn 스타일 기록 게시판에 AI 기능을 붙인 서비스다. |
-| 0:40-1:20 | 요구사항 대응 | README 요구사항 표 | 기본 게시판, RAG, MCP, Agent 요구사항을 각각 구현했다. |
-| 1:20-2:00 | 아키텍처 설명 | 아키텍처 이미지 또는 Mermaid | React, Spring Boot, MySQL, Qdrant, OpenAI, 외부 API가 역할을 나눠 가진다. |
-| 2:00-3:20 | RAG 데모 | 글 작성 모달 | 작성 중인 제목/본문/태그로 유사 게시글을 찾고, 근거 기반 초안을 만든다. |
-| 3:20-4:20 | RAG 개선 설명 | RAG 보고서 핵심 표 | vector-only에서 Qdrant + BM25 + RRF + Nori + chunk evidence 구조로 개선했다. |
-| 4:20-5:10 | MCP 데모 | 게시글 상세 fact check | MCP server가 GitHub/날씨 같은 외부 도구를 호출하고 글의 주장과 비교한다. |
-| 5:10-5:50 | Agent 데모 | Missed posts 패널 | 사용자 읽음 기록 기반으로 이미 본 글을 제외하고 놓친 글 5개를 추천한다. |
-| 5:50-6:35 | 평가와 운영성 | RAG 성능 보고서, QA 체크리스트 | `MRR@5 1.0`, `NDCG@5 0.9076`, RAGAS 보조 평가와 JWT/CSRF/rate limit/admin endpoint 보강을 설명한다. |
-| 6:35-7:00 | 회고와 개선 | 한계점 표 | reranker, 평가셋 확장, 배포 migration, MCP 도구 확장이 다음 과제다. |
+| 1 | 프로젝트 소개 | README 첫 화면 | Project Alpha는 LinkedIn 스타일 기록 게시판에 AI 기능을 붙인 서비스다. |
+| 2 | 요구사항 대응 | README 요구사항 표 | 기본 게시판, RAG, MCP, Agent 요구사항을 각각 구현했다. |
+| 3 | 아키텍처 설명 | 아키텍처 이미지 또는 Mermaid | React, Spring Boot, MySQL, Qdrant, OpenAI, 외부 API가 역할을 나눠 가진다. |
+| 4 | RAG 데모 | 글 작성 모달 | 작성 중인 제목/본문/태그로 유사 게시글을 찾고, 근거 기반 초안을 만든다. |
+| 5 | RAG 개선 설명 | RAG 보고서 핵심 표 | vector-only에서 Qdrant + BM25 + RRF + Nori + chunk evidence 구조로 개선했다. |
+| 6 | MCP 데모 | 게시글 상세 fact check | MCP server가 GitHub/날씨 같은 외부 도구를 호출하고 글의 주장과 비교한다. |
+| 7 | Agent 데모 | Missed posts 패널 | 사용자 읽음 기록 기반으로 이미 본 글을 제외하고 놓친 글 5개를 추천한다. |
+| 8 | 평가, 비용, 운영성 | RAG 성능 보고서, AI 비용 추정, QA 체크리스트 | `MRR@5 1.0`, `NDCG@5 0.9076`, RAGAS 보조 평가, 토큰 비용 통제, JWT/CSRF/rate limit/admin endpoint 보강을 설명한다. |
+| 9 | 회고와 개선 | 한계점 표 | reranker, 평가셋 확장, 배포 migration, MCP 도구 확장이 다음 과제다. |
 
-## 발표 스크립트 요약
+## 설명 스크립트 요약
 
 ### 1. 소개
 
@@ -51,13 +51,15 @@ Agent는 사용자별 최근 읽은 글을 관찰하고, 태그와 카테고리 
 
 RAG 검색은 `Precision@5`, `Recall@5`, `MRR@5`, `NDCG@5`, `Hit@5`로 평가했습니다. 최종 온라인 검증 기준으로 `Precision@5 0.8667`, `MRR@5 1.0`, `NDCG@5 0.9076`, `Hit@5 1.0`이 나왔습니다. RAGAS는 검색 랭킹을 대체하지 않고, 생성 초안의 근거성과 응답 관련성을 보는 보조 평가로 사용했습니다.
 
-### 7. 회고
+### 7. 비용과 운영성
 
-가장 큰 배움은 RAG 성능이 embedding 하나로 결정되지 않는다는 점입니다. 실제 서비스에서는 Qdrant 후보 생성, BM25 단어 검색, RRF 순위 결합, metadata 완화, 한국어 형태소 분석, chunk 근거가 함께 작동해야 했습니다. 다음 개선은 수동 라벨 평가셋 확장, holdout 평가, reranker 도입, MCP 도구 확장입니다.
-
-### 8. 운영성 보강
+OpenAI 비용은 주로 임베딩과 짧은 텍스트 생성에서 발생합니다. 현재 AWS 검증 기준으로 게시글 전체 벡터는 1312개, 청크 벡터는 5422개이고, 현재 코퍼스를 한 번 재임베딩하는 비용은 `text-embedding-3-small` 단가 기준 대략 `$0.08~$0.20` 수준으로 추정했습니다. RAG 초안 생성은 근거 게시글을 최대 3개, 각 excerpt 900자로 제한해서 input token이 과도하게 커지지 않게 했고, 사용자-facing AI 요청에는 rate limit을 적용했습니다.
 
 개발 속도를 위해 처음에는 로컬 상태와 단순 API 호출 중심으로 시작했지만, 최종 단계에서는 httpOnly cookie 기반 JWT, refresh token 재발급, CSRF 보호, 로그인/AI 요청 rate limit, 관리자 전용 운영 endpoint를 추가했습니다. 이 부분은 실제 서비스라면 최소한으로 필요한 방어선이고, 발표 전 QA에서는 회원가입/로그인/로그아웃, 잘못된 비밀번호, 게시글/댓글 CRUD, RAG/MCP/Agent API를 함께 확인했습니다.
+
+### 8. 회고
+
+가장 큰 배움은 RAG 성능이 embedding 하나로 결정되지 않는다는 점입니다. 실제 서비스에서는 Qdrant 후보 생성, BM25 단어 검색, RRF 순위 결합, metadata 완화, 한국어 형태소 분석, chunk 근거가 함께 작동해야 했습니다. 다음 개선은 수동 라벨 평가셋 확장, holdout 평가, reranker 도입, MCP 도구 확장입니다.
 
 ## 데모 실패 시 대체 흐름
 

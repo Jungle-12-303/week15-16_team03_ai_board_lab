@@ -1,10 +1,10 @@
 # Project Alpha QA 체크리스트
 
-이 문서는 발표 전 직접 눌러볼 항목을 정리한 체크리스트다. 모든 항목을 완벽한 자동 테스트로 대체하기보다, 발표 직전에 실제 화면 기준으로 깨지는 부분이 없는지 확인하는 용도다.
+이 문서는 제출 전 직접 눌러볼 항목을 정리한 체크리스트다. 모든 항목을 완벽한 자동 테스트로 대체하기보다, 실제 화면 기준으로 깨지는 부분이 없는지 확인하는 용도다.
 
 ## 2026-06-17 QA 실행 결과
 
-아래 결과는 발표 전 기준으로 실제 로컬 서버와 API를 대상으로 확인한 내용이다. 체크리스트 본문은 발표 직전 다시 눌러볼 수 있도록 유지한다.
+아래 결과는 제출 전 기준으로 실제 로컬/AWS 서버와 API를 대상으로 확인한 내용이다. 체크리스트 본문은 최종 제출 전 다시 눌러볼 수 있도록 유지한다.
 
 | 구분 | 확인 내용 | 결과 |
 |---|---|---|
@@ -15,8 +15,10 @@
 | Frontend | `http://127.0.0.1:5173` | `200` |
 | OpenAI key | `backend/.env`에 `OPENAI_API_KEY` 존재 | 확인 |
 | Qdrant | collection 목록 | `project_alpha_posts`, `project_alpha_chunks` |
-| 게시글 데이터 | `GET /api/posts?page=0&size=3` | published 기준 총 `1303`개. DB 전체 `posts` row는 `1309`개 |
+| 게시글 데이터 | `GET /api/posts?page=0&size=3` | published 기준 총 `1303`개. AWS DB 전체 `posts` row는 `1312`개 |
 | 카테고리 개수 | 전체 기준 category count | Development 201, Learning 200, Project 202, Daily 300, Review 200, Briefing 200 |
+| AWS 배포 | `http://3.37.55.77`, `http://3.37.55.77:8080/actuator/health` | frontend `200`, backend `UP` |
+| 임베딩 job | AWS DB `embedding_jobs` 상태 | `COMPLETED 2514`, `FAILED 0` |
 
 ### API Smoke Test
 
@@ -138,7 +140,7 @@
 | [ ] | RAG 보고서 | 평가셋, 지표, online/offline 차이, RAGAS 해석이 포함된다. |
 | [ ] | 데모 시나리오 | 발표 순서와 스크린샷이 포함된다. |
 | [ ] | 코드 학습 문서 | 초보자가 코드 흐름을 따라갈 수 있다. |
-| [ ] | 발표 흐름 | 7분 안에 핵심 기능 3개를 보여줄 수 있다. |
+| [ ] | 데모 흐름 | 핵심 기능 3개인 RAG, MCP, Agent를 순서대로 확인할 수 있다. |
 
 ## 최종 명령
 
