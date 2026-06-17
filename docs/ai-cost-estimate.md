@@ -79,7 +79,69 @@ embedding_cost = input_tokens / 1,000,000 * 0.02 USD
 
 `$100` API credit 기준으로 단순 환산하면, RAG 초안 생성은 대략 수만 회 단위까지 가능하다. 실제 한도는 OpenAI rate limit, 네트워크, 사용자가 동시에 누르는 빈도, 서버 사양이 함께 결정한다.
 
-## 6. 비용을 낮추기 위해 적용한 설계
+## 6. 실제 사용자 기준 월 비용 시나리오
+
+실제 서비스 비용은 전체 가입자 수보다 `하루에 몇 명이 AI 기능을 누르는가`와 `그 사용자가 어떤 AI 버튼을 몇 번 누르는가`에 의해 결정된다. 게시글 목록 조회, 상세 조회, 댓글, 일반 검색, 카테고리/태그 필터는 OpenAI를 호출하지 않는다.
+
+월 비용 공식은 다음처럼 잡을 수 있다.
+
+```text
+monthly_ai_cost
+= DAU * 30
+  * (
+      related_posts_per_user_day * related_posts_cost
+    + rag_draft_per_user_day * rag_draft_cost
+    + agent_recommend_per_user_day * agent_cost
+    + saved_posts_per_user_day * post_embedding_cost
+    )
+```
+
+현재 문서의 1회 비용 추정 범위를 그대로 사용하면 다음과 같다.
+
+| 비용 항목 | 1회 추정 비용 |
+|---|---:|
+| `Related posts` | `$0.000002 ~ $0.000012` |
+| `Draft from sources` | `$0.0016 ~ $0.0044` |
+| `Recommend 5 posts` | `$0.0009 ~ $0.0025` |
+| 게시글 저장 후 임베딩 | `$0.000012 ~ $0.00004` |
+| MCP fact check | `$0` |
+
+### 사용자 규모별 월 비용
+
+| 시나리오 | 가정 | 사용자 1명/일 AI 비용 | 월 예상 비용 |
+|---|---|---:|---:|
+| 개인/데모 사용 | DAU 1명, Related 5회, Draft 3회, Agent 2회, 글 저장 2회 | `$0.0066 ~ $0.0184` | `$0.20 ~ $0.55` |
+| 소규모 팀 | DAU 10명, Related 3회, Draft 1회, Agent 1회, 글 저장 1회 | `$0.0025 ~ $0.0070` | `$0.76 ~ $2.09` |
+| 교육반/스터디 | DAU 50명, Related 5회, Draft 2회, Agent 1회, 글 저장 2회 | `$0.0041 ~ $0.0114` | `$6.20 ~ $17.16` |
+| 작은 커뮤니티 | DAU 200명, Related 8회, Draft 3회, Agent 2회, 글 저장 2회 | `$0.0066 ~ $0.0184` | `$39.84 ~ $110.26` |
+| 무거운 사용 | DAU 1000명, Related 10회, Draft 5회, Agent 3회, 글 저장 3회 | `$0.0108 ~ $0.0297` | `$322.68 ~ $892.20` |
+
+### 해석
+
+| 관찰 | 의미 |
+|---|---|
+| 비용 대부분은 `Draft from sources`에서 발생한다. | 임베딩 검색보다 LLM 초안 생성이 더 비싸다. |
+| 게시글 저장 후 임베딩 비용은 매우 작다. | 글을 많이 저장하는 것보다 초안 생성을 반복하는 것이 비용에 더 큰 영향을 준다. |
+| MCP fact check는 OpenAI 비용이 없다. | 다만 GitHub/날씨 API quota와 서버 트래픽은 별도로 봐야 한다. |
+| `$100` credit은 소규모 팀/교육반 사용에는 충분하다. | DAU 50명 수준의 교육반 시나리오에서도 월 `$6.20 ~ $17.16` 추정이다. |
+| DAU 200명 이상에서 비용 관리가 중요해진다. | rate limit, 사용자별 사용량 제한, draft 호출 제한이 필요하다. |
+
+### 실제 운영에서 추가할 비용 관리
+
+현재는 요청 rate limit과 근거량 제한으로 비용을 제어한다. 운영 서비스라면 다음 정책을 추가하는 것이 좋다.
+
+| 정책 | 예시 |
+|---|---|
+| 사용자별 일일 AI quota | 무료 사용자는 RAG draft 하루 5회, 로그인 사용자 하루 20회 |
+| 기능별 quota 분리 | Related posts는 넉넉하게, Draft from sources는 엄격하게 제한 |
+| 팀/관리자별 월 budget | 팀별 월 `$10`, `$30`, `$100` 단위로 hard limit |
+| usage log 저장 | feature, model, input/output tokens, estimated cost 기록 |
+| 캐시 | 같은 제목/본문/태그 조합의 related query embedding 재사용 |
+| batch/off-peak 처리 | 대량 임베딩은 즉시 처리하지 않고 batch로 실행 |
+
+결론적으로 Project Alpha의 현재 구조에서 실제 사용 비용을 좌우하는 것은 "게시글 수"보다 "초안 생성 버튼을 얼마나 자주 누르는가"다. 따라서 운영 비용 관리의 핵심은 `Draft from sources` 호출 횟수 제한과 usage logging이다.
+
+## 7. 비용을 낮추기 위해 적용한 설계
 
 | 설계 | 비용 절감 효과 |
 |---|---|
@@ -92,11 +154,13 @@ embedding_cost = input_tokens / 1,000,000 * 0.02 USD
 | AI 요청 rate limit | 사용자-facing AI 요청을 기본 1분 20회로 제한 |
 | 관리자 endpoint 보호 | Qdrant sync, embedding job 대량 실행 같은 운영 API를 일반 사용자가 호출하지 못하게 함 |
 
-## 7. 요약 문장
+## 8. 요약 문장
 
 Project Alpha는 OpenAI 비용이 큰 모델 추론보다 임베딩과 짧은 초안 생성 중심으로 발생한다. 현재 1300개 게시글과 5400개 청크 벡터를 재구축하는 임베딩 비용은 대략 `$0.08~$0.20` 수준으로 추정되며, 실제 비용 관리는 근거 개수 제한, excerpt 제한, rate limit, 관리자 endpoint 보호로 통제했다.
 
-## 8. 남은 개선
+실제 사용자 기준으로 보면 비용 대부분은 `Draft from sources`에서 발생한다. 소규모 팀이나 교육반 수준에서는 월 수 달러에서 수십 달러 수준으로 추정되지만, DAU 200명 이상에서는 사용자별 quota, 기능별 rate limit, usage log 기반 budget 관리가 필요하다.
+
+## 9. 남은 개선
 
 현재 코드는 OpenAI 응답의 usage를 영구 저장하지 않는다. 운영 서비스로 확장한다면 다음 테이블을 추가하는 것이 좋다.
 

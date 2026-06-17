@@ -263,6 +263,18 @@ Project Alpha는 OpenAI API 비용이 발생하는 지점을 기능별로 분리
 
 비용을 줄이기 위해 RAG 초안에 넣는 근거 게시글을 최대 3개로 제한하고, 각 근거 본문 excerpt를 900자로 제한했다. 또한 사용자-facing AI 요청에는 rate limit을 적용하고, 대량 임베딩 처리와 Qdrant sync는 관리자 API로 보호했다.
 
+실제 사용자 기준으로는 전체 가입자 수보다 `DAU * AI 버튼 사용 횟수`가 비용을 결정한다. 글 목록 조회, 검색, 상세 보기, 댓글은 OpenAI 비용이 발생하지 않는다.
+
+| 시나리오 | 가정 | 월 예상 OpenAI 비용 |
+|---|---|---:|
+| 개인/데모 사용 | DAU 1명, Related 5회/일, Draft 3회/일, Agent 2회/일 | `$0.20 ~ $0.55` |
+| 소규모 팀 | DAU 10명, Related 3회/일, Draft 1회/일, Agent 1회/일 | `$0.76 ~ $2.09` |
+| 교육반/스터디 | DAU 50명, Related 5회/일, Draft 2회/일, Agent 1회/일 | `$6.20 ~ $17.16` |
+| 작은 커뮤니티 | DAU 200명, Related 8회/일, Draft 3회/일, Agent 2회/일 | `$39.84 ~ $110.26` |
+| 무거운 사용 | DAU 1000명, Related 10회/일, Draft 5회/일, Agent 3회/일 | `$322.68 ~ $892.20` |
+
+따라서 현재 구조에서 비용 리스크가 가장 큰 기능은 `Draft from sources`다. 실제 운영에서는 사용자별 일일 quota, 기능별 rate limit, 월 budget, usage log 저장이 필요하다.
+
 자세한 계산은 [AI 비용 추정 문서](ai-cost-estimate.md)에 정리했다.
 
 ## 9. AWS 배포
