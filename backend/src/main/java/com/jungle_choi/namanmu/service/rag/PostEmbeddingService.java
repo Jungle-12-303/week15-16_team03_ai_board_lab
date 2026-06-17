@@ -71,6 +71,8 @@ public class PostEmbeddingService {
     public void saveOrReplaceChunks(Long postId, List<ChunkEmbeddingInput> chunkEmbeddings) {
         Post post = postRepository.getReferenceById(postId);
         postEmbeddingChunkRepository.deleteAllByPost_Id(postId);
+        // Existing chunks reuse the same post_id/chunk_index unique keys, so delete SQL must run first.
+        postEmbeddingChunkRepository.flush();
 
         List<PostEmbeddingChunk> chunks = chunkEmbeddings.stream()
                 .map((chunkEmbedding) -> PostEmbeddingChunk.create(
