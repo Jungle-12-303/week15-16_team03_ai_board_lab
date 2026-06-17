@@ -1,23 +1,24 @@
 package com.example.backend.post;
 
-import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
-import java.time.LocalDateTime;
-import com.example.backend.tag.Tag;
-import java.util.ArrayList;
-import java.util.List;
 import com.example.backend.rag.PostEmbeddingService;
+import com.example.backend.tag.Tag;
 import com.example.backend.tag.TagRepository;
 import com.example.backend.user.JwtTokenProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class PostService {
+
     private static final Logger log = LoggerFactory.getLogger(PostService.class);
 
     private final PostRepository postRepository;
@@ -25,7 +26,19 @@ public class PostService {
     private final JwtTokenProvider jwtTokenProvider;
     private final PostEmbeddingService postEmbeddingService;
 
-    public Post createPost(String authorizationHeader, PostCreateRequest request){  
+    public PostService(
+        PostRepository postRepository,
+        TagRepository tagRepository,
+        JwtTokenProvider jwtTokenProvider,
+        PostEmbeddingService postEmbeddingService
+    ) {
+        this.postRepository = postRepository;
+        this.tagRepository = tagRepository;
+        this.jwtTokenProvider = jwtTokenProvider;
+        this.postEmbeddingService = postEmbeddingService;
+    }
+
+    public PostResponse createPost(String authorizationHeader, PostCreateRequest request) {
         String token = authorizationHeader.substring(7);
 
         if (!jwtTokenProvider.validateToken(token)) {
@@ -46,10 +59,10 @@ public class PostService {
 
         Post savedPost = postRepository.save(post);
         syncEmbeddingSafely(savedPost);
-        return savedPost;
+        return PostResponse.from(savedPost);
     }
 
-    public Post updatePost(String authorizationHeader, Long id, PostCreateRequest request){
+    public PostResponse updatePost(String authorizationHeader, Long id, PostCreateRequest request) {
         String token = authorizationHeader.substring(7);
 
         if (!jwtTokenProvider.validateToken(token)) {
@@ -76,10 +89,10 @@ public class PostService {
 
         Post savedPost = postRepository.save(post);
         syncEmbeddingSafely(savedPost);
-        return savedPost;
+        return PostResponse.from(savedPost);
     }
 
-    public void deletePost(String authorizationHeader, Long id){
+    public void deletePost(String authorizationHeader, Long id) {
         String token = authorizationHeader.substring(7);
 
         if (!jwtTokenProvider.validateToken(token)) {
@@ -99,41 +112,32 @@ public class PostService {
         postEmbeddingService.deletePostEmbeddings(id);
     }
 
-    public PostService(
-        PostRepository postRepository,
-        TagRepository tagRepository,
-        JwtTokenProvider jwtTokenProvider,
-        PostEmbeddingService postEmbeddingService
-    ){
-        this.postRepository = postRepository;
-        this.tagRepository = tagRepository;
-        this.jwtTokenProvider = jwtTokenProvider;
-        this.postEmbeddingService = postEmbeddingService;
-    }
-
-    public Page<Post> getPosts(String keyword, Pageable pageable){
+    public Page<PostResponse> getPosts(String keyword, Pageable pageable) {
         if (keyword == null || keyword.isBlank()) {
-            return postRepository.findAll(pageable);
+            return postRepository.findAll(pageable).map(PostResponse::from);
         }
 
-        return postRepository.findByTitleContainingOrContentContaining(keyword, keyword, pageable);
+        return postRepository.findByTitleContainingOrContentContaining(keyword, keyword, pageable)
+            .map(PostResponse::from);
     }
 
-    public Post getPost(Long id) {
-        return postRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다."));
+    public PostResponse getPost(Long id) {
+        Post post = postRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다."));
+
+        return PostResponse.from(post);
     }
 
-    private List<Tag> getTagsFromNames(List<String>tagNames){
+    private List<Tag> getTagsFromNames(List<String> tagNames) {
         List<Tag> tags = new ArrayList<>();
 
-        if(tagNames == null){
+        if (tagNames == null) {
             return tags;
         }
 
-        for(String tagName : tagNames){
+        for (String tagName : tagNames) {
             Tag tag = tagRepository.findByName(tagName)
-                .orElseGet(()->tagRepository.save(new Tag(tagName)));
+                .orElseGet(() -> tagRepository.save(new Tag(tagName)));
 
             tags.add(tag);
         }
@@ -148,5 +152,4 @@ public class PostService {
             log.warn("게시글 {} 임베딩 동기화에 실패했습니다.", post.getId(), e);
         }
     }
-
 }

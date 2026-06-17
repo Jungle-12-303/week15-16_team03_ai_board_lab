@@ -4,7 +4,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.CrossOrigin;
-import java.util.List;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -22,12 +21,12 @@ public class CommentController {
     }
 
     @GetMapping("/api/posts/{postId}/comments")
-    public List<Comment> getComments(@PathVariable Long postId) {
+    public java.util.List<CommentResponse> getComments(@PathVariable Long postId) {
         return commentService.getComments(postId);
     }
    
     @PostMapping("/api/posts/{postId}/comments")
-    public Comment createComment(
+    public CommentResponse createComment(
         @RequestHeader("Authorization") String authorizationHeader,
         @PathVariable Long postId,
         @RequestBody CommentCreateRequest request
@@ -44,7 +43,7 @@ public class CommentController {
     }
 
     @PutMapping("/api/comments/{commentId}")
-    public Comment updateComment(
+    public CommentResponse updateComment(
         @RequestHeader("Authorization") String authorizationHeader,
         @PathVariable Long commentId,
         @RequestBody CommentCreateRequest request

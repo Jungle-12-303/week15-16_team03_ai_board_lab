@@ -4,7 +4,6 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PathVariable;
-import java.util.List;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -27,7 +26,7 @@ public class PostController {
     }
 
     @GetMapping("/api/posts")
-    public Page<Post> getPosts(
+    public Page<PostResponse> getPosts(
         @RequestParam(required = false) String keyword,
         @PageableDefault(
             sort = {"createdAt", "id"},
@@ -38,12 +37,12 @@ public class PostController {
     }
     
     @GetMapping("/api/posts/{id}")
-    public Post getPost(@PathVariable Long id) {
+    public PostResponse getPost(@PathVariable Long id) {
         return postService.getPost(id);
     }
     
     @PostMapping("/api/posts")
-    public Post createPost(
+    public PostResponse createPost(
         @RequestHeader("Authorization") String authorizationHeader,
         @RequestBody PostCreateRequest request
     ) {
@@ -51,7 +50,7 @@ public class PostController {
     }
 
     @PutMapping("/api/posts/{id}")
-    public Post updatePost(
+    public PostResponse updatePost(
         @RequestHeader("Authorization") String authorizationHeader,
         @PathVariable Long id,
         @RequestBody PostCreateRequest request
