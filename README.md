@@ -261,6 +261,23 @@ cd C:\Users\cedis\week15_project\backend
 curl -X POST "http://127.0.0.1:8080/api/ai/vector-store/sync?limit=2000"
 ```
 
+이 API는 운영성 endpoint라서 `ADMIN` 권한이 필요합니다. 로컬 또는 AWS에서 실행할 때는 `APP_ADMIN_USERNAMES`에 이미 존재하는 계정을 지정한 뒤 로그인 cookie와 CSRF token을 포함해 호출합니다.
+
+## AWS 배포와 데이터 이전
+
+AWS 최소 배포는 `docker-compose.aws.yml`로 EC2 한 대에서 MySQL, Qdrant, Spring Boot, React/Nginx를 함께 실행하는 방식입니다.
+
+현재 로컬 데이터 기준으로 게시글은 1309개, 전체글 임베딩은 1309개, 청크 임베딩은 5419개이며, MySQL dump gzip 압축본은 약 54MB입니다. 따라서 게시글 데이터 자체는 EC2/EBS에 올리는 데 부담이 크지 않습니다.
+
+권장 이전 방식:
+
+1. 로컬 MySQL에서 gzip dump 생성
+2. dump를 EC2로 복사
+3. AWS MySQL 컨테이너에 import
+4. MySQL에 저장된 임베딩으로 Qdrant 재동기화
+
+자세한 절차는 [AWS EC2 배포 가이드](docs/aws-ec2-deployment.md)와 [AWS 데이터 이전 가이드](docs/aws-data-migration.md)에 정리했습니다.
+
 ## RAG 평가
 
 현재 운영 설정의 retrieval 평가는 Node script로 실행합니다.
@@ -334,6 +351,7 @@ npm run build
 - [테스트/데모 계정 모음집](docs/account-inventory.md)
 - [AWS 워크숍 적용 계획](docs/aws-workshop-application-plan.md)
 - [AWS EC2 배포 가이드](docs/aws-ec2-deployment.md)
+- [AWS 데이터 이전 가이드](docs/aws-data-migration.md)
 - [RAG 검색 성능 보고서](docs/rag-performance-report.md)
 - [RAG 측정 로그 인벤토리](docs/rag-measurement-inventory.md)
 - [RAG 시나리오 입출력 평가](docs/rag-scenario-evaluation.md)

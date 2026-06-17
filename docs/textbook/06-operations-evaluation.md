@@ -7,7 +7,7 @@
 로컬 개발은 세 프로세스를 띄웁니다.
 
 ```powershell
-docker compose up -d mysql
+docker compose up -d mysql qdrant
 ```
 
 ```powershell
@@ -67,7 +67,7 @@ npm run build
 | 백엔드 테스트 | [backend/src/test/java](../../backend/src/test/java) |
 | RAG 검색 평가 | [evaluate-rag-retrieval.mjs](../../scripts/evaluate-rag-retrieval.mjs), [RagEvaluationController.java](../../backend/src/main/java/com/jungle_choi/namanmu/api/RagEvaluationController.java), [RagEvaluationService.java](../../backend/src/main/java/com/jungle_choi/namanmu/service/rag/RagEvaluationService.java) |
 | RAGAS 평가 | [eval/ragas/README.md](../../eval/ragas/README.md), [run_project_alpha_ragas.py](../../eval/ragas/run_project_alpha_ragas.py), [cases.json](../../eval/ragas/cases.json) |
-| 아키텍처/DB 문서 | [project-alpha-architecture.png](../project-alpha-architecture.png), [database-schema.md](../database-schema.md), [code-map.md](../code-map.md) |
+| 아키텍처/DB/배포 문서 | [project-alpha-architecture.png](../project-alpha-architecture.png), [database-schema.md](../database-schema.md), [code-map.md](../code-map.md), [aws-data-migration.md](../aws-data-migration.md) |
 
 ## RAG 평가를 왜 따로 하나
 
@@ -91,11 +91,14 @@ AI 기능은 "응답이 나왔다"만으로 평가할 수 없습니다. 관련 �
 | React build | S3 + CloudFront 또는 Amplify |
 | Spring Boot | EC2, ECS, Elastic Beanstalk |
 | MySQL container | RDS MySQL |
+| Qdrant container | Qdrant Cloud, EC2 volume, ECS |
 | 환경 변수 | Parameter Store, Secrets Manager |
 | 로그 | CloudWatch Logs |
 | 파일 저장 | S3 |
 
 RAG를 AWS 서비스 중심으로 바꾸면 Bedrock Knowledge Bases, OpenSearch, Aurora PostgreSQL + pgvector 같은 선택지도 있습니다. 이 프로젝트는 핵심 RAG 흐름을 코드로 추적할 수 있도록 직접 구현한 구조를 유지합니다.
+
+현재 로컬 데이터는 게시글 1309개, 전체글 임베딩 1309개, 청크 임베딩 5419개 수준입니다. MySQL dump를 gzip으로 압축하면 약 54MB라서 EC2로 이전하기에 작습니다. 권장 이전 방식은 MySQL dump를 import한 뒤, MySQL에 저장된 임베딩으로 Qdrant를 재동기화하는 것입니다. 상세 절차는 [AWS 데이터 이전 가이드](../aws-data-migration.md)에 정리했습니다.
 
 ## 비용과 보안
 

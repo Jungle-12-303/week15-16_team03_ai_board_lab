@@ -15,7 +15,7 @@
 | Frontend | `http://127.0.0.1:5173` | `200` |
 | OpenAI key | `backend/.env`에 `OPENAI_API_KEY` 존재 | 확인 |
 | Qdrant | collection 목록 | `project_alpha_posts`, `project_alpha_chunks` |
-| 게시글 데이터 | `GET /api/posts?page=0&size=3` | 총 `1303`개 |
+| 게시글 데이터 | `GET /api/posts?page=0&size=3` | published 기준 총 `1303`개. DB 전체 `posts` row는 `1309`개 |
 | 카테고리 개수 | 전체 기준 category count | Development 201, Learning 200, Project 202, Daily 300, Review 200, Briefing 200 |
 
 ### API Smoke Test
@@ -63,7 +63,7 @@
 | [ ] | Backend `.\gradlew.bat bootRun` | `8080` 포트에서 Spring Boot가 실행된다. |
 | [ ] | Frontend `npm run dev` | `5173` 포트에서 Vite가 실행된다. |
 | [ ] | OpenAI API key 설정 | RAG 유사글 검색과 초안 생성이 실패하지 않는다. |
-| [ ] | `curl -X POST "http://127.0.0.1:8080/api/ai/vector-store/sync?limit=2000"` | 기존 임베딩이 Qdrant collection에 반영된다. |
+| [ ] | 관리자 로그인 후 `POST /api/ai/vector-store/sync?limit=2000` | 기존 임베딩이 Qdrant collection에 반영된다. 일반 사용자 호출은 `403`이 맞다. |
 
 ## 인증
 

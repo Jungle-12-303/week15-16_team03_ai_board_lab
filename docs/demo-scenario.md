@@ -25,7 +25,7 @@
 | 항목 | 확인 결과 |
 |---|---|
 | 데모 계정 로그인 | `korean-seed / korean-seed-password`로 브라우저 로그인 성공 |
-| 메인 게시판 | 전체 `1303`개 게시글과 카테고리별 개수 표시 확인 |
+| 메인 게시판 | published 기준 `1303`개 게시글과 카테고리별 개수 표시 확인. DB 전체 `posts` row는 `1309`개 |
 | 글쓰기 모달 | `Write post`, `Related posts`, `Draft from sources`, `Publish` 버튼 표시 확인 |
 | RAG API | 유사글 후보 `3`개, 초안 생성 정상 |
 | MCP API | GitHub fact check 결과 `supported` 반환 |

@@ -2,6 +2,8 @@
 
 이 문서는 Project Alpha를 AWS에 처음 올려보기 위한 최소 배포 절차다. 목표는 운영급 완성형 인프라가 아니라, 발표와 학습을 위해 React, Spring Boot, MySQL, Qdrant가 EC2 한 대에서 함께 동작하는 상태를 만드는 것이다.
 
+현재 로컬 DB에는 게시글 1309개, 전체글 임베딩 1309개, 청크 임베딩 5419개가 들어 있다. 압축한 MySQL dump는 약 54MB라서 EC2로 옮기는 데 부담이 크지 않다. 데이터 이전 절차는 [AWS 데이터 이전 가이드](aws-data-migration.md)에 따로 정리했다.
+
 ## 배포 방식 선택
 
 | 방식 | 장점 | 단점 | 이번 선택 |
@@ -132,7 +134,19 @@ docker compose --env-file .env.aws -f docker-compose.aws.yml logs -f backend
 
 ## 초기 데이터와 임베딩
 
-데이터가 비어 있으면 회원가입 후 직접 게시글을 만들 수 있다. 기존 seed/import 흐름을 AWS에서도 실행하려면 backend 컨테이너에 명령을 넣는 방식으로 진행한다.
+데이터가 비어 있으면 회원가입 후 직접 게시글을 만들 수 있다. 하지만 현재 프로젝트처럼 로컬에 이미 RAG 평가용 게시글과 임베딩이 만들어져 있다면, AWS에서 다시 크롤링하거나 OpenAI Embedding API를 다시 호출하는 것보다 MySQL dump를 가져가는 편이 낫다.
+
+권장 순서:
+
+1. 로컬 MySQL에서 gzip dump 생성
+2. dump 파일을 EC2로 복사
+3. AWS MySQL 컨테이너에 import
+4. backend/frontend 실행
+5. MySQL에 저장된 임베딩을 Qdrant에 재동기화
+
+상세 명령은 [AWS 데이터 이전 가이드](aws-data-migration.md)를 따른다.
+
+기존 seed/import 흐름을 AWS에서도 실행하려면 backend 컨테이너에 명령을 넣는 방식으로 진행한다.
 
 예시:
 
@@ -142,6 +156,26 @@ docker compose --env-file .env.aws -f docker-compose.aws.yml run --rm --no-deps 
 ```
 
 이 방식은 별도 one-off backend 컨테이너를 한 번 띄워 import만 실행하고 종료한다. 대량 import는 OpenAI embedding 비용과 EC2 메모리 사용량이 함께 늘어나므로, 로컬에서 만든 DB dump를 가져오거나 짧게 나눠 실행하는 편이 안전하다.
+
+Qdrant는 MySQL과 별도의 vector index다. MySQL dump를 import한 뒤 Qdrant가 비어 있으면 관리자 권한으로 아래 API를 호출해 재동기화한다.
+
+```bash
+POST /api/ai/vector-store/sync?limit=5000
+```
+
+이 endpoint는 `ADMIN` 권한이 필요하다. `APP_ADMIN_USERNAMES`에 이미 존재하는 계정을 지정한 뒤 로그인 cookie와 CSRF token을 포함해서 호출한다.
+
+## 배포 후 검증 체크리스트
+
+| 확인 | 명령 또는 URL | 기대 결과 |
+|---|---|---|
+| 컨테이너 상태 | `docker compose --env-file .env.aws -f docker-compose.aws.yml ps` | `mysql`, `qdrant`, `backend`, `frontend` 실행 |
+| Backend health | `http://EC2_PUBLIC_IP:8080/actuator/health` | `UP` |
+| Posts API | `http://EC2_PUBLIC_IP:8080/api/posts?page=0&size=3` | 게시글 목록 반환 |
+| MySQL row count | `SELECT COUNT(*) FROM posts;` | 로컬 dump 기준 1309개 |
+| Qdrant post points | `/collections/project_alpha_posts` | 약 1309개 이상 |
+| Qdrant chunk points | `/collections/project_alpha_chunks` | 약 5419개 이상 |
+| RAG 유사글 | 프론트 작성 모달 `Related posts` | 관련 게시글 후보 반환 |
 
 ## 종료와 삭제
 

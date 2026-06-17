@@ -73,6 +73,8 @@ flowchart LR
 | `backend/src/main/java/com/jungle_choi/namanmu/service/rag/RagDraftService.java` | 유사 게시글을 근거로 초안 생성 | RAG 생성 구현 |
 | `backend/src/main/java/com/jungle_choi/namanmu/service/rag/OpenAiEmbeddingClient.java` | OpenAI Embedding API 호출 | 임베딩 외부 연동 |
 | `backend/src/main/java/com/jungle_choi/namanmu/service/rag/OpenAiTextClient.java` | OpenAI Chat/Text API 호출 | 생성형 AI 외부 연동 |
+| `backend/src/main/java/com/jungle_choi/namanmu/service/rag/QdrantVectorStoreClient.java` | Qdrant collection 생성, post/chunk vector upsert, vector 후보 검색 | Vector DB 연동 |
+| `backend/src/main/java/com/jungle_choi/namanmu/service/rag/QdrantVectorSyncService.java` | MySQL에 저장된 임베딩을 Qdrant에 재동기화 | AWS 이전/복구 시 확인 |
 | `backend/src/main/java/com/jungle_choi/namanmu/service/mcp/McpServerService.java` | MCP 도구 목록/호출 처리 | MCP server 핵심 |
 | `backend/src/main/java/com/jungle_choi/namanmu/service/mcp/WeatherApiClient.java` | 외부 날씨 API 호출 | MCP 외부 연동 |
 | `backend/src/main/java/com/jungle_choi/namanmu/service/mcp/GitHubApiClient.java` | 외부 GitHub API 호출 | MCP 외부 연동 |
@@ -111,6 +113,16 @@ flowchart LR
 6. `RagDraftService.createDraft`
 7. `SimilarPostSearchService.searchSimilarPosts`
 8. `OpenAiTextClient.generateText`
+
+### Qdrant 재동기화
+
+1. `AiController.syncVectorStore`
+2. `SecurityConfig`의 `/api/ai/vector-store/**` ADMIN 권한 설정
+3. `QdrantVectorSyncService.syncExistingEmbeddings`
+4. `PostEmbeddingRepository.findAllByEmbeddingModel`
+5. `PostEmbeddingChunkRepository.findAllByEmbeddingModel`
+6. `QdrantVectorStoreClient.upsertPost`
+7. `QdrantVectorStoreClient.replacePostChunks`
 
 ### 외부 웹 텍스트 코퍼스 주입
 

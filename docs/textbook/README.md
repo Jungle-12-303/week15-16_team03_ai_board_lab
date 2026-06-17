@@ -13,7 +13,7 @@
 | 3장 | [Spring Boot 백엔드](03-backend-spring.md) | Controller, Service, Repository, Entity는 어떻게 연결되는가 |
 | 4장 | [RAG 구현](04-rag.md) | embedding, chunking, retrieval, generation은 어떻게 이어지는가 |
 | 5장 | [MCP와 Agent](05-mcp-agent.md) | 외부 도구 호출과 개인화 추천은 어떻게 분리되는가 |
-| 6장 | [운영과 평가](06-operations-evaluation.md) | 테스트, 평가, 배포, 비용, 보안은 어떻게 바라봐야 하는가 |
+| 6장 | [운영과 평가](06-operations-evaluation.md) | 테스트, 평가, AWS 배포, 데이터 이전, 비용, 보안은 어떻게 바라봐야 하는가 |
 
 각 장의 `코드로 바로 이동` 표는 설명과 실제 구현 파일을 연결합니다. 개념을 읽은 뒤 링크된 파일을 열어 흐름을 따라가면 됩니다.
 

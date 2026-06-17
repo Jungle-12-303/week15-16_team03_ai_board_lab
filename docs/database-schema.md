@@ -14,6 +14,7 @@ erDiagram
     posts ||--o{ comments : has
     posts ||--o{ post_tags : has
     posts ||--o| post_embeddings : has
+    posts ||--o{ post_embedding_chunks : chunked_as
     posts ||--o{ embedding_jobs : queues
     posts ||--o{ post_reads : read_by
     tags ||--o{ post_tags : attached
@@ -73,6 +74,19 @@ erDiagram
         datetime updated_at
     }
 
+    post_embedding_chunks {
+        bigint id PK
+        bigint post_id FK
+        int chunk_index
+        longtext chunk_text
+        varchar embedding_model
+        int dimensions
+        longtext embedding_json
+        varchar source_hash
+        datetime created_at
+        datetime updated_at
+    }
+
     embedding_jobs {
         bigint id PK
         bigint post_id FK
@@ -115,6 +129,7 @@ erDiagram
 | 태그 | `tags` | `Tag` | 태그 이름 저장 |
 | 게시글-태그 연결 | `post_tags` | `PostTag` | 게시글과 태그의 다대다 관계 연결 |
 | RAG 유사 게시글 | `post_embeddings` | `PostEmbedding` | 게시글별 임베딩 벡터와 원본 해시 저장 |
+| RAG 청크 근거 | `post_embedding_chunks` | `PostEmbeddingChunk` | 긴 게시글을 문단 단위로 나눈 청크와 청크 임베딩 저장 |
 | RAG 임베딩 작업 큐 | `embedding_jobs` | `EmbeddingJob` | 게시글 임베딩 생성 작업의 상태와 실패 기록 저장 |
 | Agent 읽음 기록 | `post_reads` | `PostRead` | 사용자별 게시글 읽음 여부와 마지막 읽은 시간 저장 |
 
@@ -203,8 +218,8 @@ access token 재발급을 위한 refresh token 저장 테이블이다. 브라우
 ### post_embeddings
 
 RAG 유사 게시글 검색을 위한 게시글 임베딩 저장 테이블이다.
-초기 구현에서는 MySQL에 임베딩을 JSON 문자열로 저장하고, 서버 코드에서 cosine similarity를 계산한다.
-데이터가 커지면 Chroma, OpenSearch, pgvector 같은 전용 Vector DB로 교체할 수 있다.
+MySQL은 임베딩 원본 JSON을 보관하는 기준 저장소이고, Qdrant는 이 값을 동기화해서 빠른 vector 후보 검색에 사용한다.
+Qdrant collection을 잃어도 이 테이블이 남아 있으면 `/api/ai/vector-store/sync`로 vector index를 다시 만들 수 있다.
 
 | 컬럼 | 타입 | 제약 | 설명 |
 | --- | --- | --- | --- |
@@ -218,6 +233,27 @@ RAG 유사 게시글 검색을 위한 게시글 임베딩 저장 테이블이다
 | `updated_at` | `DATETIME` | NOT NULL | 마지막 갱신 시간 |
 
 `post_id`는 unique 제약을 둔다. 게시글 하나에는 현재 기준의 최신 임베딩 하나만 연결하기 위해서다.
+
+### post_embedding_chunks
+
+긴 게시글의 일부 문단이 검색 근거가 될 수 있도록 청크 단위 임베딩을 저장하는 테이블이다.
+전체글 임베딩은 게시글의 큰 주제를 잡고, 청크 임베딩은 실제 초안 생성에 사용할 근거 문단을 보강한다.
+
+| 컬럼 | 타입 | 제약 | 설명 |
+| --- | --- | --- | --- |
+| `id` | `BIGINT` | PK, AUTO_INCREMENT | 청크 임베딩 식별자 |
+| `post_id` | `BIGINT` | FK, NOT NULL | 청크가 속한 게시글. `posts.id` 참조 |
+| `chunk_index` | `INT` | NOT NULL | 게시글 안에서의 청크 순서 |
+| `chunk_text` | `LONGTEXT` | NOT NULL | 실제 검색 근거로 보여줄 청크 원문 |
+| `embedding_model` | `VARCHAR(100)` | NOT NULL | 청크 임베딩 생성에 사용한 모델명 |
+| `dimensions` | `INT` | NOT NULL | 임베딩 벡터 차원 수 |
+| `embedding_json` | `LONGTEXT` | NOT NULL | 벡터 값을 JSON 배열 문자열로 저장 |
+| `source_hash` | `VARCHAR(64)` | NOT NULL | 청크 입력 문자열의 SHA-256 해시 |
+| `created_at` | `DATETIME` | NOT NULL | 최초 생성 시간 |
+| `updated_at` | `DATETIME` | NOT NULL | 마지막 갱신 시간 |
+
+`post_id`, `chunk_index` 조합에는 unique 제약을 둔다. 같은 게시글의 같은 순서 청크가 중복 저장되지 않게 하기 위해서다.
+Qdrant의 `project_alpha_chunks` collection은 이 테이블을 기준으로 재구성할 수 있다.
 
 ### embedding_jobs
 
@@ -270,23 +306,25 @@ Agent의 놓친 글 추천 기능을 위한 읽음 기록 테이블이다.
 | `DELETE /api/posts/{postId}` | 작성자 검증 후 게시글을 `DELETED` 상태로 변경 |
 | `POST /api/posts/{postId}/comments` | `comments` 테이블에 댓글 저장 |
 | `DELETE /api/posts/{postId}/comments/{commentId}` | 댓글 작성자 검증 후 댓글 삭제 |
-| `POST /api/ai/similar-posts` | 작성 중인 글을 임베딩하고 `post_embeddings`에서 유사 게시글 검색 |
+| `POST /api/ai/similar-posts` | 작성 중인 글을 임베딩하고 Qdrant 후보, `post_embeddings`, `post_embedding_chunks`를 함께 사용해 유사 게시글 검색 |
 | `POST /api/ai/draft` | 유사 게시글을 근거로 RAG 초안 생성 |
-| `POST /api/ai/embedding-jobs/process` | `embedding_jobs`의 대기 작업을 처리해 `post_embeddings` 갱신 |
-| `POST /api/posts/{postId}/fact-check/weather` | MCP 날씨 도구로 외부 정보를 조회하고 게시글 팩트체크 |
+| `POST /api/ai/embedding-jobs/process` | `embedding_jobs`의 대기 작업을 처리해 `post_embeddings`, `post_embedding_chunks`, Qdrant 갱신 |
+| `POST /api/ai/vector-store/sync` | MySQL에 저장된 임베딩을 Qdrant post/chunk collection에 재동기화 |
+| `POST /api/posts/{postId}/fact-check` | MCP GitHub/날씨 도구로 외부 정보를 조회하고 게시글 팩트체크 |
 
 게시글 생성/수정은 게시글 저장과 임베딩 생성을 한 요청에서 모두 처리하지 않는다.
 게시글 트랜잭션에서는 `embedding_jobs`에 작업만 예약하고, 실제 OpenAI Embedding API 호출은 별도 처리 API가 담당한다.
 
 ## 남은 확장 후보
 
-AI 기능과 개인화 기능 중 일부는 아직 테이블로 만들지 않았다. 구현 시점에 아래 후보를 추가 검토한다.
+AI 기능과 개인화 기능 중 현재 저장하지 않는 이력성 데이터는 아래처럼 확장할 수 있다. 현재 구현은 AI 결과를 즉시 응답으로 내려주고, 장기 보관은 하지 않는다.
 
 | 기능 | 후보 테이블 | 목적 |
 | --- | --- | --- |
 | AI 초안 생성 기록 | `ai_draft_logs` | 입력 초안, 참조 게시글, 생성 결과, 모델명 저장 |
-| MCP 날씨 브리핑 | `weather_briefing_logs` | 지역, 날씨 원본 데이터, 생성된 브리핑 저장 |
-| 놓친 글 추천 Agent | `user_interests` | 사용자 선호 태그 저장 |
+| MCP 팩트체크 기록 | `fact_check_logs` | 사용한 도구, 외부 원본, 판정, 비교 결과 저장 |
+| Agent 선호 프로필 | `user_interests` | 읽음 기록에서 추론한 사용자 선호 태그를 별도 캐시 |
+| AI 사용량 기록 | `ai_request_logs` | 사용자별 AI 호출량, 모델, latency, 실패 원인 추적 |
 
 ## 유지보수 규칙
 

@@ -155,7 +155,7 @@ Content-Type: application/json
 
 ## MCP 기능 반영
 
-확정한 MCP 기능은 날씨 브리핑 기반 글 작성 보조다.
+초기 MCP 후보는 날씨 브리핑 기반 글 작성 보조였지만, 최종 구현은 게시글 상세에서 실행하는 외부 데이터 기반 팩트체크로 정리했다. 날씨 API 연동은 유지하되, GitHub/날씨 같은 외부 도구 결과를 이미 작성된 글의 주장과 비교하는 방향이다.
 
 워크숍의 Agent Action Group과 Lambda 개념은 MCP 도구 설계에 참고할 수 있다. 우리 프로젝트에서는 처음부터 Lambda를 쓰지 않고, MCP Server 또는 Spring Boot 내부 어댑터로 시작한다.
 
@@ -237,4 +237,4 @@ Bedrock Guardrail 실습은 그대로 쓰지 않더라도, 다음 규칙은 우�
 
 ## 발표 문서에 넣을 표현
 
-Project Alpha는 React와 Spring Boot 기반의 개발/학습/일상 로그 게시판이다. 기본 게시판 기능 위에 OpenAI 기반 RAG 초안 생성, MCP 날씨 브리핑, 태그 선호 기반 Agent 추천 기능을 결합한다. 배포 구조는 AWS VPC 안에서 public entry point와 private application/database 영역을 분리하는 방향으로 설계하며, 추후 ALB, RDS, CloudWatch를 통해 운영 안정성을 확장할 수 있다.
+Project Alpha는 React와 Spring Boot 기반의 개발/학습/일상 로그 게시판이다. 기본 게시판 기능 위에 OpenAI 기반 RAG 초안 생성, MCP 외부 데이터 기반 팩트체크, 읽음 기록 기반 Agent 추천 기능을 결합한다. 배포 구조는 AWS VPC 안에서 public entry point와 private application/database 영역을 분리하는 방향으로 설계하며, 추후 ALB, RDS, CloudWatch를 통해 운영 안정성을 확장할 수 있다.
