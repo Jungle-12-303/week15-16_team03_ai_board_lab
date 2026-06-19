@@ -5,11 +5,13 @@ import com.example.aiknowledgeboard.ai.rag.SimilarPostResponse;
 import com.example.aiknowledgeboard.post.Post;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.transformer.splitter.TextSplitter;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -22,19 +24,58 @@ public class RagService2 {
 
     private final VectorStore vectorStore;
     private final ChatClient chatClient;
+    private final TextSplitter textSplitter;
+    private final int topK;
+    private final double similarityThreshold;
 
-    public RagService2(VectorStore vectorStore, ChatClient.Builder chatClientBuilder) {
+    public RagService2(VectorStore vectorStore, ChatClient.Builder chatClientBuilder,
+                       @Value("${RAG_TOP_K:6}") int topK,
+                       @Value("${RAG_SIMILARITY_THRESHOLD:0.4}") double similarityThreshold) {
         this.vectorStore = vectorStore;
         this.chatClient = chatClientBuilder.build();
+        this.textSplitter = createTokenTextSplitter();
+        this.topK = topK;
+        this.similarityThreshold = similarityThreshold;
     }
 
     public void loadIndex(Post post) {
         delete(post);
+        index(post);
+    }
 
+    private void index(Post post) {
+        Document document = toDocument(post);
+        List<Document> chunks = textSplitter.split(document);
+        vectorStore.add(chunks);
+    }
+
+    public int reindexAll(List<Post> posts) {
+        deleteAllPostIndexes();
+
+        int indexedCount = 0;
+        for (Post post : posts) {
+            if (post.getId() == null) {
+                continue;
+            }
+
+            index(post);
+            indexedCount++;
+        }
+        return indexedCount;
+    }
+
+    private TextSplitter createTokenTextSplitter() {
+        return TokenTextSplitter.builder()
+                .withChunkSize(800)
+                .withMinChunkSizeChars(200)
+                .build();
+    }
+
+    private Document toDocument(Post post) {
         String sourceText = "제목: %s\n내용: %s"
                 .formatted(post.getTitle(), post.getContent());
 
-        Document document = new Document(
+        return new Document(
                 sourceText,
                 Map.of(
                         "type", "post",
@@ -44,14 +85,6 @@ public class RagService2 {
                         "authorNickname", post.getAuthor().getNickname()
                 )
         );
-
-        TokenTextSplitter splitter = TokenTextSplitter.builder()
-                .withChunkSize(800)
-                .withMinChunkSizeChars(200)
-                .build();
-        List<Document> chunks = splitter.apply(List.of(document));
-
-        vectorStore.add(chunks);
     }
 
     public String requestQuery(String question) {
@@ -62,8 +95,8 @@ public class RagService2 {
         List<Document> documents = vectorStore.similaritySearch(
                 SearchRequest.builder()
                         .query(query)
-                        .topK(6)
-                        .similarityThreshold(0.5d)
+                        .topK(topK)
+                        .similarityThreshold(similarityThreshold)
                         .filterExpression(postSearchFilter(excludePostId))
                         .build()
         );
@@ -111,7 +144,7 @@ public class RagService2 {
             SimilarPostResponse source = new SimilarPostResponse(
                     postId,
                     metadataText(document, "title", "제목 없음"),
-                    preview(metadataText(document, "content", document.getText())),
+                    preview(document.getText()),
                     metadataText(document, "authorNickname", "알 수 없음"),
                     document.getScore() == null ? 0.0d : document.getScore(),
                     "/posts/" + postId
@@ -164,6 +197,13 @@ public class RagService2 {
         }
 
         Filter.Expression filter = getFilter(post);
+        vectorStore.delete(filter);
+    }
+
+    private void deleteAllPostIndexes() {
+        Filter.Expression filter = new FilterExpressionBuilder()
+                .eq("type", "post")
+                .build();
         vectorStore.delete(filter);
     }
 

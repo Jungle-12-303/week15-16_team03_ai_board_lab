@@ -34,6 +34,9 @@ services:
       OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL:-gpt-4o-mini}
       OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      NOTION_API_KEY: ${NOTION_API_KEY:-}
+      NOTION_DATA_SOURCE_ID: ${NOTION_DATA_SOURCE_ID:-}
+      NOTION_VERSION: ${NOTION_VERSION:-2026-03-11}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost,http://localhost:5173}
     expose:
       - "8080"

@@ -2,6 +2,7 @@ package com.example.aiknowledgeboard.ai.rag;
 
 import com.example.aiknowledgeboard.ai.rag2.RagService2;
 import com.example.aiknowledgeboard.common.ErrorResponse;
+import com.example.aiknowledgeboard.post.PostService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -15,15 +16,19 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/ai/rag")
 @Tag(name = "AI - RAG", description = "유사 게시글 검색과 요약 API")
 @SecurityRequirement(name = "bearerAuth")
 public class RagController {
     private final RagService2 ragService;
+    private final PostService postService;
 
-    public RagController(RagService2 ragService) {
+    public RagController(RagService2 ragService, PostService postService) {
         this.ragService = ragService;
+        this.postService = postService;
     }
 
     @PostMapping("/similar")
@@ -51,4 +56,16 @@ public class RagController {
     RagResponse chat(@Valid @RequestBody RagChatRequest request) {
         return ragService.answer(request.message(), null);
     }
+
+    @PostMapping("/reindex")
+    @Operation(summary = "RAG 전체 재인덱싱", description = "현재 DB의 모든 게시글을 현재 splitter 설정으로 다시 벡터 저장소에 저장합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "전체 재인덱싱 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 필요")
+    })
+    Map<String, Integer> reindex() {
+        int indexedPosts = postService.reindexAllForRag();
+        return Map.of("indexedPosts", indexedPosts);
+    }
+
 }

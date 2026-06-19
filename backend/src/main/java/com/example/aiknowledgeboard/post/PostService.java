@@ -17,6 +17,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -86,6 +87,12 @@ public class PostService {
         verifyOwner(post, user);
         deleteIndexSafely(post);
         postRepository.delete(post);
+    }
+
+    @Transactional
+    public int reindexAllForRag() {
+        List<Post> posts = postRepository.findAll(Sort.by(Sort.Direction.ASC, "id"));
+        return ragService.reindexAll(posts);
     }
 
     private PostDetailResponse toDetail(Post post) {

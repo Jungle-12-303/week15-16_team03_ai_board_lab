@@ -299,6 +299,82 @@ export const resultPre = style({
     wordBreak: 'break-word'
 })
 
+export const ragSummary = style({
+    margin: 0,
+    padding: '12px',
+    border: '1px solid #dbeafe',
+    borderRadius: '8px',
+    backgroundColor: '#eff6ff',
+    color: '#1f2937',
+    fontSize: '14px',
+    lineHeight: 1.7,
+    whiteSpace: 'pre-wrap',
+    overflowWrap: 'anywhere'
+})
+
+export const sourceCardList = style({
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+    gap: '10px'
+})
+
+export const sourceCard = style({
+    display: 'flex',
+    minWidth: 0,
+    minHeight: '144px',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: '10px',
+    padding: '14px',
+    border: '1px solid #dfe6ef',
+    borderRadius: '8px',
+    backgroundColor: '#ffffff',
+    color: '#172033',
+    cursor: 'pointer',
+    textAlign: 'left',
+    transition: 'border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease',
+    selectors: {
+        '&:hover': {
+            borderColor: '#2563eb',
+            boxShadow: '0 10px 28px rgba(37, 99, 235, 0.1)',
+            transform: 'translateY(-1px)'
+        },
+        '&:focus-visible': {
+            outline: '2px solid #2563eb',
+            outlineOffset: '2px'
+        }
+    }
+})
+
+export const sourceCardTitle = style({
+    color: '#111827',
+    fontSize: '15px',
+    fontWeight: 800,
+    lineHeight: 1.4,
+    overflowWrap: 'anywhere'
+})
+
+export const sourceCardPreview = style({
+    color: '#4b5563',
+    fontSize: '13px',
+    lineHeight: 1.55,
+    overflowWrap: 'anywhere'
+})
+
+export const sourceCardMeta = style({
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '8px',
+    color: '#6b7280',
+    fontSize: '12px',
+    fontWeight: 700
+})
+
+export const sourceCardScore = style({
+    color: '#1d4ed8'
+})
+
 export const comments = style({
     display: 'flex',
     flexDirection: 'column',
@@ -488,6 +564,43 @@ export const sourceButtonPreview = style({
     color: '#4b5563',
     fontSize: '12px',
     lineHeight: 1.5
+})
+
+export const chatActions = style({
+    display: 'flex',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: '8px',
+    paddingTop: '8px',
+    borderTop: '1px solid #e5e7eb'
+})
+
+export const notionLink = style({
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    minHeight: '28px',
+    padding: '0 10px',
+    border: '1px solid #86efac',
+    borderRadius: '6px',
+    backgroundColor: '#f0fdf4',
+    color: '#166534',
+    fontSize: '12px',
+    fontWeight: 800,
+    textDecoration: 'none',
+    selectors: {
+        '&:hover': {
+            borderColor: '#16a34a',
+            backgroundColor: '#dcfce7'
+        }
+    }
+})
+
+export const chatActionError = style({
+    margin: 0,
+    color: '#b42318',
+    fontSize: '12px',
+    fontWeight: 800
 })
 
 export const chatForm = style({

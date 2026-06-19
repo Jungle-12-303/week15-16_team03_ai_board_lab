@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Send, Trash2 } from 'lucide-react'
+import { ExternalLink, FilePlus2, Send, Trash2 } from 'lucide-react'
 import { aiApi, getErrorMessage, postApi } from '../../api/client.js'
 import PostListItem from './PostListItem.jsx'
 import * as styles from '../../css/PostListPage.css'
@@ -384,7 +384,11 @@ export default function PostListPage({ user, setNotice }) {
                     id: `assistant-${messageId}`,
                     role: 'assistant',
                     content: data.summary,
-                    sources: data.sources ?? []
+                    sources: data.sources ?? [],
+                    originalQuestion: message,
+                    notionUrl: '',
+                    notionError: '',
+                    notionSaving: false
                 }
             ])
         } catch (error) {
@@ -399,6 +403,57 @@ export default function PostListPage({ user, setNotice }) {
             ])
         } finally {
             setChatLoading(false)
+        }
+    }
+
+    function updateChatMessage(messageId, update) {
+        setChatMessages((current) => current.map((message) => (
+            message.id === messageId ? { ...message, ...update } : message
+        )))
+    }
+
+    async function saveChatAnswerToNotion(message) {
+        if (!message.originalQuestion || message.notionUrl || message.notionSaving) {
+            return
+        }
+
+        updateChatMessage(message.id, {
+            notionSaving: true,
+            notionError: ''
+        })
+
+        try {
+            const data = await aiApi.mcp({
+                jsonrpc: '2.0',
+                id: `notion-${Date.now()}`,
+                method: 'notion.saveRagAnswer',
+                params: {
+                    question: message.originalQuestion,
+                    answer: message.content,
+                    sources: message.sources ?? []
+                }
+            })
+
+            if (data.error) {
+                throw new Error(data.error.message || 'Notion 저장 실패')
+            }
+
+            const result = data.result
+            if (!result?.saved || !result?.notionUrl) {
+                throw new Error('Notion 저장 실패')
+            }
+
+            updateChatMessage(message.id, {
+                notionSaving: false,
+                notionUrl: result.notionUrl,
+                notionPageId: result.notionPageId,
+                notionError: ''
+            })
+        } catch (error) {
+            updateChatMessage(message.id, {
+                notionSaving: false,
+                notionError: error?.response ? getErrorMessage(error) : error?.message || 'Notion 저장 실패'
+            })
         }
     }
 
@@ -421,10 +476,16 @@ export default function PostListPage({ user, setNotice }) {
 
     function renderAiPanel({ showAgent = false } = {}) {
         const hasResult = aiState.ragResult || aiState.mcpResult || aiState.agentResult || aiState.error || aiState.loading
+        const MIN_SIMILARITY_SCORE = 0.5
+
 
         if (!hasResult && !showAgent) {
             return null
         }
+
+        const similarSources = (aiState.ragResult?.sources ?? []).filter((source) => (
+            typeof source.score === 'number' && source.score >= MIN_SIMILARITY_SCORE
+        ))
 
         return (
             <Card className={styles.aiPanel}>
@@ -440,17 +501,7 @@ export default function PostListPage({ user, setNotice }) {
                         >
                             유사 글
                         </Button>
-                        {showAgent && (
-                            <Button
-                                type="button"
-                                size="sm"
-                                variant="secondary"
-                                disabled={aiState.loading}
-                                onClick={runAgent}
-                            >
-                                작성 보조
-                            </Button>
-                        )}
+
                     </div>
                 </div>
 
@@ -461,15 +512,7 @@ export default function PostListPage({ user, setNotice }) {
                         onChange={(event) => setMcpUsername(event.target.value)}
                         placeholder="GitHub username"
                     />
-                    <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        disabled={aiState.loading}
-                        onClick={runMcp}
-                    >
-                        MCP GitHub 조회
-                    </Button>
+
                 </div>
 
                 {aiState.loading && <p className={styles.loading}>AI 요청 중...</p>}
@@ -478,9 +521,36 @@ export default function PostListPage({ user, setNotice }) {
                 {aiState.ragResult && (
                     <div className={styles.aiResult}>
                         <h3 className={styles.resultTitle}>유사 글 결과</h3>
-                        <pre className={styles.resultPre}>
-                            {JSON.stringify(aiState.ragResult, null, 2)}
-                        </pre>
+                        <p className={styles.ragSummary}>{aiState.ragResult.summary}</p>
+
+                        {similarSources.length > 0 ? (
+                            <div className={styles.sourceCardList}>
+                                {similarSources.map((source) => (
+                                    <button
+                                        className={styles.sourceCard}
+                                        type="button"
+                                        key={source.id}
+                                        onClick={() => loadPost(source.id)}
+                                        aria-label={`${source.title} 게시글로 이동`}
+                                    >
+                                        <span className={styles.sourceCardTitle}>{source.title}</span>
+                                        <span className={styles.sourceCardPreview}>
+                                            {source.contentPreview || '미리보기 내용이 없습니다.'}
+                                        </span>
+                                        <span className={styles.sourceCardMeta}>
+                                            <span>{source.authorNickname || '작성자 없음'}</span>
+                                            {typeof source.score === 'number' && (
+                                                <span className={styles.sourceCardScore}>
+                                                    유사도 {source.score.toFixed(3)}
+                                                </span>
+                                            )}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className={styles.loading}>이동할 유사 게시글이 없습니다.</p>
+                        )}
                     </div>
                 )}
 
@@ -569,6 +639,36 @@ export default function PostListPage({ user, setNotice }) {
                                                     <span className={styles.sourceButtonPreview}>{source.contentPreview}</span>
                                                 </button>
                                             ))}
+                                        </div>
+                                    )}
+
+                                    {message.role === 'assistant' && message.originalQuestion && (
+                                        <div className={styles.chatActions}>
+                                            {message.notionUrl ? (
+                                                <a
+                                                    className={styles.notionLink}
+                                                    href={message.notionUrl}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                >
+                                                    <ExternalLink size={14} />
+                                                    Notion 열기
+                                                </a>
+                                            ) : (
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    variant="secondary"
+                                                    disabled={message.notionSaving}
+                                                    onClick={() => saveChatAnswerToNotion(message)}
+                                                >
+                                                    <FilePlus2 size={14} />
+                                                    {message.notionSaving ? '저장 중...' : 'Notion에 적기'}
+                                                </Button>
+                                            )}
+                                            {message.notionError && (
+                                                <p className={styles.chatActionError}>{message.notionError}</p>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -761,14 +861,7 @@ export default function PostListPage({ user, setNotice }) {
                         <Button type="button" variant="secondary" onClick={backToList}>
                             취소
                         </Button>
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            disabled={aiState.loading}
-                            onClick={runAgent}
-                        >
-                            작성 보조
-                        </Button>
+
                     </div>
                 </Card>
 
